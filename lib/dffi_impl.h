@@ -1,0 +1,200 @@
+// Copyright 2018 Adrien Guinet <adrien@guinet.me>
+// 
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+// 
+//     http://www.apache.org/licenses/LICENSE-2.0
+// 
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+#ifndef DFFI_IMPL_H
+#define DFFI_IMPL_H
+
+#include <memory>
+#include <sstream>
+
+#include <llvm/ADT/IntrusiveRefCntPtr.h>
+#include <llvm/ADT/StringRef.h>
+#include <llvm/ADT/SmallVector.h>
+#include <llvm/ADT/StringMap.h>
+#include <llvm/Support/raw_ostream.h>
+#include <llvm/IR/LLVMContext.h>
+
+#include <clang/Frontend/FrontendAction.h>
+
+#include <dffi/dffi.h>
+#include <dffi/composite_type.h>
+
+#include "dffictx.h"
+
+namespace llvm {
+class Module;
+class Function;
+class TargetMachine;
+class ExecutionEngine;
+class DIType;
+class DICompositeType;
+class DISubroutineType;
+} // llvm
+
+namespace clang {
+class CompilerInstance;
+class DiagnosticIDs;
+class DiagnosticOptions;
+class TextDiagnosticPrinter;
+namespace vfs {
+class FileSystem;
+}
+} // llvm
+
+namespace dffi {
+
+// Types
+struct BasicType;
+struct PointerType;
+struct StructType;
+struct UnionType;
+struct FunctionType;
+struct TypePrinter;
+
+namespace details {
+
+void getFuncTrampolineName(llvm::SmallVectorImpl<char>& Ret, llvm::StringRef const Name);
+void getFuncWrapperName(llvm::SmallVectorImpl<char>& Ret, llvm::StringRef const Name);
+llvm::StringRef getFuncNameFromWrapper(llvm::StringRef const Name);
+bool isWrapperFunction(llvm::StringRef const Name);
+
+typedef llvm::StringMap<dffi::FunctionType const*> FuncTysMap;
+typedef llvm::StringMap<std::unique_ptr<dffi::CanOpaqueType>> CompositeTysMap;
+typedef llvm::StringMap<dffi::Type const*> AliasTysMap;
+typedef llvm::DenseMap<llvm::DICompositeType const*, dffi::Type*> AnonTysMap;
+typedef llvm::StringMap<std::string> FuncAliasesMap;
+
+llvm::IntrusiveRefCntPtr<clang::vfs::FileSystem> getClangResFileSystem();
+const char* getClangResRootDirectory();
+
+struct CUImpl;
+
+struct DFFIImpl
+{
+  friend class CUImpl;
+
+  DFFIImpl(CCOpts const& Opts);
+  ~DFFIImpl();
+
+  CUImpl* compile(llvm::StringRef const Code, llvm::StringRef CUName, bool IncludeDefs, std::string& Err);
+
+  BasicType const* getBasicType(BasicType::BasicKind K);
+  PointerType const* getPointerType(QualType Ty);
+  ArrayType const* getArrayType(QualType Ty, uint64_t NElements);
+  NativeFunc getFunction(FunctionType const* FTy, void* FPtr);
+
+protected:
+  DFFICtx& getContext() { return DCtx_; }
+  DFFICtx const& getContext() const { return DCtx_; }
+  void* getFunctionAddress(llvm::StringRef Name);
+
+private:
+  std::unique_ptr<llvm::Module> compile_llvm_with_decls(llvm::StringRef const Code, llvm::StringRef const CUName, FuncAliasesMap& FuncAliases, std::string& Err);
+  std::unique_ptr<llvm::Module> compile_llvm(llvm::StringRef const Code, llvm::StringRef const CUName, std::string& Err);
+
+  void genFuncTypeWrapper(TypePrinter& P, std::stringstream& ss, FunctionType const* FTy);
+  void getCompileError(std::string& Err);
+  void setNewDiagnostics();
+
+private:
+  std::unique_ptr<clang::CompilerInstance> Clang_;
+  std::string ErrorMsg_;
+  llvm::IntrusiveRefCntPtr<clang::DiagnosticIDs> DiagID_;
+  llvm::IntrusiveRefCntPtr<clang::DiagnosticOptions> DiagOpts_;
+  llvm::raw_string_ostream ErrorMsgStream_;
+  llvm::LLVMContext Ctx_;
+  std::unique_ptr<llvm::TargetMachine> TM_;
+  std::unique_ptr<llvm::ExecutionEngine> EE_;
+  llvm::IntrusiveRefCntPtr<clang::SourceManager> SrcMgr_;
+  llvm::IntrusiveRefCntPtr<clang::vfs::InMemoryFileSystem> VFS_;
+  llvm::IntrusiveRefCntPtr<clang::FileManager> FileMgr_;
+  llvm::SmallVector<std::unique_ptr<CUImpl>, 8> CUs_;
+  llvm::DenseMap<dffi::FunctionType const*, size_t> FuncTyWrappers_;
+
+  DFFICtx DCtx_;
+
+  CCOpts Opts_;
+
+  size_t CUIdx_ = 0;
+};
+
+struct CUImpl
+{
+  CUImpl(DFFIImpl& DFFI);
+
+  dffi::Type const* getType(llvm::StringRef Name) const;
+
+  dffi::StructType const* getStructType(llvm::StringRef Name) const;
+  dffi::UnionType const* getUnionType(llvm::StringRef Name) const;
+  dffi::EnumType const* getEnumType(llvm::StringRef Name) const;
+
+  BasicType const* getBasicType(BasicType::BasicKind K) const {
+    return DFFI_.getBasicType(K);
+  }
+  PointerType const* getPointerType(QualType Ty) const {
+    return DFFI_.getPointerType(Ty);
+  }
+
+  dffi::FunctionType const* getFunctionType(llvm::DISubroutineType const* Ty);
+  dffi::FunctionType const* getFunctionType(llvm::Function& F);
+  QualType getQualTypeFromDIType(llvm::DIType const* Ty);
+  dffi::Type const* getTypeFromDIType(llvm::DIType const* Ty);
+
+  NativeFunc getFunction(llvm::StringRef Name);
+
+  void declareDIComposite(llvm::DICompositeType const* Ty);
+  void parseDIComposite(llvm::DICompositeType const* Ty, llvm::Module& M);
+  void setAlias(llvm::StringRef Name, dffi::Type const* Ty) { AliasTys_[Name] = Ty; }
+  void parseFunctionAlias(llvm::Function& F);
+
+  DFFICtx& getContext() { return DFFI_.getContext(); }
+  DFFICtx const& getContext() const { return DFFI_.getContext(); }
+
+  std::vector<std::string> getTypes() const;
+  std::vector<std::string> getFunctions() const;
+
+  DFFIImpl& DFFI_;
+
+  CompositeTysMap CompositeTys_;
+  FuncTysMap FuncTys_;
+  AliasTysMap AliasTys_;
+  FuncAliasesMap FuncAliases_;
+
+  // Temporary map used during debug metadata parsing
+  AnonTysMap AnonTys_;
+};
+
+struct ASTGenWrappersAction: public clang::ASTFrontendAction
+{
+  ASTGenWrappersAction(FuncAliasesMap& FuncAliases):
+    clang::ASTFrontendAction(),
+    FuncAliases_(FuncAliases)
+  { }
+
+  std::unique_ptr<clang::ASTConsumer> CreateASTConsumer(clang::CompilerInstance &Compiler, llvm::StringRef InFile) override;
+
+  std::string getForceDecls() const; 
+
+  llvm::IntrusiveRefCntPtr<clang::ASTContext> releaseAST() { return std::move(ASTCtxt_); }
+
+private:
+  std::stringstream ForceDecls_;
+  llvm::IntrusiveRefCntPtr<clang::ASTContext> ASTCtxt_;
+  FuncAliasesMap& FuncAliases_;
+};
+
+} // details
+} // dffi
+
+#endif

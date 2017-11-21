@@ -1,0 +1,16 @@
+features:
+* cdef of types
+* bitfields
+* var args
+* int128_t support in pybind11
+* atomic types
+
+fixes:
+* TODOs!
+* clean python API
+* OSX/win support
+* get non qualified type (whole tree)
+* tests structures with custom alignments/pack
+
+ideas:
+* shellcode generation (JITPacker)
