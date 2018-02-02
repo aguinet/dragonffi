@@ -22,7 +22,7 @@ python bindings around this library that also uses pycparser to be able to
 easily declare interfaces and types.
 
 ``libffi``  has the issue that it doesn't support recent calling conventions
-(for instance the MS x64 ABI under Linux x64 OSes), and every ABI has to hand written
+(for instance the MS x64 ABI under Linux x64 OSes), and every ABI has to be hand written
 in assembly. Moreover, ABIs can become really complex (especially for instance when
 structure are passed/returned by values).
 
