@@ -146,7 +146,7 @@ Current limitations
 Some C features are still not supported by dffi (but will be in future releases):
 
 * C structures with bitfields
-* functions with triadic arguments
+* functions with variadic arguments
 * functions with the noreturn attribute
 * cdef of types that are not used by any function won't be visible to dffi
 * support for atomic operations
