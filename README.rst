@@ -2,7 +2,7 @@ DragonFFI
 =========
 
 DragonFFI is a C Foreign Function Interface (FFI) library written in C++ and
-based on Clang/LLVM. It allows any language to call C functions thought the
+based on Clang/LLVM. It allows any language to call C functions throught the
 provided APIs and bindings.
 
 For now, only python bindings and a C++ API are provided.
