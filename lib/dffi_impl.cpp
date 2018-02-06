@@ -271,7 +271,6 @@ DFFIImpl::DFFIImpl(CCOpts const& Opts):
   EB.setEngineKind(EngineKind::JIT)
     .setErrorStr(&Error)
     .setOptLevel(CodeGenOpt::Default)
-    .setCodeModel(CodeModel::Small)
     .setRelocationModel(Reloc::PIC_);
 
   SmallVector<std::string, 1> Attrs;
