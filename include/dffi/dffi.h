@@ -117,12 +117,16 @@ struct DFFI_API DFFI
   BasicType const* getInt16Ty();
   BasicType const* getInt32Ty();
   BasicType const* getInt64Ty();
+#ifdef DFFI_SUPPORT_I128
   BasicType const* getInt128Ty();
+#endif
   BasicType const* getUInt8Ty();
   BasicType const* getUInt16Ty();
   BasicType const* getUInt32Ty();
   BasicType const* getUInt64Ty();
+#ifdef DFFI_SUPPORT_I128
   BasicType const* getUInt128Ty();
+#endif
   BasicType const* getFloat32Ty();
   BasicType const* getFloat64Ty();
   BasicType const* getFloat128Ty();

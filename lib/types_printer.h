@@ -15,6 +15,7 @@
 #ifndef DFFI_TYPE_PRINTER_H
 #define DFFI_TYPE_PRINTER_H
 
+#include <dffi/config.h>
 #include <dffi/cc.h>
 #include <dffi/types.h>
 #include <dffi/casting.h>
@@ -63,18 +64,22 @@ struct TypePrinter
         case BasicType::Int64:
           ss << "int" << BTy->getSize() * 8 << "_t";
           break;
+#ifdef DFFI_SUPPORT_I128
         case BasicType::Int128:
           ss << "__int128_t";
           break;
+#endif
         case BasicType::UInt8:
         case BasicType::UInt16:
         case BasicType::UInt32:
         case BasicType::UInt64:
           ss << "uint" << BTy->getSize() * 8 << "_t";
           break;
+#ifdef DFFI_SUPPORT_I128
         case BasicType::UInt128:
           ss << "__uint128_t";
           break;
+#endif
         case BasicType::Float32:
           ss << "float";
           break;

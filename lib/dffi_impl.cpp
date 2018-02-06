@@ -43,6 +43,7 @@
 #include <llvm/Support/raw_ostream.h>
 #include <llvm/Target/TargetMachine.h>
 
+#include <dffi/config.h>
 #include <dffi/dffi.h>
 #include <dffi/types.h>
 #include <dffi/composite_type.h>
@@ -801,7 +802,9 @@ dffi::Type const* CUImpl::getTypeFromDIType(llvm::DIType const* Ty)
         HANDLE_BASICTY(16, BasicType::UInt16);
         HANDLE_BASICTY(32, BasicType::UInt32);
         HANDLE_BASICTY(64, BasicType::UInt64);
+#ifdef DFFI_SUPPORT_I128
         HANDLE_BASICTY(128, BasicType::UInt128);
+#endif
         break;
       }
       case llvm::dwarf::DW_ATE_signed:
@@ -814,7 +817,9 @@ dffi::Type const* CUImpl::getTypeFromDIType(llvm::DIType const* Ty)
         HANDLE_BASICTY(16, BasicType::Int16);
         HANDLE_BASICTY(32, BasicType::Int32);
         HANDLE_BASICTY(64, BasicType::Int64);
+#ifdef DFFI_SUPPORT_I128
         HANDLE_BASICTY(128, BasicType::Int128);
+#endif
         break;
       }
       case llvm::dwarf::DW_ATE_float:

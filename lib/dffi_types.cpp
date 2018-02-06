@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <dffi/config.h>
 #include <dffi/dffi.h>
 #include <dffi/composite_type.h>
 #include <dffi/casting.h>
@@ -49,8 +50,10 @@ uint64_t BasicType::getSize() const
       return 4;
     case Int64:
       return 8;
+#ifdef DFFI_SUPPORT_I128
     case Int128:
       return 16;
+#endif
     case UInt8:
       return 1;
     case UInt16:
@@ -59,8 +62,10 @@ uint64_t BasicType::getSize() const
       return 4;
     case UInt64:
       return 8;
+#ifdef DFFI_SUPPORT_I128
     case UInt128:
       return 16;
+#endif
     case Float32:
       return 4;
     case Float64:

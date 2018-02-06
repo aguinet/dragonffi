@@ -12,6 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <iostream>
+#include <cstdlib>
+
+#include <dffi/config.h>
 #include <dffi/dffi.h>
 #include <dffi/composite_type.h>
 #include <dffi/casting.h>
@@ -103,10 +107,12 @@ BasicType const* DFFI::getInt64Ty()
 {
   return getBasicType(BasicType::Int64);
 }
+#ifdef DFFI_SUPPORT_I128
 BasicType const* DFFI::getInt128Ty()
 {
   return getBasicType(BasicType::Int128);
 }
+#endif
 BasicType const* DFFI::getUInt8Ty()
 {
   return getBasicType(BasicType::UInt8);
@@ -123,10 +129,12 @@ BasicType const* DFFI::getUInt64Ty()
 {
   return getBasicType(BasicType::UInt64);
 }
+#ifdef DFFI_SUPPORT_I128
 BasicType const* DFFI::getUInt128Ty()
 {
   return getBasicType(BasicType::UInt128);
 }
+#endif
 BasicType const* DFFI::getFloat32Ty()
 {
   return getBasicType(BasicType::Float32);
@@ -167,10 +175,12 @@ PointerType const* DFFI::getInt64PtrTy()
 {
   return getPointerType(getInt64Ty());
 }
+#ifdef DFFI_SUPPORT_I128
 PointerType const* DFFI::getInt128PtrTy()
 {
   return getPointerType(getInt128Ty());
 }
+#endif
 PointerType const* DFFI::getUInt8PtrTy()
 {
   return getPointerType(getUInt8Ty());
@@ -187,10 +197,12 @@ PointerType const* DFFI::getUInt64PtrTy()
 {
   return getPointerType(getUInt64Ty());
 }
+#ifdef DFFI_SUPPORT_I128
 PointerType const* DFFI::getUInt128PtrTy()
 {
   return getPointerType(getUInt128Ty());
 }
+#endif
 PointerType const* DFFI::getFloat32PtrTy()
 {
   return getPointerType(getFloat32Ty());

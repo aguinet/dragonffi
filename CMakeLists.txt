@@ -49,6 +49,7 @@ include_directories(${LLVM_INCLUDE_DIRS})
 link_directories(${LLVM_LIBRARY_DIRS})
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
+include_directories(${CMAKE_CURRENT_BINARY_DIR}/include)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/third-party)
 
 set(LLVM_LINK_COMPONENTS
@@ -99,7 +100,6 @@ message(STATUS "Clang resources directory: ${CLANG_RES_DIR}")
 # Parse CLANG_RES_DIR and create a .cpp file with all its content
 # This will be mapped into a virtual file system in dffi!
 set(CLANG_RES_HEADER "${CMAKE_CURRENT_BINARY_DIR}/include/dffi/clang_res.h")
-include_directories("${CMAKE_CURRENT_BINARY_DIR}/include")
 
 file(GLOB_RECURSE CLANG_RES_GLOB LIST_DIRECTORIES false "${CLANG_RES_DIR}/*")
 add_custom_command(
@@ -109,6 +109,25 @@ add_custom_command(
   COMMENT "Packing clang ressources into a header file...")
 
 llvm_map_components_to_libnames(llvm_libs ${LLVM_LINK_COMPONENTS})
+
+include(CheckTypeSize)
+
+if (APPLE)
+  # It seems to have an issue ith the libc++ on OSX: typeinfo(__int128_t) does not exist!
+  # Disable it on this platform until we figure it out..
+  set(HAVE_INT128_T 0)
+else()
+  SET(CMAKE_EXTRA_INCLUDE_FILES stdint.h)
+  check_type_size("__int128_t" INT128_T)
+  if (HAVE_INT128_T)
+    set(HAVE_INT128_T 1)
+  else()
+    set(HAVE_INT128_T 0)
+  endif()
+  SET(CMAKE_EXTRA_INCLUDE_FILES)
+endif()
+
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/include/dffi/config.h.in" "${CMAKE_CURRENT_BINARY_DIR}/include/dffi/config.h" @ONLY)
 
 add_library(dffi_objs
   OBJECT

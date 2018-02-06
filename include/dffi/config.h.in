@@ -1,0 +1,8 @@
+#ifndef DFFI_CONFIG_H
+#define DFFI_CONFIG_H
+
+#if @HAVE_INT128_T@
+#define DFFI_SUPPORT_I128
+#endif
+
+#endif

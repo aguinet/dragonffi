@@ -564,12 +564,16 @@ struct BasicObjConvertor<T, false>
         HANDLE_BASICTY(UInt16, uint16_t);
         HANDLE_BASICTY(UInt32, uint32_t);
         HANDLE_BASICTY(UInt64, uint64_t);
+#ifdef DFFI_SUPPORT_I128
         HANDLE_BASICTY(UInt128, __uint128_t);
+#endif
         HANDLE_BASICTY(Int8, int8_t);
         HANDLE_BASICTY(Int16, int16_t);
         HANDLE_BASICTY(Int32, int32_t);
         HANDLE_BASICTY(Int64, int64_t);
+#ifdef DFFI_SUPPORT_I128
         HANDLE_BASICTY(Int128, __int128_t);
+#endif
         HANDLE_BASICTY(Float32, float);
         HANDLE_BASICTY(Float64, double);
         HANDLE_BASICTY(Float128, long double);

@@ -22,6 +22,7 @@
 #include <cassert>
 
 #include <dffi/casting.h>
+#include <dffi/config.h>
 #include <dffi/cc.h>
 #include <dffi/exports.h>
 #include <dffi/native_func.h>
@@ -75,12 +76,16 @@ public:
     Int16,
     Int32,
     Int64,
+#ifdef DFFI_SUPPORT_I128
     Int128,
+#endif
     UInt8,
     UInt16,
     UInt32,
     UInt64,
+#ifdef DFFI_SUPPORT_I128
     UInt128,
+#endif
     Float32,
     Float64,
     Float128,
@@ -121,12 +126,16 @@ BASICTY_GETKIND(int8_t, Int8)
 BASICTY_GETKIND(int16_t, Int16)
 BASICTY_GETKIND(int32_t, Int32)
 BASICTY_GETKIND(int64_t, Int64)
+#ifdef DFFI_SUPPORT_I128
 BASICTY_GETKIND(__int128_t, Int128)
+#endif
 BASICTY_GETKIND(uint8_t, UInt8)
 BASICTY_GETKIND(uint16_t, UInt16)
 BASICTY_GETKIND(uint32_t, UInt32)
 BASICTY_GETKIND(uint64_t, UInt64)
+#ifdef DFFI_SUPPORT_I128
 BASICTY_GETKIND(__uint128_t, UInt128)
+#endif
 BASICTY_GETKIND(float, Float32)
 BASICTY_GETKIND(double, Float64)
 BASICTY_GETKIND(long double, Float128)
