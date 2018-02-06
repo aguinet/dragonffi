@@ -92,6 +92,9 @@ set(LLVM_LINK_COMPONENTS
   Vectorize
   ipo
 )
+if (APPLE)
+  set(LLVM_LINK_COMPONENTS ${LLVM_LINK_COMPONENTS} Demangle)
+endif() 
 
 set(CLANG_RES_DIR "${LLVM_BINDIR}/../lib${LLVM_LIBDIR_SUFFIX}/clang/${LLVM_VERSION}/")
 get_filename_component(CLANG_RES_DIR "${CLANG_RES_DIR}" ABSOLUTE)
