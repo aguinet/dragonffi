@@ -48,8 +48,8 @@ struct A init() {
 ''')
 A = CU.getStructType("A")
 fields_name = sorted((f.name for f in A))
-# CHECK: ['a', 'b']
-print(fields_name)
+assert(fields_name[0] == 'a')
+assert(fields_name[1] == 'b')
 
 Av = CU.types.A(a=1,b=2)
 

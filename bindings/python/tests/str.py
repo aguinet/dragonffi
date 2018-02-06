@@ -1,3 +1,4 @@
+# coding: utf-8
 # Copyright 2018 Adrien Guinet <adrien@guinet.me>
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,7 +14,6 @@
 # limitations under the License.
 
 # RUN: "%python" "%s" | "%FileCheck" "%s"
-# coding: utf-8
 
 import pydffi
 import random

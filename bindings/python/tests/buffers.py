@@ -1,3 +1,4 @@
+# -*- coding: utf8 -*-
 # Copyright 2018 Adrien Guinet <adrien@guinet.me>
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,7 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# -*- coding: utf8 -*-
 # RUN: "%python" "%s" | "%FileCheck" "%s"
 
 import pydffi
