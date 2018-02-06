@@ -79,6 +79,10 @@ BasicType const* DFFI::getVoidTy()
 {
   return nullptr;
 }
+BasicType const* DFFI::getBoolTy()
+{
+  return getBasicType(BasicType::Bool);
+}
 BasicType const* DFFI::getCharTy()
 {
   return getBasicType(BasicType::Char);
@@ -138,6 +142,10 @@ BasicType const* DFFI::getFloat128Ty()
 PointerType const* DFFI::getVoidPtrTy()
 {
   return getPointerType(getVoidTy());
+}
+PointerType const* DFFI::getBoolPtrTy()
+{
+  return getPointerType(getBoolTy());
 }
 PointerType const* DFFI::getCharPtrTy()
 {

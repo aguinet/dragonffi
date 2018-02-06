@@ -12,37 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set(TESTS
-  anon_struct
-  anon_union
-  array
-  asm_redirect
-  bool
-  cconv
-  compile
-  compile_error
-  decl
-  enum
-  func_ptr
-  includes
-  stdint
-  struct
-  system_headers
-  typedef
-  union
-)
+# RUN: "%python" "%s"
+# coding: utf-8
 
-# Compile tests
-foreach(TEST ${TESTS})
-  add_executable(${TEST} ${TEST}.cpp)
-  target_link_libraries(${TEST} dffi)
-endforeach()
+import pydffi
+import random
 
-# Configure lit
-configure_file("lit.site.cfg.in" "${CMAKE_CURRENT_BINARY_DIR}/lit.site.cfg" @ONLY)
+J=pydffi.FFI()
 
-add_lit_target(check_lib
-  "Running dragonffi library tests"
-  "${CMAKE_CURRENT_BINARY_DIR}")
-add_dependencies(check_lib ${TESTS})
-add_dependencies(check check_lib) 
+CU = J.compile('''
+#include <stdbool.h>
+bool foo(int a) { return a==1; }
+bool invert(const bool v) { return !v; }
+''')
+
+assert(CU.funcs.foo(1) == True)
+assert(CU.funcs.foo(0) == False)
+assert(CU.funcs.invert(True) == False)
+assert(CU.funcs.invert(False) == True)

@@ -111,6 +111,7 @@ struct DFFI_API DFFI
 
   // Easy type access
   BasicType const* getVoidTy();
+  BasicType const* getBoolTy();
   BasicType const* getCharTy();
   BasicType const* getInt8Ty();
   BasicType const* getInt16Ty();
@@ -127,6 +128,7 @@ struct DFFI_API DFFI
   BasicType const* getFloat128Ty();
 
   PointerType const* getVoidPtrTy();
+  PointerType const* getBoolPtrTy();
   PointerType const* getCharPtrTy();
   PointerType const* getInt8PtrTy();
   PointerType const* getInt16PtrTy();

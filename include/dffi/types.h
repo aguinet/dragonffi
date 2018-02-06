@@ -69,6 +69,7 @@ class DFFI_API BasicType: public Type
 
 public:
   enum BasicKind: uint8_t {
+    Bool,
     Char,
     Int8,
     Int16,
@@ -114,6 +115,7 @@ private:
 #define BASICTY_GETKIND(Ty, K)\
   template <>\
   constexpr BasicType::BasicKind BasicType::getKind<Ty>() { return BasicType::K; }
+BASICTY_GETKIND(bool, Bool)
 BASICTY_GETKIND(char, Char)
 BASICTY_GETKIND(int8_t, Int8)
 BASICTY_GETKIND(int16_t, Int16)

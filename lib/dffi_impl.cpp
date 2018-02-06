@@ -789,6 +789,8 @@ dffi::Type const* CUImpl::getTypeFromDIType(llvm::DIType const* Ty)
 
     const auto Size = BTy->getSizeInBits();
     switch (BTy->getEncoding()) {
+      case llvm::dwarf::DW_ATE_boolean:
+        return DFFI_.getBasicType(BasicType::Bool);
       case llvm::dwarf::DW_ATE_unsigned:
       case llvm::dwarf::DW_ATE_unsigned_char:
       {

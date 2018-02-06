@@ -254,6 +254,7 @@ py::object basictype_new(BasicType const& BTy, py::handle O)
   case BasicType::K:\
     return basictype_new_impl<CTy>(BTy, O);
   switch (BTy.getBasicKind()) {
+    HANDLE_BASICTY(Bool, bool);
     HANDLE_BASICTY(Char, char);
     HANDLE_BASICTY(UInt8, uint8_t);
     HANDLE_BASICTY(UInt16, uint16_t);
@@ -335,6 +336,7 @@ PYBIND11_MODULE(pydffi, m)
     ;
 
   py::enum_<BasicType::BasicKind>(m, "BasicKind")
+    .value("Bool", BasicType::Bool)
     .value("Int8", BasicType::Int8)
     .value("Int16", BasicType::Int16)
     .value("Int32", BasicType::Int32)
@@ -462,10 +464,10 @@ PYBIND11_MODULE(pydffi, m)
     .def(py::self &= typename std::remove_cv<CTy>::type{})\
     .def(~py::self)
 
+  DECL_CBASICOBJ_INT(bool, "Bool", "__bool__");
   DECL_CBASICOBJ_INT(uint8_t, "UInt8", "__int__");
   DECL_CBASICOBJ_INT(uint16_t, "UInt16", "__int__");
   DECL_CBASICOBJ_INT(uint32_t, "UInt32", "__int__");
-  // TODO: s/long/int in python3
   DECL_CBASICOBJ_INT(uint64_t, "UInt64", sizeof(long) <= sizeof(int64_t) ? "__int__":"__long__");
   DECL_CBASICOBJ_INT(__uint128_t, "UInt128", "__long__");
   DECL_CBASICOBJ_INT(int8_t, "Int8", "__int__");
@@ -603,6 +605,7 @@ PYBIND11_MODULE(pydffi, m)
 
     // Type helpers
     .def_property_readonly("VoidTy", &DFFI::getVoidTy, py::return_value_policy::reference_internal)
+    .def_property_readonly("BoolTy", &DFFI::getBoolTy, py::return_value_policy::reference_internal)
     .def_property_readonly("CharTy", &DFFI::getCharTy, py::return_value_policy::reference_internal)
     .def_property_readonly("Int8Ty", &DFFI::getInt8Ty, py::return_value_policy::reference_internal)
     .def_property_readonly("Int16Ty", &DFFI::getInt16Ty, py::return_value_policy::reference_internal)
@@ -620,6 +623,7 @@ PYBIND11_MODULE(pydffi, m)
 
     // Pointer type helpers
     .def_property_readonly("VoidPtrTy", &DFFI::getVoidPtrTy, py::return_value_policy::reference_internal)
+    .def_property_readonly("BoolPtrTy", &DFFI::getBoolPtrTy, py::return_value_policy::reference_internal)
     .def_property_readonly("CharPtrTy", &DFFI::getCharPtrTy, py::return_value_policy::reference_internal)
     .def_property_readonly("Int8PtrTy", &DFFI::getInt8PtrTy, py::return_value_policy::reference_internal)
     .def_property_readonly("Int16PtrTy", &DFFI::getInt16PtrTy, py::return_value_policy::reference_internal)

@@ -558,6 +558,7 @@ struct BasicObjConvertor<T, false>
       case dffi::BasicType::K:\
         return BasicObjConvertorImpl<T, T_, std::is_convertible<T, T_>::value>::cast(BTy, V);
       switch (BTy->getBasicKind()) {
+        HANDLE_BASICTY(Bool, bool);
         HANDLE_BASICTY(Char, char);
         HANDLE_BASICTY(UInt8, uint8_t);
         HANDLE_BASICTY(UInt16, uint16_t);

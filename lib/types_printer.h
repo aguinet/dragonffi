@@ -51,6 +51,9 @@ struct TypePrinter
       auto* BTy = cast<BasicType>(Ty);
       std::stringstream ss;
       switch (BTy->getBasicKind()) {
+        case BasicType::Bool:
+          ss << "_Bool";
+          break;
         case BasicType::Char:
           ss << "char";
           break;

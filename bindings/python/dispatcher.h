@@ -35,6 +35,7 @@ struct TypeDispatcher
         return T::template case_basic<CTy>(BTy, std::forward<Args>(args)...);
 
       switch (BTy->getBasicKind()) {
+        HANDLE_BASICTY(Bool, bool);
         HANDLE_BASICTY(Char, char);
         HANDLE_BASICTY(UInt8, uint8_t);
         HANDLE_BASICTY(UInt16, uint16_t);
