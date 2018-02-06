@@ -37,6 +37,8 @@ unsigned BasicType::getAlign() const
 uint64_t BasicType::getSize() const
 {
   switch (BKind_) {
+    case Bool:
+      return sizeof(bool);
     case Char:
       return sizeof(char);
     case Int8:
