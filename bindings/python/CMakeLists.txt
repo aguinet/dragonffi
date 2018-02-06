@@ -22,6 +22,9 @@ add_library(pydffi
   pydffi.cpp
 )
 set_target_properties(pydffi PROPERTIES PREFIX "")
+if (APPLE)
+  set_target_properties(pydffi PROPERTIES SUFFIX ".so")
+endif()
 target_link_libraries(pydffi
   PUBLIC
   dffi

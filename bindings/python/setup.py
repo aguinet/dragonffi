@@ -21,14 +21,15 @@ import subprocess
 import sys
 import errno
 
+link_args = []
 if platform.system() in ("Linux","Darwin"):
     # This will work w/ GCC and clang
     compile_args = ['-std=c++11']
-    # Stripping the library makes us win 20mb..!
-    link_args = ["-static-libstdc++","-Wl,--strip-all"]
+    if platform.system() == "Linux":
+        # Stripping the library makes us win 20mb..!
+        link_args = ["-static-libstdc++","-Wl,--strip-all"]
 elif platform.system() == "Windows":
     compile_args = ['/TP', '/EHsc']
-    link_args = []
 else:
     raise RuntimeError("unsupported platform '%s'!" % os.platform)
 
