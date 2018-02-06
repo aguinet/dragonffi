@@ -190,7 +190,13 @@ if (DFFI_STATIC_LLVM)
 
   set(DFFI_STATIC_LLVM_PATH "${CMAKE_CURRENT_BINARY_DIR}/dffi_static_llvm${CMAKE_STATIC_LIBRARY_SUFFIX}" CACHE STRING "Path to the static library containings dffi and LLVM static libraries")
   # TODO: make merge libs for {dar,}win
-  set(MERGE_LIBS "${CMAKE_CURRENT_SOURCE_DIR}/tools/merge_libs.sh")
+  if (APPLE)
+    set(MERGE_LIBS "${CMAKE_CURRENT_SOURCE_DIR}/tools/merge_libs_osx.sh")
+  elseif(UNIX)
+    set(MERGE_LIBS "${CMAKE_CURRENT_SOURCE_DIR}/tools/merge_libs_gnu.sh")
+  else()
+    message(FATAL_ERROR "Static llvm library: unsupported system ${CMAKE_SYSTEM_NAME}")
+  endif()
   add_custom_command(
     TARGET dffi_static POST_BUILD
     COMMAND "${MERGE_LIBS}"
