@@ -125,7 +125,7 @@ private:
 
   T* Ptr_;
   Type Ty_;
-  __attribute__((align(sizeof(T)))) char BufValue[sizeof(T)];
+  __attribute__((aligned(alignof(T)))) char BufValue[sizeof(T)];
 };
 
 template <>

@@ -32,7 +32,46 @@ BasicType::BasicType(details::DFFIImpl& Dffi, BasicKind BKind):
 
 unsigned BasicType::getAlign() const
 {
-  return BasicType::getSize();
+  switch (BKind_) {
+    case Char:
+      return alignof(char);
+    case Int8:
+      return alignof(int8_t);
+    case Int16:
+      return alignof(int16_t);
+    case Int32:
+      return alignof(int32_t);
+    case Int64:
+      return alignof(int64_t);
+#ifdef DFFI_SUPPORT_I128
+    case Int128:
+      return alignof(__int128_t);
+#endif
+    case UInt8:
+      return alignof(uint8_t);
+    case UInt16:
+      return alignof(uint16_t);
+    case UInt32:
+      return alignof(uint32_t);
+    case UInt64:
+      return alignof(uint64_t);
+#ifdef DFFI_SUPPORT_I128
+    case UInt128:
+      return alignof(__uint128_t);
+#endif
+    case Float32:
+      return alignof(float);
+    case Float64:
+      return alignof(double);
+    case Float128:
+      return alignof(long double);
+    case ComplexFloat32:
+      return alignof(_Complex float);
+    case ComplexFloat64:
+      return alignof(_Complex double);
+    case ComplexFloat128:
+      return alignof(_Complex long double);
+  }
 }
 
 uint64_t BasicType::getSize() const
