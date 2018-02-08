@@ -668,4 +668,6 @@ PYBIND11_MODULE(pydffi, m)
   py::register_exception<UnknownFunctionError>(m, "UnknownFunctionError");
   py::register_exception<TypeError>(m, "TypeError");
   py::register_exception<DLOpenError>(m, "DLOpenError");
+  py::register_exception<UnknownField>(m, "UnknownField");
+  py::register_exception<AllocError>(m, "AllocError");
 };
