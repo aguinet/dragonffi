@@ -18,6 +18,7 @@
 #include <dffi/composite_type.h>
 #include <dffi/types.h>
 #include <dffi/casting.h>
+#include "errors.h"
 
 template <class T>
 struct TypeDispatcher
@@ -28,68 +29,78 @@ struct TypeDispatcher
   {
     assert(Ty != nullptr && "conversion of void type requested!");
 
-    // TODO: convert this to a switch!
-    if (auto* BTy = dffi::dyn_cast<dffi::BasicType>(Ty)) {
+    switch (Ty->getKind()) {
+      case dffi::Type::TY_Basic:
+        {
+          auto* BTy = dffi::cast<dffi::BasicType>(Ty);
 #define HANDLE_BASICTY(DTy, CTy)\
-      case dffi::BasicType::DTy:\
-        return T::template case_basic<CTy>(BTy, std::forward<Args>(args)...);
+          case dffi::BasicType::DTy:\
+                                    return T::template case_basic<CTy>(BTy, std::forward<Args>(args)...);
 
-      switch (BTy->getBasicKind()) {
-        HANDLE_BASICTY(Bool, bool);
-        HANDLE_BASICTY(Char, char);
-        HANDLE_BASICTY(UInt8, uint8_t);
-        HANDLE_BASICTY(UInt16, uint16_t);
-        HANDLE_BASICTY(UInt32, uint32_t);
-        HANDLE_BASICTY(UInt64, uint64_t);
+          switch (BTy->getBasicKind()) {
+            HANDLE_BASICTY(Bool, bool);
+            HANDLE_BASICTY(Char, char);
+            HANDLE_BASICTY(UInt8, uint8_t);
+            HANDLE_BASICTY(UInt16, uint16_t);
+            HANDLE_BASICTY(UInt32, uint32_t);
+            HANDLE_BASICTY(UInt64, uint64_t);
 #ifdef DFFI_SUPPORT_I128
-        HANDLE_BASICTY(UInt128, __uint128_t);
+            HANDLE_BASICTY(UInt128, __uint128_t);
 #endif
-        HANDLE_BASICTY(Int8, int8_t);
-        HANDLE_BASICTY(Int16, int16_t);
-        HANDLE_BASICTY(Int32, int32_t);
-        HANDLE_BASICTY(Int64, int64_t);
+            HANDLE_BASICTY(Int8, int8_t);
+            HANDLE_BASICTY(Int16, int16_t);
+            HANDLE_BASICTY(Int32, int32_t);
+            HANDLE_BASICTY(Int64, int64_t);
 #ifdef DFFI_SUPPORT_I128
-        HANDLE_BASICTY(Int128, __int128_t);
+            HANDLE_BASICTY(Int128, __int128_t);
 #endif
-        static_assert(sizeof(float) == 4, "float must be 4 bytes");
-        static_assert(sizeof(double) == 8, "double must be 8 bytes");
-        static_assert(sizeof(long double) == 16, "double must be 16 bytes");
-        HANDLE_BASICTY(Float32, float);
-        HANDLE_BASICTY(Float64, double);
-        HANDLE_BASICTY(Float128, long double);
-        HANDLE_BASICTY(ComplexFloat32, _Complex float);
-        HANDLE_BASICTY(ComplexFloat64, _Complex double);
-        HANDLE_BASICTY(ComplexFloat128, _Complex long double);
-        default:
-          break;
+            static_assert(sizeof(float) == 4, "float must be 4 bytes");
+            static_assert(sizeof(double) == 8, "double must be 8 bytes");
+            static_assert(sizeof(long double) == 16, "double must be 16 bytes");
+            HANDLE_BASICTY(Float32, float);
+            HANDLE_BASICTY(Float64, double);
+            HANDLE_BASICTY(Float128, long double);
+            HANDLE_BASICTY(ComplexFloat32, _Complex float);
+            HANDLE_BASICTY(ComplexFloat64, _Complex double);
+            HANDLE_BASICTY(ComplexFloat128, _Complex long double);
 #undef HANDLE_BASICTY
-      };
+          };
+          break;
+        }
+      case dffi::Type::TY_Struct:
+        {
+          auto* STy = dffi::cast<dffi::StructType>(Ty);
+          return T::case_composite(STy, std::forward<Args>(args)...);
+        }
+      case dffi::Type::TY_Union:
+        {
+          auto* UTy = dffi::cast<dffi::UnionType>(Ty);
+          return T::case_composite(UTy, std::forward<Args>(args)...);
+        }
+      case dffi::Type::TY_Enum:
+        {
+          auto* UTy = dffi::cast<dffi::EnumType>(Ty);
+          return T::case_enum(UTy, std::forward<Args>(args)...);
+        }
+      case dffi::Type::TY_Pointer:
+        {
+          auto* PTy = dffi::cast<dffi::PointerType>(Ty);
+          return T::case_pointer(PTy, std::forward<Args>(args)...);
+        }
+      case dffi::Type::TY_Array:
+        {
+          auto* ATy = dffi::cast<dffi::ArrayType>(Ty);
+          return T::case_array(ATy, std::forward<Args>(args)...);
+        }
+      case dffi::Type::TY_Function:
+        {
+          auto* FTy = dffi::cast<dffi::FunctionType>(Ty);
+          return T::case_func(FTy, std::forward<Args>(args)...);
+        }
+      default:
+        break;
     }
-    else
-    if (auto* STy = dffi::dyn_cast<dffi::StructType>(Ty)) {
-      return T::case_composite(STy, std::forward<Args>(args)...);
-    }
-    else
-    if (auto* UTy = dffi::dyn_cast<dffi::UnionType>(Ty)) {
-      return T::case_composite(UTy, std::forward<Args>(args)...);
-    }
-    else
-    if (auto* UTy = dffi::dyn_cast<dffi::EnumType>(Ty)) {
-      return T::case_enum(UTy, std::forward<Args>(args)...);
-    }
-    else
-    if (auto* PTy = dffi::dyn_cast<dffi::PointerType>(Ty)) {
-      return T::case_pointer(PTy, std::forward<Args>(args)...);
-    }
-    else
-    if (auto* ATy = dffi::dyn_cast<dffi::ArrayType>(Ty)) {
-      return T::case_array(ATy, std::forward<Args>(args)...);
-    }
-    else
-    if (auto* FTy = dffi::dyn_cast<dffi::FunctionType>(Ty)) {
-      return T::case_func(FTy, std::forward<Args>(args)...);
-    }
-    assert(false && "unknown type!");
+    dffi::unreachable("unsupported type!");
   }
 };
 

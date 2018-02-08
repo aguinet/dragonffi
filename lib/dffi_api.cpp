@@ -367,4 +367,10 @@ const char* CCToClangAttribute(CallingConv CC)
   return "";
 }
 
+void unreachable(const char* msg)
+{
+  std::cerr << "Fatal error: DFFI unreachable: " << msg << std::endl;
+  std::exit(1);
+}
+
 } // dffi
