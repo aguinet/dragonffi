@@ -7,8 +7,7 @@ features:
 
 fixes:
 * TODOs!
-* clean python API
-* OSX/win support
+* win support
 * get non qualified type (whole tree)
 * tests structures with custom alignments/pack
 
