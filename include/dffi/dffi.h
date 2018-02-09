@@ -127,9 +127,9 @@ struct DFFI_API DFFI
 #ifdef DFFI_SUPPORT_I128
   BasicType const* getUInt128Ty();
 #endif
-  BasicType const* getFloat32Ty();
-  BasicType const* getFloat64Ty();
-  BasicType const* getFloat128Ty();
+  BasicType const* getFloatTy();
+  BasicType const* getDoubleTy();
+  BasicType const* getLongDoubleTy();
 
   PointerType const* getVoidPtrTy();
   PointerType const* getBoolPtrTy();
@@ -144,9 +144,9 @@ struct DFFI_API DFFI
   PointerType const* getUInt32PtrTy();
   PointerType const* getUInt64PtrTy();
   PointerType const* getUInt128PtrTy();
-  PointerType const* getFloat32PtrTy();
-  PointerType const* getFloat64PtrTy();
-  PointerType const* getFloat128PtrTy();
+  PointerType const* getFloatPtrTy();
+  PointerType const* getDoublePtrTy();
+  PointerType const* getLongDoublePtrTy();
 
 private:
   std::unique_ptr<details::DFFIImpl> Impl_;

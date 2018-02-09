@@ -270,12 +270,12 @@ py::object basictype_new(BasicType const& BTy, py::handle O)
 #ifdef DFFI_SUPPORT_I128
     HANDLE_BASICTY(Int128, __int128_t);
 #endif
-    HANDLE_BASICTY(Float32, float);
-    HANDLE_BASICTY(Float64, double);
-    HANDLE_BASICTY(Float128, long double);
-    HANDLE_BASICTY(ComplexFloat32, _Complex float);
-    HANDLE_BASICTY(ComplexFloat64, _Complex double);
-    HANDLE_BASICTY(ComplexFloat128, _Complex long double);
+    HANDLE_BASICTY(Float, float);
+    HANDLE_BASICTY(Double, double);
+    HANDLE_BASICTY(LongDouble, long double);
+    HANDLE_BASICTY(ComplexFloat, _Complex float);
+    HANDLE_BASICTY(ComplexDouble, _Complex double);
+    HANDLE_BASICTY(ComplexLongDouble, _Complex long double);
   };
   return py::none();
 }
@@ -349,12 +349,12 @@ PYBIND11_MODULE(pydffi, m)
     .value("UInt16", BasicType::UInt16)
     .value("UInt32", BasicType::UInt32)
     .value("UInt64", BasicType::UInt64)
-    .value("Float32", BasicType::Float32)
-    .value("Float64", BasicType::Float64)
-    .value("Float128", BasicType::Float128)
-    .value("ComplexFloat32", BasicType::ComplexFloat32)
-    .value("ComplexFloat64", BasicType::ComplexFloat64)
-    .value("ComplexFloat128", BasicType::ComplexFloat128)
+    .value("Float", BasicType::Float)
+    .value("Double", BasicType::Double)
+    .value("LongDouble", BasicType::LongDouble)
+    .value("ComplexFloat", BasicType::ComplexFloat)
+    .value("ComplexDouble", BasicType::ComplexDouble)
+    .value("ComplexLongDouble", BasicType::ComplexLongDouble)
     ;
 
   py::class_<BasicType>(m, "BasicType", type)
@@ -483,9 +483,9 @@ PYBIND11_MODULE(pydffi, m)
 #ifdef DFFI_SUPPORT_I128
   DECL_CBASICOBJ_INT(__int128_t, "Int128", "__long__");
 #endif
-  DECL_CBASICOBJ(float, "Float32", "__float__");
-  DECL_CBASICOBJ(double, "Float64", "__float__");
-  DECL_CBASICOBJ(long double, "Float128", "__float__");
+  DECL_CBASICOBJ(float, "Float", "__float__");
+  DECL_CBASICOBJ(double, "Double", "__float__");
+  DECL_CBASICOBJ(long double, "LongDouble", "__float__");
 
   py::class_<CPointerObj>(m, "CPointerObj", cobj)
     .def(py::init<PointerType const&>(), py::keep_alive<1, 2>())
@@ -611,9 +611,9 @@ PYBIND11_MODULE(pydffi, m)
 #ifdef DFFI_SUPPORT_I128
     .def("UInt128", createBasicObj<__uint128_t>, py::keep_alive<0,1>())
 #endif
-    .def("Float32", createBasicObj<float>, py::keep_alive<0,1>())
-    .def("Float64", createBasicObj<double>, py::keep_alive<0,1>())
-    .def("Float128", createBasicObj<long double>, py::keep_alive<0,1>())
+    .def("Float", createBasicObj<float>, py::keep_alive<0,1>())
+    .def("Double", createBasicObj<double>, py::keep_alive<0,1>())
+    .def("LongDouble", createBasicObj<long double>, py::keep_alive<0,1>())
 
     // Type helpers
     .def_property_readonly("VoidTy", &DFFI::getVoidTy, py::return_value_policy::reference_internal)
@@ -633,9 +633,9 @@ PYBIND11_MODULE(pydffi, m)
 #ifdef DFFI_SUPPORT_I128
     .def_property_readonly("UInt128Ty", &DFFI::getUInt128Ty, py::return_value_policy::reference_internal)
 #endif
-    .def_property_readonly("Float32Ty", &DFFI::getFloat32Ty, py::return_value_policy::reference_internal)
-    .def_property_readonly("Float64Ty", &DFFI::getFloat64Ty, py::return_value_policy::reference_internal)
-    .def_property_readonly("Float128Ty", &DFFI::getFloat128Ty, py::return_value_policy::reference_internal)
+    .def_property_readonly("FloatTy", &DFFI::getFloatTy, py::return_value_policy::reference_internal)
+    .def_property_readonly("DoubleTy", &DFFI::getDoubleTy, py::return_value_policy::reference_internal)
+    .def_property_readonly("LongDoubleTy", &DFFI::getLongDoubleTy, py::return_value_policy::reference_internal)
 
     // Pointer type helpers
     .def_property_readonly("VoidPtrTy", &DFFI::getVoidPtrTy, py::return_value_policy::reference_internal)
@@ -655,9 +655,9 @@ PYBIND11_MODULE(pydffi, m)
 #ifdef DFFI_SUPPORT_I128
     .def_property_readonly("UInt128PtrTy", &DFFI::getUInt128PtrTy, py::return_value_policy::reference_internal)
 #endif
-    .def_property_readonly("Float32PtrTy", &DFFI::getFloat32PtrTy, py::return_value_policy::reference_internal)
-    .def_property_readonly("Float64PtrTy", &DFFI::getFloat64PtrTy, py::return_value_policy::reference_internal)
-    .def_property_readonly("Float128PtrTy", &DFFI::getFloat128PtrTy, py::return_value_policy::reference_internal)
+    .def_property_readonly("FloatPtrTy", &DFFI::getFloatPtrTy, py::return_value_policy::reference_internal)
+    .def_property_readonly("DoublePtrTy", &DFFI::getDoublePtrTy, py::return_value_policy::reference_internal)
+    .def_property_readonly("LongDoublePtrTy", &DFFI::getLongDoublePtrTy, py::return_value_policy::reference_internal)
     ;
 
 

@@ -574,12 +574,12 @@ struct BasicObjConvertor<T, false>
 #ifdef DFFI_SUPPORT_I128
         HANDLE_BASICTY(Int128, __int128_t);
 #endif
-        HANDLE_BASICTY(Float32, float);
-        HANDLE_BASICTY(Float64, double);
-        HANDLE_BASICTY(Float128, long double);
-        HANDLE_BASICTY(ComplexFloat32, _Complex float);
-        HANDLE_BASICTY(ComplexFloat64, _Complex double);
-        HANDLE_BASICTY(ComplexFloat128, _Complex long double);
+        HANDLE_BASICTY(Float, float);
+        HANDLE_BASICTY(Double, double);
+        HANDLE_BASICTY(LongDouble, long double);
+        HANDLE_BASICTY(ComplexFloat, _Complex float);
+        HANDLE_BASICTY(ComplexDouble, _Complex double);
+        HANDLE_BASICTY(ComplexLongDouble, _Complex long double);
         default:
           break;
 #undef HANDLE_BASICTY

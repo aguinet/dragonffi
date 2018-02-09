@@ -135,17 +135,17 @@ BasicType const* DFFI::getUInt128Ty()
   return getBasicType(BasicType::UInt128);
 }
 #endif
-BasicType const* DFFI::getFloat32Ty()
+BasicType const* DFFI::getFloatTy()
 {
-  return getBasicType(BasicType::Float32);
+  return getBasicType(BasicType::Float);
 }
-BasicType const* DFFI::getFloat64Ty()
+BasicType const* DFFI::getDoubleTy()
 {
-  return getBasicType(BasicType::Float64);
+  return getBasicType(BasicType::Double);
 }
-BasicType const* DFFI::getFloat128Ty()
+BasicType const* DFFI::getLongDoubleTy()
 {
-  return getBasicType(BasicType::Float128);
+  return getBasicType(BasicType::LongDouble);
 }
 PointerType const* DFFI::getVoidPtrTy()
 {
@@ -203,17 +203,17 @@ PointerType const* DFFI::getUInt128PtrTy()
   return getPointerType(getUInt128Ty());
 }
 #endif
-PointerType const* DFFI::getFloat32PtrTy()
+PointerType const* DFFI::getFloatPtrTy()
 {
-  return getPointerType(getFloat32Ty());
+  return getPointerType(getFloatTy());
 }
-PointerType const* DFFI::getFloat64PtrTy()
+PointerType const* DFFI::getDoublePtrTy()
 {
-  return getPointerType(getFloat64Ty());
+  return getPointerType(getDoubleTy());
 }
-PointerType const* DFFI::getFloat128PtrTy()
+PointerType const* DFFI::getLongDoublePtrTy()
 {
-  return getPointerType(getFloat128Ty());
+  return getPointerType(getLongDoubleTy());
 }
 
 // Compilation unit

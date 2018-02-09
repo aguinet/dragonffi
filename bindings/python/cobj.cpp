@@ -322,8 +322,8 @@ std::string getFormatDescriptor(Type const* Ty)
       HANDLE_BASICTY(Int16, int16_t);
       HANDLE_BASICTY(Int32, int32_t);
       HANDLE_BASICTY(Int64, int64_t);
-      HANDLE_BASICTY(Float32, float);
-      HANDLE_BASICTY(Float64, double);
+      HANDLE_BASICTY(Float, float);
+      HANDLE_BASICTY(Double, double);
       default:
       break;
     };

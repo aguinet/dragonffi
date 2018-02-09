@@ -86,12 +86,12 @@ public:
 #ifdef DFFI_SUPPORT_I128
     UInt128,
 #endif
-    Float32,
-    Float64,
-    Float128,
-    ComplexFloat32,
-    ComplexFloat64,
-    ComplexFloat128
+    Float,
+    Double,
+    LongDouble,
+    ComplexFloat,
+    ComplexDouble,
+    ComplexLongDouble
   };
 
   BasicKind getBasicKind() const { return BKind_; }
@@ -136,12 +136,12 @@ BASICTY_GETKIND(uint64_t, UInt64)
 #ifdef DFFI_SUPPORT_I128
 BASICTY_GETKIND(__uint128_t, UInt128)
 #endif
-BASICTY_GETKIND(float, Float32)
-BASICTY_GETKIND(double, Float64)
-BASICTY_GETKIND(long double, Float128)
-BASICTY_GETKIND(_Complex float, ComplexFloat32)
-BASICTY_GETKIND(_Complex double, ComplexFloat64)
-BASICTY_GETKIND(_Complex long double, ComplexFloat128)
+BASICTY_GETKIND(float, Float)
+BASICTY_GETKIND(double, Double)
+BASICTY_GETKIND(long double, LongDouble)
+BASICTY_GETKIND(_Complex float, ComplexFloat)
+BASICTY_GETKIND(_Complex double, ComplexDouble)
+BASICTY_GETKIND(_Complex long double, ComplexLongDouble)
 
 namespace details {
 template <bool, size_t, bool>

@@ -54,15 +54,12 @@ struct TypeDispatcher
 #ifdef DFFI_SUPPORT_I128
             HANDLE_BASICTY(Int128, __int128_t);
 #endif
-            static_assert(sizeof(float) == 4, "float must be 4 bytes");
-            static_assert(sizeof(double) == 8, "double must be 8 bytes");
-            static_assert(sizeof(long double) == 16, "double must be 16 bytes");
-            HANDLE_BASICTY(Float32, float);
-            HANDLE_BASICTY(Float64, double);
-            HANDLE_BASICTY(Float128, long double);
-            HANDLE_BASICTY(ComplexFloat32, _Complex float);
-            HANDLE_BASICTY(ComplexFloat64, _Complex double);
-            HANDLE_BASICTY(ComplexFloat128, _Complex long double);
+            HANDLE_BASICTY(Float, float);
+            HANDLE_BASICTY(Double, double);
+            HANDLE_BASICTY(LongDouble, long double);
+            HANDLE_BASICTY(ComplexFloat, _Complex float);
+            HANDLE_BASICTY(ComplexDouble, _Complex double);
+            HANDLE_BASICTY(ComplexLongDouble, _Complex long double);
 #undef HANDLE_BASICTY
           };
           break;

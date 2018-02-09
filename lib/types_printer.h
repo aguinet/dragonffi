@@ -80,22 +80,22 @@ struct TypePrinter
           ss << "__uint128_t";
           break;
 #endif
-        case BasicType::Float32:
+        case BasicType::Float:
           ss << "float";
           break;
-        case BasicType::Float64:
+        case BasicType::Double:
           ss << "double";
           break;
-        case BasicType::Float128:
+        case BasicType::LongDouble:
           ss << "long double";
           break;
-        case BasicType::ComplexFloat32:
+        case BasicType::ComplexFloat:
           ss << "_Complex float";
           break;
-        case BasicType::ComplexFloat64:
+        case BasicType::ComplexDouble:
           ss << "_Complex double";
           break;
-        case BasicType::ComplexFloat128:
+        case BasicType::ComplexLongDouble:
           ss << "_Complex long double";
           break;
       };

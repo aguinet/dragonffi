@@ -261,8 +261,9 @@ DFFIImpl::DFFIImpl(CCOpts const& Opts):
   std::string Error;
   const llvm::Target *Tgt = TargetRegistry::lookupTarget(TO.Triple, Error);
   if (!Tgt) {
-    errs() << "unable to find target: " << Error << "!\n";
-    return;
+    std::stringstream ss;
+    ss << "unable to find native target: " << Error << "!";
+    unreachable(ss.str().c_str());
   }
 
   std::unique_ptr<llvm::Module> DummyM(new llvm::Module{"DummyM",Ctx_});
@@ -277,7 +278,9 @@ DFFIImpl::DFFIImpl(CCOpts const& Opts):
   // TODO: get the target machine from clang?
   EE_.reset(EB.create());
   if (!EE_) {
-    errs() << "error creating jit: " << Error << "\n";
+    std::stringstream ss;
+    ss << "error creating jit: " << Error; 
+    unreachable(ss.str().c_str());
   }
 }
 
@@ -828,17 +831,14 @@ dffi::Type const* CUImpl::getTypeFromDIType(llvm::DIType const* Ty)
         break;
       }
       case llvm::dwarf::DW_ATE_float:
-        static_assert(sizeof(float) == 4, "float must be 4 bytes");
-        static_assert(sizeof(double) == 8, "double must be 8 bytes");
-        static_assert(sizeof(long double) == 16, "double must be 16 bytes");
-        HANDLE_BASICTY(32, BasicType::Float32);
-        HANDLE_BASICTY(64, BasicType::Float64);
-        HANDLE_BASICTY(128, BasicType::Float128);
+        HANDLE_BASICTY(sizeof(float)*8, BasicType::Float);
+        HANDLE_BASICTY(sizeof(double)*8, BasicType::Double);
+        HANDLE_BASICTY(sizeof(long double)*8, BasicType::LongDouble);
         break;
       case llvm::dwarf::DW_ATE_complex_float:
-        HANDLE_BASICTY(64, BasicType::ComplexFloat32);
-        HANDLE_BASICTY(128, BasicType::ComplexFloat64);
-        HANDLE_BASICTY(256, BasicType::ComplexFloat128);
+        HANDLE_BASICTY(sizeof(_Complex float)*8, BasicType::ComplexFloat);
+        HANDLE_BASICTY(sizeof(_Complex double)*8, BasicType::ComplexDouble);
+        HANDLE_BASICTY(sizeof(_Complex long double)*8, BasicType::ComplexLongDouble);
         break;
       default:
         break;

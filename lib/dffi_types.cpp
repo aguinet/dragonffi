@@ -59,17 +59,17 @@ unsigned BasicType::getAlign() const
     case UInt128:
       return alignof(__uint128_t);
 #endif
-    case Float32:
+    case Float:
       return alignof(float);
-    case Float64:
+    case Double:
       return alignof(double);
-    case Float128:
+    case LongDouble:
       return alignof(long double);
-    case ComplexFloat32:
+    case ComplexFloat:
       return alignof(_Complex float);
-    case ComplexFloat64:
+    case ComplexDouble:
       return alignof(_Complex double);
-    case ComplexFloat128:
+    case ComplexLongDouble:
       return alignof(_Complex long double);
   }
 }
@@ -105,18 +105,18 @@ uint64_t BasicType::getSize() const
     case UInt128:
       return 16;
 #endif
-    case Float32:
-      return 4;
-    case Float64:
-      return 8;
-    case Float128:
-      return 16;
-    case ComplexFloat32:
-      return 8;
-    case ComplexFloat64:
-      return 16;
-    case ComplexFloat128:
-      return 32;
+    case Float:
+      return sizeof(float);
+    case Double:
+      return sizeof(double);
+    case LongDouble:
+      return sizeof(long double);
+    case ComplexFloat:
+      return sizeof(_Complex float);
+    case ComplexDouble:
+      return sizeof(_Complex double);
+    case ComplexLongDouble:
+      return sizeof(_Complex long double);
   }
 }
 
