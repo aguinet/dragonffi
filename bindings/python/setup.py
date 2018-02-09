@@ -72,6 +72,7 @@ class build_ext_dffi(build_ext):
             raise RuntimeError("unable to get DFFI_STATIC_LLVM_PATH from cmake! This is an internal error, please submit a bug report!")
 
         for ext in self.extensions:
+            ext.include_dirs.append(os.path.join(build_temp, "include"))
             ext.extra_link_args.append(DFFI_STATIC_LLVM_PATH)
 
         os.chdir(cwd)
