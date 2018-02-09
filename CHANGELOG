@@ -6,6 +6,7 @@ Features:
 * Support for the C99 boolean type
 * Support for OSX x86 32/64 bits
 * Support for Linux x86 32 bits
+* Support for typedefs in cdef
 
 Bug fixes:
 
