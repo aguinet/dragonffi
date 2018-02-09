@@ -82,5 +82,25 @@ void foo2() {
   // CHECK: coucou from foo
   CU.getFunction("foo2").call(nullptr);
 
+  CU = Jit.cdef(R"(
+#include <stdint.h>
+typedef uint32_t MyInt;
+)", "/myint.h", Err);
+  CHECK_COMPILE()
+  Type const* Ty = CU.getType("MyInt");
+  if (!Ty) {
+    std::cerr << "type MyInt isn't defined!" << std::endl;
+    return 1;
+  }
+  BasicType const* BTy = dyn_cast<BasicType>(Ty);
+  if (!BTy) {
+    std::cerr << "type MyInt isn't a basic type!" << std::endl;
+    return 1;
+  }
+  if (BTy->getBasicKind() != BasicType::UInt32) {
+    std::cerr << "type MyInt isn't an uint32_t!" << std::endl;
+    return 1;
+  }
+
   return 0;
 }

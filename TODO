@@ -1,5 +1,4 @@
 features:
-* cdef of types
 * bitfields
 * var args
 * int128_t support in pybind11

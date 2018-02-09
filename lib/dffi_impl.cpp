@@ -475,19 +475,23 @@ CUImpl* DFFIImpl::compile(StringRef const Code, StringRef CUName, bool IncludeDe
       continue;
     if (F.isVarArg())
       continue;
+    StringRef FName = F.getName();
+    if (FName.startswith("__dffi_force_typedef")) {
+      ToRemove.push_back(&F);
+      continue;
+    }
     auto* DFTy = CU->getFunctionType(F);
     if (!DFTy)
       continue;
-    StringRef FName = F.getName();
     if (FName.startswith("__dffi_force_decl_")) {
       FName = FName.substr(strlen("__dffi_force_decl_"));
       ToRemove.push_back(&F);
     }
     else {
       if (FName.size() > 0 && FName[0] == 1) {
-	// Clang emits the "\01" prefix in some cases, when ASM function
-	// redirects are used!
-	F.setName(FName.substr(1));
+        // Clang emits the "\01" prefix in some cases, when ASM function
+        // redirects are used!
+        F.setName(FName.substr(1));
         FName = F.getName();
       }
       CU->parseFunctionAlias(F);

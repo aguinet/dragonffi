@@ -37,7 +37,8 @@ struct ASTGenWrappersConsumer: public clang::ASTConsumer
   ASTGenWrappersConsumer(std::stringstream& ForceDecls, FuncAliasesMap& FuncAliases, LangOptions const& LO):
     ForceDecls_(ForceDecls),
     FuncAliases_(FuncAliases),
-    PP_(LO)
+    PP_(LO),
+    ForceIdx_(0)
   {
     PP_.IncludeTagDefinition = false;
     PP_.AnonymousTagLocations = false;
@@ -50,11 +51,24 @@ struct ASTGenWrappersConsumer: public clang::ASTConsumer
       if (auto* FD = llvm::dyn_cast<FunctionDecl>(D)) {
         HandleFD(FD);
       }
+      else
+      if (auto* TD = llvm::dyn_cast<TypedefDecl>(D)) {
+        HandleTypedefDecl(TD);
+      }
     }
     return true;
   }
 
 private:
+  void HandleTypedefDecl(TypedefDecl* TD)
+  {
+    // TODO: AFAIK, no use-def chain in clang, see if there is a way to know if
+    // it is used somewhere!
+    // Force the emission of this type by creating an empty function that takes
+    // this type as argument!
+    ForceDecls_ << "void __dffi_force_typedef_" << std::to_string(ForceIdx_++) << "(" << TD->getName().str() << " *__Arg) {}\n";
+  }
+
   void HandleFD(FunctionDecl* FD)
   {
     if (FD->hasBody()) {
@@ -127,6 +141,7 @@ private:
   std::stringstream& ForceDecls_;
   FuncAliasesMap& FuncAliases_;
   PrintingPolicy PP_;
+  unsigned ForceIdx_;
 };
 
 } // anonymous
