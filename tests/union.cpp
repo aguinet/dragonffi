@@ -46,11 +46,11 @@ union A {
 };
 
 void dump(union A* a) {
-  printf("a=%d, b=%d, c=%d, d=%f\n", a->a, a->b, a->c, a->d);
+  printf("a=%d, b=%d, c=%d\n", a->a, a->b, a->c);
 }
 
 void dump_value(union A a) {
-  printf("a=%d, b=%d, c=%d, d=%f\n", a.a, a.b, a.c, a.d);
+  printf("a=%d, b=%d, c=%d\n", a.a, a.b, a.c);
 }
 
 void set(union A* a) {
@@ -65,11 +65,11 @@ void set(union A* a) {
   A obj;
   obj.a = 1;
   void* Args[] = {&obj};
-  // CHECK: a=1, b=1, c=1, d=0.000000
+  // CHECK: a=1, b=1, c=1
   CU.getFunction("dump_value").call(&Args[0]);
   A* pObj = &obj;
   Args[0] = &pObj;
-  // CHECK: a=1, b=1, c=1, d=0.000000
+  // CHECK: a=1, b=1, c=1
   CU.getFunction("dump").call(&Args[0]);
   CU.getFunction("set").call(&Args[0]);
   if (obj.d != 4.) {
