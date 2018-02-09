@@ -58,7 +58,11 @@ class build_ext_dffi(build_ext):
                 raise
 
         os.chdir(build_temp)
-        subprocess.check_call(['cmake', '-DLLVM_CONFIG=%s' % LLVM_CONFIG, "-DCMAKE_BUILD_TYPE=release", "-DDFFI_STATIC_LLVM=ON", "-DPYTHON_BINDINGS=OFF", "-DBUILD_TESTS=OFF", source_dir])
+        cmake_args = ['-DLLVM_CONFIG=%s' % LLVM_CONFIG, "-DCMAKE_BUILD_TYPE=release", "-DDFFI_STATIC_LLVM=ON", "-DPYTHON_BINDINGS=OFF", "-DBUILD_TESTS=OFF", source_dir]
+        if platform.system() == "Darwin":
+            # Compile for both 32 and 64 bits
+            cmake_args.append("-DCMAKE_OSX_ARCHITECTURES='x86_64;i386'")
+        subprocess.check_call(['cmake'] + cmake_args)
         subprocess.check_call(['cmake','--build','.'])
         # Get static library path from cmake
         # TODO: get encoding from the current environment?
