@@ -418,10 +418,13 @@ PYBIND11_MODULE(pydffi, m)
       .def("align", &CObj::getAlign)
     ;
 
-#define DECL_CBASICOBJ(CTy, Name, Conv)\
+#define DECL_CBASICOBJ_BASE(CTy, Name)\
   py::class_<CBasicObj<CTy>>(m, Name, cobj)\
     .def(py::init(&createBasicObj<CTy>), py::keep_alive<1, 2>())\
     .def_property_readonly("value", &CBasicObj<CTy>::value)\
+
+#define DECL_CBASICOBJ(CTy, Name, Conv)\
+    DECL_CBASICOBJ_BASE(CTy, Name)\
     .def(Conv, &CBasicObj<CTy>::value)\
     .def(py::self + py::self)\
     .def(py::self + typename std::remove_cv<CTy>::type{})\
@@ -468,7 +471,35 @@ PYBIND11_MODULE(pydffi, m)
     .def(py::self &= typename std::remove_cv<CTy>::type{})\
     .def(~py::self)
 
-  DECL_CBASICOBJ_INT(bool, "Bool", "__bool__");
+  DECL_CBASICOBJ_BASE(bool, "Bool")
+    .def("__nonzero__", &CBasicObj<bool>::value)
+    .def("__bool__", &CBasicObj<bool>::value)
+    .def(py::self ^ py::self)
+    .def(py::self ^ bool())
+    .def(py::self ^= py::self)
+    .def(py::self ^= bool())
+    .def(py::self | py::self)
+    .def(py::self | bool())
+    .def(py::self |= py::self)
+    .def(py::self |= bool())
+    .def(py::self & py::self)
+    .def(py::self & bool())
+    .def(py::self &= py::self)
+    .def(py::self &= bool())
+    .def(py::self == py::self)
+    .def(py::self == bool())
+    .def(py::self != py::self)
+    .def(py::self != bool())
+    .def(py::self < py::self)
+    .def(py::self < bool())
+    .def(py::self > py::self)
+    .def(py::self > bool())
+    .def(py::self <= py::self)
+    .def(py::self <= bool())
+    .def(py::self >= py::self)
+    .def(py::self >= bool())
+    ;
+    
   DECL_CBASICOBJ_INT(uint8_t, "UInt8", "__int__");
   DECL_CBASICOBJ_INT(uint16_t, "UInt16", "__int__");
   DECL_CBASICOBJ_INT(uint32_t, "UInt32", "__int__");

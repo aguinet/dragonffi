@@ -226,8 +226,88 @@ private:
   dffi::Type const* Ty_;
 };
 
+namespace details {
+
+template <class CBO, class T>
+struct CBOOps
+{
+#define _CAT(a, b) a##b
+#define CAT(a, b) _CAT( a, b)
+
+#define OP_NAME(OP, PARAM)\
+  CAT(operator, CAT(OP, CAT("(", CAT(PARAM, ")"))))
+
+#define IMPL_BINOP(op, opself)\
+  inline CBO operator op(T const V) const {\
+    return CBO(*static_cast<CBO const&>(*this).getType(), static_cast<CBO const&>(*this).value() op V);\
+  }\
+  inline CBO operator op(CBO const& V) const {\
+    return static_cast<CBO const&>(*this) op V.value();\
+  }\
+  inline CBO& operator opself(CBO const& V) {\
+    static_cast<CBO&>(*this) opself static_cast<T>(V);\
+    return static_cast<CBO&>(*this);\
+  }\
+  inline CBO& operator opself(T const V) {\
+    static_cast<CBO&>(*this).vref() opself V;\
+    return static_cast<CBO&>(*this);\
+  }
+
+  IMPL_BINOP(+,+=)
+  IMPL_BINOP(-,-=)
+  IMPL_BINOP(*,*=)
+  IMPL_BINOP(/,/=)
+  IMPL_BINOP(^,^=)
+  IMPL_BINOP(&,&=)
+  IMPL_BINOP(|,|=)
+
+#define IMPL_UNOP(op)\
+  inline CBO& operator op() {\
+    static_cast<CBO&>(*this).vref() = op static_cast<CBO&>(*this).value();\
+    return static_cast<CBO&>(*this);\
+  }\
+  inline CBO operator op() const {\
+    return CBO(*static_cast<CBO const&>(*this).getType(), op static_cast<CBO const&>(*this).value());\
+  }
+  IMPL_UNOP(~)
+
+  // Spaceship FTW...!
+#define IMPL_CMP(op)\
+  inline bool operator op(T const V) const {\
+    return static_cast<CBO const&>(*this).value() op V;\
+  }\
+  inline bool operator op(CBO const& V) const {\
+    return static_cast<CBO const&>(*this) op V.value();\
+  }\
+
+  IMPL_CMP(==)
+  IMPL_CMP(!=)
+  IMPL_CMP(<)
+  IMPL_CMP(<=)
+  IMPL_CMP(>=)
+  IMPL_CMP(>)
+};
+
+template <class CBO>
+struct CBOOps<CBO, bool>
+{
+  using T = bool;
+
+  IMPL_BINOP(^,^=)
+  IMPL_BINOP(&,&=)
+  IMPL_BINOP(|,|=)
+  IMPL_CMP(==)
+  IMPL_CMP(!=)
+  IMPL_CMP(<)
+  IMPL_CMP(<=)
+  IMPL_CMP(>=)
+  IMPL_CMP(>)
+};
+
+} // details
+
 template <class T>
-struct CBasicObj: public CObj
+struct CBasicObj: public CObj, public details::CBOOps<CBasicObj<T>, T>
 {
   CBasicObj(dffi::BasicType const& Ty, Data<T>&& D):
     CObj(Ty),
@@ -254,65 +334,11 @@ struct CBasicObj: public CObj
 
   std::unique_ptr<CObj> cast(dffi::Type const* To) const override;
 
-#define _CAT(a, b) a##b
-#define CAT(a, b) _CAT( a, b)
-
-#define OP_NAME(OP, PARAM)\
-  CAT(operator, CAT(OP, CAT("(", CAT(PARAM, ")"))))
-
-#define IMPL_BINOP(op, opself)\
-  inline CBasicObj operator op(T const V) const {\
-    return CBasicObj(*getType(), value() op V);\
-  }\
-  inline CBasicObj operator op(CBasicObj<T> const& V) const {\
-    return *this + V.value();\
-  }\
-  inline CBasicObj& operator opself(CBasicObj<T> const& V) {\
-    *this opself static_cast<T>(V);\
-    return *this;\
-  }\
-  inline CBasicObj& operator opself(T const V) {\
-    vref() opself V;\
-    return *this;\
-  }
-
-  IMPL_BINOP(+,+=)
-  IMPL_BINOP(-,-=)
-  IMPL_BINOP(*,*=)
-  IMPL_BINOP(/,/=)
-  IMPL_BINOP(^,^=)
-  IMPL_BINOP(&,&=)
-  IMPL_BINOP(|,|=)
-
-#define IMPL_UNOP(op)\
-  inline CBasicObj& operator op() {\
-    vref() = op value();\
-    return *this;\
-  }\
-  inline CBasicObj operator op() const {\
-    return CBasicObj(*getType(), op value());\
-  }
-  IMPL_UNOP(~)
-
-  // Spaceship FTW...!
-#define IMPL_CMP(op)\
-  inline bool operator op(T const V) const {\
-    return value() op V;\
-  }\
-  inline bool operator op(CBasicObj<T> const& V) const {\
-    return *this op V.value();\
-  }\
-
-  IMPL_CMP(==)
-  IMPL_CMP(!=)
-  IMPL_CMP(<)
-  IMPL_CMP(<=)
-  IMPL_CMP(>=)
-  IMPL_CMP(>)
-
   inline dffi::BasicType const* getType() const { return dffi::cast<dffi::BasicType>(CObj::getType()); }
 
-private:
+protected:
+  friend class details::CBOOps<CBasicObj<T>, T>;
+
   inline T& vref() { return *Data_.dataPtr(); }
   inline T const& vref() const { return *Data_.dataPtr(); }
 
