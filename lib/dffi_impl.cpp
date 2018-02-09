@@ -207,7 +207,7 @@ DFFIImpl::DFFIImpl(CCOpts const& Opts):
 
 
   auto& TO = CI.getTargetOpts();
-  TO.Triple = llvm::sys::getDefaultTargetTriple();
+  TO.Triple = llvm::sys::getProcessTriple();
   // We create it by hand to have a minimal user-friendly API!
   // From Juan's code!
   auto& CGO = CI.getCodeGenOpts();
@@ -232,14 +232,14 @@ DFFIImpl::DFFIImpl(CCOpts const& Opts):
   CI.getLangOpts()->CXXOperatorNames = false;
   CI.getLangOpts()->Bool = false;
   CI.getLangOpts()->WChar = false; // builtin in C++, typedef in C (stddef.h)
+  CI.getLangOpts()->EmitAllDecls = true;
 
   const bool IsWinMSVC = Triple{TO.Triple}.isWindowsMSVCEnvironment();
   CI.getLangOpts()->MSVCCompat = IsWinMSVC;
   CI.getLangOpts()->MicrosoftExt = IsWinMSVC;
   CI.getLangOpts()->AsmBlocks = IsWinMSVC;
   CI.getLangOpts()->DeclSpecKeyword = IsWinMSVC;
-  CI.getLangOpts()->MSBitfields = true;
-  CI.getLangOpts()->EmitAllDecls = true;
+  CI.getLangOpts()->MSBitfields = IsWinMSVC;
 
   // gnu compatibility
   CI.getLangOpts()->GNUMode = true;
@@ -272,7 +272,7 @@ DFFIImpl::DFFIImpl(CCOpts const& Opts):
   EB.setEngineKind(EngineKind::JIT)
     .setErrorStr(&Error)
     .setOptLevel(CodeGenOpt::Default)
-    .setRelocationModel(Reloc::PIC_);
+    .setRelocationModel(Reloc::Static);
 
   SmallVector<std::string, 1> Attrs;
   // TODO: get the target machine from clang?
