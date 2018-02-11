@@ -50,7 +50,7 @@ struct DFFI_API NativeFunc
   dffi::Type const* getReturnType() const; 
 
 protected:
-  friend class details::DFFIImpl;
+  friend struct details::DFFIImpl;
 
   NativeFunc(TrampPtrTy Ptr, void* CodePtr, dffi::FunctionType const* FTy);
 
