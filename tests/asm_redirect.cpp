@@ -47,7 +47,7 @@ void myfunc() { puts("toto"); }
   CU = Jit.cdef(R"(
 void myfunc() __asm__ ("" "redirected_myfunc");
 void myfunc();
-)", "/__foo.h", Err);
+)", nullptr, Err);
   if (!CU) {
     std::cerr << Err << std::endl;
     return 1;

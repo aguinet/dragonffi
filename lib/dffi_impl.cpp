@@ -167,11 +167,7 @@ void InitHeaderSearchFlags(std::string const& TripleStr,
     if (IncludeArgs[i] == StringRef("-internal-externc-isystem"))
       IncludeType = frontend::ExternCSystem;
 
-    if (path::is_relative(Directory)) {
-      llvm::report_fatal_error("relative directory in clang's include paths!");
-    } else {
-      HSO.UserEntries.emplace_back(Directory, IncludeType, false, false);
-    }
+    HSO.UserEntries.emplace_back(Directory, IncludeType, false, false);
   }
 
   for (auto const& D: Opts.IncludeDirs) {
@@ -322,11 +318,7 @@ std::unique_ptr<llvm::Module> DFFIImpl::compile_llvm_with_decls(StringRef const 
     return nullptr;
   }
 
-  // Keep all the ASTContext, so that types are still valid objects!
-  //ASTCtxtsHolder_.emplace_back(Action->releaseAST());
-
   auto BufForceDecl = Code.str() + "\n" + Action->getForceDecls();
-  //errs() << BufForceDecl << "\n";
   SmallString<128> PrivateCU;
   ("/__dffi_private/force_decls/" + CUName).toStringRef(PrivateCU);
   return compile_llvm(BufForceDecl, PrivateCU, Err);
@@ -405,14 +397,21 @@ void DFFIImpl::genFuncTypeWrapper(TypePrinter& P, std::stringstream& ss, Functio
 
 CUImpl* DFFIImpl::compile(StringRef const Code, StringRef CUName, bool IncludeDefs, std::string& Err)
 {
-  std::unique_ptr<llvm::Module> M;
-  std::unique_ptr<CUImpl> CU(new CUImpl{*this});
-
   std::string AnonCUName;
   if (CUName.empty()) {
     AnonCUName = "/__dffi_private/anon_cu_" + std::to_string(CUIdx_++) + ".c";
     CUName = AnonCUName;
   }
+#ifdef _WIN32
+  else {
+    // TODO: figure out why!
+    Err = "named compilation unit does not work on Windows!";
+    return nullptr;
+  }
+#endif
+
+  std::unique_ptr<llvm::Module> M;
+  std::unique_ptr<CUImpl> CU(new CUImpl{*this});
 
   if (IncludeDefs) {
     M = compile_llvm_with_decls(Code, CUName, CU->FuncAliases_, Err);
@@ -511,13 +510,11 @@ CUImpl* DFFIImpl::compile(StringRef const Code, StringRef CUName, bool IncludeDe
   EE_->addModule(std::move(M));
   EE_->generateCodeForModule(pM);
 
-
   // Compile wrappers
   std::string WCode = "#include <stdint.h>\n\n";
   WCode += Printer.getDecls() + "\n" + Wrappers.str();
   std::stringstream ss;
   ss << "/__dffi_private/wrappers_" << CUIdx_++ << ".c";
-  //errs() << WCode;
   M = compile_llvm(WCode, ss.str(), Err);
   if (!M) {
     errs() << WCode;
@@ -849,7 +846,7 @@ dffi::Type const* CUImpl::getTypeFromDIType(llvm::DIType const* Ty)
       default:
         break;
     };
-#ifndef NDEBUG
+#ifdef LLVM_DEBUG
     Ty->dump();
 #endif
     llvm::report_fatal_error("unsupported type");
@@ -860,7 +857,7 @@ dffi::Type const* CUImpl::getTypeFromDIType(llvm::DIType const* Ty)
       auto Pointee = getQualTypeFromDIType(PtrTy->getBaseType().resolve());
       return getPointerType(Pointee);
     }
-#ifndef NDEBUG
+#ifdef LLVM_DEBUG
     Ty->dump();
 #endif
     llvm::report_fatal_error("unsupported type");
@@ -901,7 +898,7 @@ dffi::Type const* CUImpl::getTypeFromDIType(llvm::DIType const* Ty)
     return getFunctionType(FTy);
   }
 
-#ifndef NDEBUG
+#ifdef LLVM_DEBUG
   Ty->dump();
 #endif
   llvm::report_fatal_error("unsupported type");

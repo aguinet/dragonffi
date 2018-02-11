@@ -28,12 +28,18 @@ int main(int argc, char** argv)
 
   DFFI Jit(Opts);
 
+  const char* myinc;
+#ifdef _WIN32
+  myinc = nullptr;
+#else
+  myinc = "/myinc.h";
+#endif
   std::string Err;
   auto CU = Jit.cdef(R"(
-void puts(const char* s);
+void print(const char* s);
 static const char* msg="def msg";
 )",
-    "/stdio.h", Err);
+    nullptr, Err);
 
 #define CHECK_COMPILE()\
   if (!CU) {\
@@ -42,23 +48,39 @@ static const char* msg="def msg";
   }
   CHECK_COMPILE()
 
+  CU = Jit.cdef(R"(
+#include <stdio.h>
+void print(const char* s)
+{
+  puts(s);
+}
+)", nullptr, Err);
+  CHECK_COMPILE()
+
   const char* arg0 = "coucou";
   void* Args[] = {&arg0};
+  int Ret;
   // CHECK: coucou
-  CU.getFunction("puts").call(Args);
+  CU.getFunction("puts").call(&Ret, Args);
   // CHECK: coucou
-  CU.getFunction("puts").call(Args);
+  CU.getFunction("puts").call(&Ret, Args);
 
   CU = Jit.compile(R"(
-#include "/stdio.h"
+#ifdef _WIN32
+// Includes of previously defined CU is broken under Windows...
+void print(const char* s);
+static const char* msg="def msg";
+#else
+#include "/myinc.h"
+#endif
 void foo() {
-  puts(msg);
-  puts("coucou from foo");
+  print(msg);
+  print("coucou from foo");
 }
 
 void toto()
 {
-  puts("coucou from toto");
+  print("coucou from toto");
 })", Err);
   CHECK_COMPILE()
 
@@ -72,7 +94,7 @@ void toto()
   CU = Jit.compile(R"(
 void foo();
 void foo2() {
-  puts("foo2");
+  print("foo2");
   foo();
 })", Err);
   CHECK_COMPILE()
@@ -85,7 +107,7 @@ void foo2() {
   CU = Jit.cdef(R"(
 #include <stdint.h>
 typedef uint32_t MyInt;
-)", "/myint.h", Err);
+)", nullptr, Err);
   CHECK_COMPILE()
   Type const* Ty = CU.getType("MyInt");
   if (!Ty) {

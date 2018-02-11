@@ -86,6 +86,7 @@ def run_buf_view():
     J,buf = get_buf_view()
     CU = J.compile('''
     #include <stdint.h>
+    #include <stdio.h>
     void print(uint8_t* msg) {
         puts(msg);
     }

@@ -39,7 +39,7 @@ foreach(TEST ${TESTS})
 endforeach()
 
 # Configure lit
-configure_file("lit.site.cfg.in" "${CMAKE_CURRENT_BINARY_DIR}/lit.site.cfg" @ONLY)
+configure_file("lit.site.cfg.in" "${CMAKE_CURRENT_BINARY_DIR}/lit.site.cfg" ESCAPE_QUOTES @ONLY)
 
 add_lit_target(check_lib
   "Running dragonffi library tests"

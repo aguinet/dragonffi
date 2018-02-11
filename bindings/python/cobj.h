@@ -15,9 +15,12 @@
 #ifndef PYDFFI_COBJ_H
 #define PYDFFI_COBJ_H
 
+#include <malloc.h>
 #include <memory>
+
 #include <pybind11/pybind11.h>
 
+#include <dffi/compat.h>
 #include <dffi/dffi.h>
 #include <dffi/types.h>
 #include <dffi/composite_type.h>
@@ -29,6 +32,19 @@
 //
 
 using dffi::dyn_cast;
+
+static void* alloc_align(size_t Size, size_t Align)
+{
+#ifdef _MSC_VER
+  return _aligned_malloc(Size, Align);
+#else
+  void* Ptr;
+  if (posix_memalign(&Ptr, Align, Size) != 0) {
+    return nullptr;
+  }
+  return Ptr;
+#endif
+}
 
 template <class T>
 struct Data
@@ -88,6 +104,7 @@ struct Data
     return {Ptr, View};
   }
 
+
   static Data owned_free(T* Ptr)
   {
     return {Ptr, OwnedFree};
@@ -105,7 +122,11 @@ struct Data
         ptrValue()->~T();
         break;
       case OwnedFree:
+#ifdef _MSC_VER
+        _aligned_free(Ptr_);
+#else
         free(Ptr_);
+#endif
         break;
       case View:
         break;
@@ -124,8 +145,8 @@ private:
   T* ptrValue() { return reinterpret_cast<T*>(&BufValue[0]); }
 
   T* Ptr_;
+  ALIGN(alignof(T)) char BufValue[sizeof(T)];
   Type Ty_;
-  __attribute__((aligned(alignof(T)))) char BufValue[sizeof(T)];
 };
 
 template <>
@@ -186,7 +207,11 @@ struct Data<void>
   {
     switch (Ty_) {
       case OwnedFree:
+#ifdef _MSC_VER
+        _aligned_free(Ptr_);
+#else
         free(Ptr_);
+#endif
         break;
       case View:
         break;
@@ -226,7 +251,7 @@ private:
   dffi::Type const* Ty_;
 };
 
-namespace details {
+namespace {
 
 template <class CBO, class T>
 struct CBOOps
@@ -304,10 +329,10 @@ struct CBOOps<CBO, bool>
   IMPL_CMP(>)
 };
 
-} // details
+} // anonymous
 
 template <class T>
-struct CBasicObj: public CObj, public details::CBOOps<CBasicObj<T>, T>
+struct CBasicObj: public CObj, public CBOOps<CBasicObj<T>, T>
 {
   CBasicObj(dffi::BasicType const& Ty, Data<T>&& D):
     CObj(Ty),
@@ -337,7 +362,7 @@ struct CBasicObj: public CObj, public details::CBOOps<CBasicObj<T>, T>
   inline dffi::BasicType const* getType() const { return dffi::cast<dffi::BasicType>(CObj::getType()); }
 
 protected:
-  friend class details::CBOOps<CBasicObj<T>, T>;
+  friend struct CBOOps<CBasicObj<T>, T>;
 
   inline T& vref() { return *Data_.dataPtr(); }
   inline T const& vref() const { return *Data_.dataPtr(); }
@@ -398,10 +423,10 @@ struct CArrayObj: public CObj
   CArrayObj(dffi::ArrayType const& Ty):
     CObj(Ty)
   {
-    void* Ptr;
     size_t Align = std::max(sizeof(void*), (size_t)Ty.getAlign());
     auto Size = Ty.getSize();
-    if (posix_memalign(&Ptr, Align, Size) != 0) {
+    void* Ptr = alloc_align(Size, Align);
+    if (!Ptr) {
       throw AllocError{"allocation failure!"};
     }
     memset(Ptr, 0xDD, Size);
@@ -445,9 +470,9 @@ struct CCompositeObj: public CObj
     CObj(Ty)
   {
     assert(!Ty.isOpaque() && "can't instantiate an opaque structure/union!");
-    void* Ptr;
     size_t Align = std::max(sizeof(void*), (size_t)Ty.getAlign());
-    if (posix_memalign(&Ptr, Align, getSize()) != 0) {
+    void* Ptr = alloc_align(getSize(), Align);
+    if (!Ptr) {
       throw AllocError{"allocation failure!"};
     }
     Data_ = Data<void>::owned_free(Ptr);

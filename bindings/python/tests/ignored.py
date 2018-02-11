@@ -41,6 +41,6 @@ check(CU, "print")
 CU = D.cdef('''
 __attribute__((noreturn)) void fatal(const char* err);
 void print(const char* log, ...);
-''', "api.h")
+''')
 check(CU, "fatal")
 check(CU, "print")
