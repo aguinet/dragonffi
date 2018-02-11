@@ -839,11 +839,13 @@ dffi::Type const* CUImpl::getTypeFromDIType(llvm::DIType const* Ty)
         HANDLE_BASICTY(sizeof(double)*8, BasicType::Double);
         HANDLE_BASICTY(sizeof(long double)*8, BasicType::LongDouble);
         break;
+#ifdef DFFI_SUPPORT_COMPLEX
       case llvm::dwarf::DW_ATE_complex_float:
         HANDLE_BASICTY(sizeof(_Complex float)*8, BasicType::ComplexFloat);
         HANDLE_BASICTY(sizeof(_Complex double)*8, BasicType::ComplexDouble);
         HANDLE_BASICTY(sizeof(_Complex long double)*8, BasicType::ComplexLongDouble);
         break;
+#endif
       default:
         break;
     };

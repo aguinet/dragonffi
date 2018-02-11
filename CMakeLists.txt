@@ -22,11 +22,13 @@ endif()
 message(STATUS "Using llvm-config: ${LLVM_CONFIG}")
 exec_program(${LLVM_CONFIG} ARGS --prefix OUTPUT_VARIABLE LLVM_PREFIX)
 exec_program(${LLVM_CONFIG} ARGS --bindir OUTPUT_VARIABLE LLVM_BINDIR)
+exec_program(${LLVM_CONFIG} ARGS --cmakedir OUTPUT_VARIABLE LLVM_CMAKE)
+string(REPLACE "\\" "/" LLVM_CMAKE "${LLVM_CMAKE}")
 
 set(CMAKE_C_VISIBILITY_PRESET hidden)
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 
-set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake" "${LLVM_PREFIX}/lib/cmake/llvm")
+set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake" "${LLVM_CMAKE}")
 set(Clang_DIR "${LLVM_PREFIX}/lib/cmake/clang")
 
 include(PrecompiledHeader)
@@ -128,6 +130,13 @@ else()
     set(HAVE_INT128_T 0)
   endif()
   SET(CMAKE_EXTRA_INCLUDE_FILES)
+endif()
+
+check_type_size("_Complex" COMPLEX_T)
+if (HAVE_COMPLEX_T)
+  set(HAVE_COMPLEX_T 1)
+else()
+  set(HAVE_COMPLEX_T 0)
 endif()
 
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/include/dffi/config.h.in" "${CMAKE_CURRENT_BINARY_DIR}/include/dffi/config.h" @ONLY)

@@ -57,9 +57,11 @@ struct TypeDispatcher
             HANDLE_BASICTY(Float, float);
             HANDLE_BASICTY(Double, double);
             HANDLE_BASICTY(LongDouble, long double);
+#ifdef DFFI_SUPPORT_COMPLEX
             HANDLE_BASICTY(ComplexFloat, _Complex float);
             HANDLE_BASICTY(ComplexDouble, _Complex double);
             HANDLE_BASICTY(ComplexLongDouble, _Complex long double);
+#endif
 #undef HANDLE_BASICTY
           };
           break;

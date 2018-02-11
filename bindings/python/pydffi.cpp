@@ -273,9 +273,11 @@ py::object basictype_new(BasicType const& BTy, py::handle O)
     HANDLE_BASICTY(Float, float);
     HANDLE_BASICTY(Double, double);
     HANDLE_BASICTY(LongDouble, long double);
+#ifdef DFFI_SUPPORT_COMPLEX
     HANDLE_BASICTY(ComplexFloat, _Complex float);
     HANDLE_BASICTY(ComplexDouble, _Complex double);
     HANDLE_BASICTY(ComplexLongDouble, _Complex long double);
+#endif
   };
   return py::none();
 }
@@ -352,9 +354,11 @@ PYBIND11_MODULE(pydffi, m)
     .value("Float", BasicType::Float)
     .value("Double", BasicType::Double)
     .value("LongDouble", BasicType::LongDouble)
+#ifdef DFFI_SUPPORT_COMPLEX
     .value("ComplexFloat", BasicType::ComplexFloat)
     .value("ComplexDouble", BasicType::ComplexDouble)
     .value("ComplexLongDouble", BasicType::ComplexLongDouble)
+#endif
     ;
 
   py::class_<BasicType>(m, "BasicType", type)

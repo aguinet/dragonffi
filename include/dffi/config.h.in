@@ -5,4 +5,8 @@
 #define DFFI_SUPPORT_I128
 #endif
 
+#if @HAVE_COMPLEX_T@
+#define DFFI_SUPPORT_COMPLEX
+#endif
+
 #endif

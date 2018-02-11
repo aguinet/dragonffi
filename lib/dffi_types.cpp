@@ -65,12 +65,14 @@ unsigned BasicType::getAlign() const
       return alignof(double);
     case LongDouble:
       return alignof(long double);
+#ifdef DFFI_SUPPORT_COMPLEX
     case ComplexFloat:
       return alignof(_Complex float);
     case ComplexDouble:
       return alignof(_Complex double);
     case ComplexLongDouble:
       return alignof(_Complex long double);
+#endif
   }
 }
 
@@ -111,12 +113,14 @@ uint64_t BasicType::getSize() const
       return sizeof(double);
     case LongDouble:
       return sizeof(long double);
+#ifdef DFFI_SUPPORT_COMPLEX
     case ComplexFloat:
       return sizeof(_Complex float);
     case ComplexDouble:
       return sizeof(_Complex double);
     case ComplexLongDouble:
       return sizeof(_Complex long double);
+#endif
   }
 }
 

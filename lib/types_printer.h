@@ -89,6 +89,7 @@ struct TypePrinter
         case BasicType::LongDouble:
           ss << "long double";
           break;
+#ifdef DFFI_SUPPORT_COMPLEX
         case BasicType::ComplexFloat:
           ss << "_Complex float";
           break;
@@ -98,6 +99,7 @@ struct TypePrinter
         case BasicType::ComplexLongDouble:
           ss << "_Complex long double";
           break;
+#endif
       };
       if (Name)
         ss << " " << Name;

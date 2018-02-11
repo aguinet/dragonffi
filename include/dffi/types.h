@@ -89,9 +89,11 @@ public:
     Float,
     Double,
     LongDouble,
+#ifdef DFFI_SUPPORT_COMPLEX
     ComplexFloat,
     ComplexDouble,
     ComplexLongDouble
+#endif
   };
 
   BasicKind getBasicKind() const { return BKind_; }
@@ -139,9 +141,11 @@ BASICTY_GETKIND(__uint128_t, UInt128)
 BASICTY_GETKIND(float, Float)
 BASICTY_GETKIND(double, Double)
 BASICTY_GETKIND(long double, LongDouble)
+#ifdef DFFI_SUPPORT_COMPLEX
 BASICTY_GETKIND(_Complex float, ComplexFloat)
 BASICTY_GETKIND(_Complex double, ComplexDouble)
 BASICTY_GETKIND(_Complex long double, ComplexLongDouble)
+#endif
 
 namespace details {
 template <bool, size_t, bool>
