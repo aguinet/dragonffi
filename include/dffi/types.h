@@ -34,8 +34,9 @@ struct DFFICtx;
 struct DFFIImpl;
 }
 
-struct DFFI_API Type
+class DFFI_API Type
 {
+public:
   enum TypeKind : uint8_t {
     TY_Basic,
     TY_Pointer,
@@ -66,7 +67,7 @@ public:
 
 class DFFI_API BasicType: public Type
 {
-  friend class details::DFFICtx;
+  friend struct details::DFFICtx;
 
 public:
   enum BasicKind: uint8_t {
@@ -149,7 +150,7 @@ BASICTY_GETKIND(_Complex long double, ComplexLongDouble)
 
 namespace details {
 template <bool, size_t, bool>
-struct KindDefault;
+class KindDefault;
 
 #define BASICTY_GETKIND_DEFAULT(Size, Signed, K)\
   template <>\
@@ -183,8 +184,9 @@ constexpr BasicType::BasicKind BasicType::getKindDefault() {
 // by the python bindings, to know if it can map read-only memoryview to a
 // pointer (which thus need to be const). In the same way, CPointerObj which
 // points to a const-type will return a read-only memoryview!
-struct DFFI_API QualType
+class DFFI_API QualType
 {
+public:
   enum Qualifiers : uintptr_t {
     None = 0,
     Const = 1
@@ -248,7 +250,7 @@ T const* cast(dffi::QualType Ty)
 
 class DFFI_API PointerType: public Type
 {
-  friend class details::DFFICtx;
+  friend struct details::DFFICtx;
 
 public:
   static bool classof(Type const* T) {
@@ -270,7 +272,7 @@ private:
 
 class DFFI_API FunctionType: public Type
 {
-  friend class details::DFFICtx;
+  friend struct details::DFFICtx;
 
 public:
   typedef std::vector<QualType> ParamsVecTy;
@@ -304,7 +306,7 @@ private:
 
 class DFFI_API ArrayType: public Type
 {
-  friend class details::DFFICtx;
+  friend struct details::DFFICtx;
 
 public:
   static bool classof(Type const* T) {

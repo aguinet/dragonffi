@@ -31,7 +31,7 @@ struct CUImpl;
 
 class DFFI_API CompositeField
 {
-  friend class details::CUImpl;
+  friend struct details::CUImpl;
 
 public:
   CompositeField(CompositeField&&) = default;
@@ -71,8 +71,8 @@ private:
 
 class DFFI_API CompositeType: public CanOpaqueType
 {
-  friend class details::CUImpl;
-  friend class details::DFFICtx;
+  friend struct details::CUImpl;
+  friend struct details::DFFICtx;
 
 public:
   uint64_t getSize() const override { return Size_; }
@@ -102,11 +102,12 @@ protected:
   unsigned Align_;
 };
 
-struct DFFI_API StructType: public CompositeType
+class DFFI_API StructType: public CompositeType
 {
-  friend class details::CUImpl;
-  friend class details::DFFICtx;
+  friend struct details::CUImpl;
+  friend struct details::DFFICtx;
 
+public:
   // Generate opaque structure
   StructType(details::DFFIImpl& Dffi):
     CompositeType(Dffi, TY_Struct)
@@ -121,11 +122,12 @@ protected:
   StructType(StructType&&) = default;
 };
 
-struct DFFI_API UnionType: public CompositeType
+class DFFI_API UnionType: public CompositeType
 {
-  friend class details::CUImpl;
-  friend class details::DFFICtx;
+  friend struct details::CUImpl;
+  friend struct details::DFFICtx;
 
+public:
   // Generate opaque structure
   UnionType(details::DFFIImpl& Dffi):
     CompositeType(Dffi, TY_Union)
@@ -142,13 +144,14 @@ protected:
   void setBody(std::vector<CompositeField>&& Fields, uint64_t Size, unsigned Align);
 };
 
-struct DFFI_API EnumType: public CanOpaqueType
+class DFFI_API EnumType: public CanOpaqueType
 {
+public:
   using IntType = int;
   using Fields = std::unordered_map<std::string, IntType>;
 
-  friend class details::CUImpl;
-  friend class details::DFFICtx;
+  friend struct details::CUImpl;
+  friend struct details::DFFICtx;
 
   // Generate opaque enum
   EnumType(details::DFFIImpl& Dffi):

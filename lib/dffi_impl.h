@@ -55,11 +55,11 @@ class FileSystem;
 namespace dffi {
 
 // Types
-struct BasicType;
-struct PointerType;
-struct StructType;
-struct UnionType;
-struct FunctionType;
+class BasicType;
+class PointerType;
+class StructType;
+class UnionType;
+class FunctionType;
 struct TypePrinter;
 
 namespace details {
@@ -82,7 +82,7 @@ struct CUImpl;
 
 struct DFFIImpl
 {
-  friend class CUImpl;
+  friend struct CUImpl;
 
   DFFIImpl(CCOpts const& Opts);
   ~DFFIImpl();

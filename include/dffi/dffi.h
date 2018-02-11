@@ -47,7 +47,7 @@ struct CCOpts
   std::vector<std::string> IncludeDirs;
 };
 
-struct DFFI;
+class DFFI;
 
 struct Exception
 {
@@ -86,8 +86,9 @@ private:
   details::CUImpl* Impl_;
 };
 
-struct DFFI_API DFFI
+class DFFI_API DFFI
 {
+public:
   DFFI(CCOpts const& Opts);
   ~DFFI();
 
