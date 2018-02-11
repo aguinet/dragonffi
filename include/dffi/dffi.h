@@ -153,7 +153,7 @@ private:
   std::unique_ptr<details::DFFIImpl> Impl_;
 };
 
-[[noreturn]] void unreachable(const char* msg);
+[[noreturn]] DFFI_API void unreachable(const char* msg);
 
 } // dffi
 

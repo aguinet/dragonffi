@@ -21,6 +21,9 @@ import struct
 
 FFI=pydffi.FFI()
 CU=FFI.compile('''
+#include <stdio.h>
+#include <string.h>
+
 struct A
 {
   char buf[128];

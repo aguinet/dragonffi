@@ -25,7 +25,10 @@
   #define DFFI_HELPER_LOCAL  __attribute__ ((visibility ("hidden")))
 #endif
 
-#ifdef dffi_EXPORTS
+#ifdef dffi_STATIC
+  #define DFFI_API
+  #define DFFI_LOCAL
+#elif defined(dffi_EXPORTS)
   #define DFFI_API DFFI_HELPER_EXPORT
   #define DFFI_LOCAL DFFI_HELPER_LOCAL
 #else

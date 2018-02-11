@@ -22,6 +22,7 @@ import sys
 import errno
 
 link_args = []
+libraries = []
 if platform.system() in ("Linux","Darwin"):
     # This will work w/ GCC and clang
     compile_args = ['-std=c++11']
@@ -30,6 +31,7 @@ if platform.system() in ("Linux","Darwin"):
         link_args = ["-static-libstdc++","-Wl,--strip-all"]
 elif platform.system() == "Windows":
     compile_args = ['/TP', '/EHsc']
+    libraries = ['Mincore']
 else:
     raise RuntimeError("unsupported platform '%s'!" % os.platform)
 
@@ -58,7 +60,7 @@ class build_ext_dffi(build_ext):
                 raise
 
         os.chdir(build_temp)
-        cmake_args = ['-DLLVM_CONFIG=%s' % LLVM_CONFIG, "-DCMAKE_BUILD_TYPE=release", "-DDFFI_STATIC_LLVM=ON", "-DPYTHON_BINDINGS=OFF", "-DBUILD_TESTS=OFF", source_dir]
+        cmake_args = ['-DLLVM_CONFIG=%s' % LLVM_CONFIG, "-DCMAKE_BUILD_TYPE=release", "-DDFFI_STATIC_LLVM=ON", "-DPYTHON_BINDINGS=OFF", "-DBUILD_TESTS=OFF", "-G","Ninja",source_dir]
         if platform.system() == "Darwin":
             # Compile for both 32 and 64 bits
             cmake_args.append("-DCMAKE_OSX_ARCHITECTURES='x86_64;i386'")
@@ -85,10 +87,11 @@ class build_ext_dffi(build_ext):
 module = Extension('pydffi',
                     include_dirs = [os.path.join(this_dir, '../../include'),
                         os.path.join(this_dir, '../../third-party')],
+                    define_macros = [('dffi_STATIC', None)],
                     extra_compile_args = compile_args,
                     extra_link_args = link_args,
                     library_dirs = [],
-                    libraries = [],
+                    libraries = libraries,
                     sources = glob.glob(os.path.join(this_dir, '*.cpp'))) 
 setup(name = 'pydffi',
     version = '0.2.0',

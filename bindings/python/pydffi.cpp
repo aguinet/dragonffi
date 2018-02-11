@@ -158,11 +158,6 @@ std::unique_ptr<DFFI> default_ctor(unsigned optLevel, py::list includeDirs)
   return std::unique_ptr<DFFI>{new DFFI{Opts}};
 }
 
-__attribute__((constructor)) void init()
-{
-  DFFI::initialize();
-}
-
 CFunction dffi_getfunction(DFFI& D, FunctionType const& Ty, void* Ptr)
 {
   return CFunction{D.getFunction(&Ty, Ptr)};
@@ -332,6 +327,8 @@ py::tuple list_fields(T const& Fields)
 
 PYBIND11_MODULE(pydffi, m)
 {
+  DFFI::initialize();
+
   // Types
   py::class_<Type> type(m, "Type");
   type.def_property_readonly("size", &Type::getSize)

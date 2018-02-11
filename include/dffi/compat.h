@@ -33,4 +33,10 @@
 #define DFFI_NODISCARD
 #endif
 
+#ifdef _MSC_VER
+#define ALIGN(N) __declspec(align(N))
+#else
+#define ALIGN(N) __attribute__((aligned(N)))
+#endif
+
 #endif

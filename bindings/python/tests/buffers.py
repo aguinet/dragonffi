@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# REQUIRES: posix
 # RUN: "%python" "%s" | "%FileCheck" "%s"
 
 import pydffi

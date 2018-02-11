@@ -45,7 +45,7 @@ void foo() {
   // CHECK: hello world!
   CU.getFunction("foo").call();
 
-  CU = Jit.cdef("#include <stdio.h>\n#include <stdlib.h>\n", "/__libs.h", Err);
+  CU = Jit.cdef("#include <stdio.h>\n#include <stdlib.h>\n", nullptr, Err);
   if (!CU) {
     std::cerr << "Compile error: " << Err << std::endl;
     return 1;

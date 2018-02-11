@@ -12,7 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import platform
+import os
+
 config.build_dir = "@CMAKE_CURRENT_BINARY_DIR@"
 config.llvm_bindir = "@LLVM_BINDIR@"
 
 lit_config.load_config(config, "@CMAKE_CURRENT_SOURCE_DIR@/lit.cfg")
+
+if platform.system() == "Windows":
+    # Add the current build directory to the path, so that executables can load
+    # dffi.dll (no rpath equivalent on windows)
+    this_dir =  os.path.dirname(os.path.realpath(__file__))
+    config.environment['PATH'] += ";" + os.path.join(this_dir, "..")

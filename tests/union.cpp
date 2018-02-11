@@ -12,9 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// RUN: "%build_dir/union" | "%FileCheck" "%s"
+// RUN: "%build_dir/union" >"%t"
+// RUN: "%FileCheck" "%s" <"%t"
 
-#include <iostream>
+#include <stdio.h>
 #include <dffi/dffi.h>
 #include <dffi/composite_type.h>
 
@@ -38,6 +39,7 @@ int main()
 
   std::string Err;
   auto CU = Jit.compile(R"(
+#include <stdio.h>
 union A {
   int a;
   int b;
@@ -58,7 +60,7 @@ void set(union A* a) {
 }
 )", Err);
   if (!CU) {
-    std::cerr << Err << std::endl;
+    fprintf(stderr, "%s\n", Err);
     return 1;
   }
 
@@ -73,7 +75,7 @@ void set(union A* a) {
   CU.getFunction("dump").call(&Args[0]);
   CU.getFunction("set").call(&Args[0]);
   if (obj.d != 4.) {
-    std::cerr << "invalid value for d!" << std::endl;
+    fprintf(stderr, "invalid value for d!\n", Err);
     return 1;
   }
 
@@ -84,7 +86,7 @@ void set(union A* a) {
   // CHECK: c
   // CHECK: d
   for (auto const& F: Fields) {
-    std::cout << F.getName() << std::endl;
+    printf("%s\n", F.getName());
   }
 
   return 0;

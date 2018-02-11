@@ -13,6 +13,7 @@
 # limitations under the License.
 
 find_package(PythonLibs ${PYTHON_VERSION} REQUIRED)
+set(PythonInterp_FIND_VERSION ${PYTHON_VERSION})
 find_package(PythonInterp REQUIRED)
 include_directories(${PYTHON_INCLUDE_DIRS})
 
@@ -24,6 +25,8 @@ add_library(pydffi
 set_target_properties(pydffi PROPERTIES PREFIX "")
 if (APPLE)
   set_target_properties(pydffi PROPERTIES SUFFIX ".so")
+elseif(WIN32)
+  set_target_properties(pydffi PROPERTIES SUFFIX ".pyd")
 endif()
 target_link_libraries(pydffi
   PUBLIC

@@ -27,7 +27,7 @@ static void addPath(vfs::InMemoryFileSystem& VFS, const char* Path, const char* 
 {
   assert(sys::path::is_relative(Path) && "path must be relative!");
   SmallString<1024> FullPath;
-  (StringRef{dffi::details::getClangResRootDirectory()} + sys::path::get_separator() + Path).toStringRef(FullPath);
+  (StringRef{dffi::details::getClangResRootDirectory()} + "/" + Path).toStringRef(FullPath);
   VFS.addFile(FullPath, time(NULL), 
     MemoryBuffer::getMemBuffer(StringRef{Data, Len}, "", false));
 }
