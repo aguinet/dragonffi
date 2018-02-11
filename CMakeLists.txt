@@ -141,8 +141,7 @@ endif()
 
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/include/dffi/config.h.in" "${CMAKE_CURRENT_BINARY_DIR}/include/dffi/config.h" @ONLY)
 
-add_library(dffi_objs
-  OBJECT
+set(DFFI_SRC
   lib/dffi_api.cpp
   lib/dffi_impl.cpp
   lib/dffi_impl_clang.cpp
@@ -151,7 +150,10 @@ add_library(dffi_objs
   lib/dffictx.cpp
 )
 
-add_library(dffi $<TARGET_OBJECTS:dffi_objs>)
+add_library(dffi
+  SHARED
+  ${DFFI_SRC}
+)
 
 get_source_file_property(_obj_depends lib/dffi_impl_clang_res.cpp OBJECT_DEPENDS)
 if(NOT _obj_depends)
@@ -193,7 +195,7 @@ option(DFFI_STATIC_LLVM "Create a static library with dffi and llvm/clang" OFF)
 if (DFFI_STATIC_LLVM)
   add_library(dffi_static
     STATIC
-    $<TARGET_OBJECTS:dffi_objs>
+    ${DFFI_SRC}
   )
 
   foreach(LIB_ ${DFFI_LINK_LIBRARIES})
