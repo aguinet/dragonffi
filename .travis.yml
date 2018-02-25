@@ -1,0 +1,35 @@
+git:
+  depth: 1
+
+matrix:
+  include:
+    - os: osx
+      osx_image: xcode9.3beta
+      language: cpp
+      cache:
+        - ccache
+      env: PYTHON_BINDINGS=NO
+      before_install: tests/travis/osx_setup.sh
+      script: tests/travis/osx.sh
+    - os: linux
+      addons:
+        apt:
+          packages:
+          - ninja-build
+      language: cpp
+      cache:
+        - ccache
+      env: PYTHON_BINDINGS=NO
+      before_install: tests/travis/lnx_setup.sh
+      script: tests/travis/lnx.sh
+    - os: linux
+      addons:
+        apt:
+          packages:
+          - ninja-build
+      language: cpp
+      cache:
+        - ccache
+      env: PYTHON_VERSION=2.7
+      before_install: tests/travis/lnx_setup.sh
+      script: tests/travis/lnx_py.sh

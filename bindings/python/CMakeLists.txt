@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-find_package(PythonLibs ${PYTHON_VERSION} REQUIRED)
 set(PythonInterp_FIND_VERSION ${PYTHON_VERSION})
 find_package(PythonInterp REQUIRED)
+find_package(PythonLibs ${PYTHON_VERSION} REQUIRED)
 include_directories(${PYTHON_INCLUDE_DIRS})
 
 add_library(pydffi

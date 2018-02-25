@@ -12,37 +12,39 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set(TESTS
-  anon_struct
-  anon_union
-  array
-  asm_redirect
-  bool
-  cconv
-  compile
-  compile_error
-  decl
-  enum
-  func_ptr
-  includes
-  stdint
-  struct
-  system_headers
-  typedef
-  union
-)
-
-# Compile tests
-foreach(TEST ${TESTS})
-  add_executable(${TEST} ${TEST}.cpp)
-  target_link_libraries(${TEST} dffi)
-endforeach()
-
 # Configure lit
 configure_file("lit.site.cfg.in" "${CMAKE_CURRENT_BINARY_DIR}/lit.site.cfg" ESCAPE_QUOTES @ONLY)
 
-add_lit_target(check_lib
-  "Running dragonffi library tests"
-  "${CMAKE_CURRENT_BINARY_DIR}")
-add_dependencies(check_lib ${TESTS})
-add_dependencies(check check_lib) 
+if (BUILD_TESTS)
+  set(TESTS
+    anon_struct
+    anon_union
+    array
+    asm_redirect
+    bool
+    cconv
+    compile
+    compile_error
+    decl
+    enum
+    func_ptr
+    includes
+    stdint
+    struct
+    system_headers
+    typedef
+    union
+  )
+
+  # Compile tests
+  foreach(TEST ${TESTS})
+    add_executable(${TEST} ${TEST}.cpp)
+    target_link_libraries(${TEST} dffi)
+  endforeach()
+
+  add_lit_target(check_lib
+    "Running dragonffi library tests"
+    "${CMAKE_CURRENT_BINARY_DIR}")
+  add_dependencies(check_lib ${TESTS})
+  add_dependencies(check check_lib) 
+endif()

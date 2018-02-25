@@ -6,7 +6,6 @@ features:
 
 fixes:
 * TODOs!
-* win support
 * get non qualified type (whole tree)
 * tests structures with custom alignments/pack
 
