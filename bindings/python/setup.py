@@ -60,7 +60,15 @@ class build_ext_dffi(build_ext):
                 raise
 
         os.chdir(build_temp)
-        cmake_args = ['-DLLVM_CONFIG=%s' % LLVM_CONFIG, "-DCMAKE_BUILD_TYPE=release", "-DDFFI_STATIC_LLVM=ON", "-DPYTHON_BINDINGS=OFF", "-DBUILD_TESTS=OFF", "-G","Ninja",source_dir]
+        # Use Ninja if it is available
+        try:
+            subprocess.check_call(['ninja','--version'])
+            use_ninja = True
+        except:
+            use_ninja = False
+        cmake_args = ['-DLLVM_CONFIG=%s' % LLVM_CONFIG, "-DCMAKE_BUILD_TYPE=release", "-DDFFI_STATIC_LLVM=ON", "-DPYTHON_BINDINGS=OFF", "-DBUILD_TESTS=OFF", source_dir]
+        if use_ninja:
+            cmake_args.extend(("-G","Ninja"))
         if platform.system() == "Darwin":
             # Compile for both 32 and 64 bits
             cmake_args.append("-DCMAKE_OSX_ARCHITECTURES='x86_64;i386'")
