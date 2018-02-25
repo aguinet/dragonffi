@@ -11,7 +11,11 @@ Please note that this project is still in alpha stage. Documentation is far
 from complete and, although many efforts have been put into it, its APIs aren't
 considered stable yet!
 
-Linux is for now the only supported OS (OSX and Windows are on the way).
+Supported OSes/architectures:
+
+* Linux i386/x64, with bindings for python 2/3
+* OSX i386/x64, with bindings for python 2/3
+* Windows x64, with bindings for python 3
 
 Why another FFI?
 ================
