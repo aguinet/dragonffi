@@ -39,7 +39,7 @@ int main(int argc, char** argv)
 void print(const char* s);
 static const char* msg="def msg";
 )",
-    nullptr, Err);
+    myinc, Err);
 
 #define CHECK_COMPILE()\
   if (!CU) {\

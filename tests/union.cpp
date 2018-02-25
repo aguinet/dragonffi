@@ -60,7 +60,7 @@ void set(union A* a) {
 }
 )", Err);
   if (!CU) {
-    fprintf(stderr, "%s\n", Err);
+    fprintf(stderr, "%s\n", Err.c_str());
     return 1;
   }
 
@@ -75,7 +75,7 @@ void set(union A* a) {
   CU.getFunction("dump").call(&Args[0]);
   CU.getFunction("set").call(&Args[0]);
   if (obj.d != 4.) {
-    fprintf(stderr, "invalid value for d!\n", Err);
+    fprintf(stderr, "invalid value for d!\n", Err.c_str());
     return 1;
   }
 
