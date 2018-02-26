@@ -30,17 +30,10 @@ __attribute__((noreturn)) void fatal(const char* err) {
     puts(err);
     exit(1);
 }
-
-void print(const char* log, ...) {
-    puts(log);
-}
 ''')
 check(CU, "fatal")
-check(CU, "print")
 
 CU = D.cdef('''
 __attribute__((noreturn)) void fatal(const char* err);
-void print(const char* log, ...);
 ''')
 check(CU, "fatal")
-check(CU, "print")

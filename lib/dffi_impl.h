@@ -93,6 +93,7 @@ struct DFFIImpl
   PointerType const* getPointerType(QualType Ty);
   ArrayType const* getArrayType(QualType Ty, uint64_t NElements);
   NativeFunc getFunction(FunctionType const* FTy, void* FPtr);
+  NativeFunc getFunction(FunctionType const* FTy, llvm::ArrayRef<Type const*> VarArgs, void* FPtr);
 
 protected:
   DFFICtx& getContext() { return DCtx_; }
@@ -103,9 +104,15 @@ private:
   std::unique_ptr<llvm::Module> compile_llvm_with_decls(llvm::StringRef const Code, llvm::StringRef const CUName, FuncAliasesMap& FuncAliases, std::string& Err);
   std::unique_ptr<llvm::Module> compile_llvm(llvm::StringRef const Code, llvm::StringRef const CUName, std::string& Err);
 
-  void genFuncTypeWrapper(TypePrinter& P, std::stringstream& ss, FunctionType const* FTy);
+  std::pair<size_t, bool> getFuncTypeWrapperId(FunctionType const* FTy);
+  std::pair<size_t, bool> getFuncTypeWrapperId(FunctionType const* FTy, llvm::ArrayRef<Type const*> VarArgs);
+  void genFuncTypeWrapper(TypePrinter& P, size_t WrapperIdx, std::stringstream& ss, FunctionType const* FTy, llvm::ArrayRef<Type const*> VarArgs);
   void getCompileError(std::string& Err);
   void setNewDiagnostics();
+  void compileWrappers(TypePrinter& P, std::string const& Wrappers);
+
+  void* getWrapperAddress(FunctionType const* FTy);
+  void* getWrapperAddress(FunctionType const* FTy, llvm::ArrayRef<Type const*> VarArgs);
 
 private:
   std::unique_ptr<clang::CompilerInstance> Clang_;
@@ -121,6 +128,8 @@ private:
   llvm::IntrusiveRefCntPtr<clang::FileManager> FileMgr_;
   llvm::SmallVector<std::unique_ptr<CUImpl>, 8> CUs_;
   llvm::DenseMap<dffi::FunctionType const*, size_t> FuncTyWrappers_;
+  llvm::DenseMap<std::pair<dffi::FunctionType const*, llvm::ArrayRef<Type const*>>, size_t> VarArgsFuncTyWrappers_;
+  size_t WrapperIdx_ = 0;
 
   DFFICtx DCtx_;
 
@@ -148,10 +157,17 @@ struct CUImpl
 
   dffi::FunctionType const* getFunctionType(llvm::DISubroutineType const* Ty);
   dffi::FunctionType const* getFunctionType(llvm::Function& F);
+
   QualType getQualTypeFromDIType(llvm::DIType const* Ty);
   dffi::Type const* getTypeFromDIType(llvm::DIType const* Ty);
 
+  std::tuple<void*, FunctionType const*> getFunctionAddressAndTy(llvm::StringRef Name);
+
   NativeFunc getFunction(llvm::StringRef Name);
+  NativeFunc getFunction(void* FPtr, FunctionType const* FTy);
+  NativeFunc getFunction(llvm::StringRef Name, llvm::ArrayRef<Type const*> VarArgs);
+  NativeFunc getFunction(void* FPtr, FunctionType const* FTy, llvm::ArrayRef<Type const*> VarArgs);
+
 
   void declareDIComposite(llvm::DICompositeType const* Ty);
   void parseDIComposite(llvm::DICompositeType const* Ty, llvm::Module& M);

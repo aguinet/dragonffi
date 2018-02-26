@@ -1,6 +1,5 @@
 features:
 * bitfields
-* var args
 * int128_t support in pybind11
 * atomic types
 

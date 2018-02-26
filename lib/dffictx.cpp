@@ -61,14 +61,14 @@ ArrayType* details::DFFICtx::getArrayType(DFFIImpl& Dffi, QualType EltTy, uint64
   return Ret;
 }
 
-FunctionType* details::DFFICtx::getFunctionType(DFFIImpl& Dffi, QualType RetTy, llvm::ArrayRef<QualType> ParamsTy, CallingConv CC)
+FunctionType* details::DFFICtx::getFunctionType(DFFIImpl& Dffi, QualType RetTy, llvm::ArrayRef<QualType> ParamsTy, CallingConv CC, bool VarArgs)
 {
-  FunctionTypeKeyInfo::KeyTy K(RetTy, ParamsTy, CC, false);
+  FunctionTypeKeyInfo::KeyTy K(RetTy, ParamsTy, CC, VarArgs);
   auto It = FunctionTys_.find_as(K);
   if (It != FunctionTys_.end()) {
     return *It;
   }
-  auto* Ret = new FunctionType{Dffi, RetTy, ParamsTy, CC};
+  auto* Ret = new FunctionType{Dffi, RetTy, ParamsTy, CC, VarArgs};
   FunctionTys_.insert(Ret);
   return Ret;
 }

@@ -124,18 +124,33 @@ uint64_t BasicType::getSize() const
   }
 }
 
-FunctionType::FunctionType(details::DFFIImpl& Dffi, QualType RetTy, ParamsVecTy ParamsTy, CallingConv CC):
+FunctionType::FunctionType(details::DFFIImpl& Dffi, QualType RetTy, ParamsVecTy ParamsTy, CallingConv CC, bool VarArgs):
   Type(Dffi, TY_Function),
   RetTy_(RetTy),
   ParamsTy_(std::move(ParamsTy))
 {
   Flags_.D.CC = CC;
-  Flags_.D.VarArgs = 0;
+  Flags_.D.VarArgs = VarArgs;
 }
 
 NativeFunc FunctionType::getFunction(void* Ptr) const
 {
   return getDFFI().getFunction(this, Ptr);
+}
+
+NativeFunc FunctionType::getFunction(Type const** VarArgsTys, size_t VarArgsCount, void* Ptr) const
+{
+  return getDFFI().getFunction(this, llvm::ArrayRef<Type const*>{VarArgsTys, VarArgsCount}, Ptr);
+}
+
+bool FunctionType::hasVarArgs() const
+{
+  return Flags_.D.VarArgs;
+}
+
+CallingConv FunctionType::getCC() const
+{
+  return (CallingConv)Flags_.D.CC;
 }
 
 PointerType::PointerType(details::DFFIImpl& Dffi, QualType Pointee):

@@ -284,13 +284,14 @@ public:
   Type const* getReturnType() const { return RetTy_; }
   ParamsVecTy const& getParams() const { return ParamsTy_; }
 
-  bool hasVarArgs() const { return Flags_.D.VarArgs; }
-  CallingConv getCC() const { return (CallingConv)Flags_.D.CC; }
+  bool hasVarArgs() const; 
+  CallingConv getCC() const; 
 
   NativeFunc getFunction(void* Ptr) const;
+  NativeFunc getFunction(Type const** VarArgsTys, size_t VarArgsCount, void* Ptr) const;
 
 protected:
-  FunctionType(details::DFFIImpl& Dffi, QualType RetTy, ParamsVecTy ParamsTy, CallingConv CC);
+  FunctionType(details::DFFIImpl& Dffi, QualType RetTy, ParamsVecTy ParamsTy, CallingConv CC, bool VarArgs);
 
 private:
   QualType RetTy_;

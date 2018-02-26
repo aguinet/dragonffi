@@ -199,7 +199,7 @@ struct DFFICtx
 
   BasicType* getBasicType(DFFIImpl& Dffi, BasicType::BasicKind Kind);
   PointerType* getPtrType(DFFIImpl& Dffi, QualType Pointee);
-  FunctionType* getFunctionType(DFFIImpl& Dffi, QualType RetTy, llvm::ArrayRef<QualType> ParamsTy, CallingConv CC);
+  FunctionType* getFunctionType(DFFIImpl& Dffi, QualType RetTy, llvm::ArrayRef<QualType> ParamsTy, CallingConv CC, bool VarArgs);
   ArrayType* getArrayType(DFFIImpl& Dffi, QualType EltTy, uint64_t NElements);
 
 private:

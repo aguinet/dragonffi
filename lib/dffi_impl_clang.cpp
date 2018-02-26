@@ -78,19 +78,11 @@ private:
       return;
     }
 
-    //FD->dump();
-
     auto* FTy = FD->getType()->getAs<clang::FunctionType>();
     assert(FTy);
 
-    bool IsVariadic = false;
     bool NoReturn = FTy->getExtInfo().getNoReturn();
-    if (auto* PFTy = FTy->getAs<clang::FunctionProtoType>()) {
-      IsVariadic = PFTy->isVariadic();
-    }
-
-    if (IsVariadic || NoReturn) {
-      // TODO: save the info we ignored a function somewhere!
+    if (NoReturn) {
       return;
     }
 

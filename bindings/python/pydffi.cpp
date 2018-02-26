@@ -87,13 +87,25 @@ CompilationUnit dffi_compile(DFFI& C, const char* Code)
   return CU;
 }
 
-CFunction cu_getfunction(CompilationUnit& CU, const char* Name)
+std::unique_ptr<CObj> cu_getfunction(CompilationUnit& CU, const char* Name)
 {
-  auto Ret = CU.getFunction(Name);
-  if (!Ret) {
-    throw UnknownFunctionError(Name);
+  void* FPtr;
+  FunctionType const* FTy;
+  std::tie(FPtr, FTy) = CU.getFunctionAddressAndTy(Name);
+  if (!FPtr || !FTy) {
+    throw UnknownFunctionError{Name};
   }
-  return CFunction{Ret};
+
+  CObj* Ret;
+  if (FTy->hasVarArgs()) {
+    Ret = new CVarArgsFunction{FPtr, FTy};
+  }
+  else {
+    auto NF = CU.getFunction(FPtr, FTy);
+    Ret = new CFunction{NF};
+  }
+
+  return std::unique_ptr<CObj>{Ret};
 }
 
 
@@ -185,7 +197,7 @@ struct CUFuncs
     CU_(CU)
   { }
 
-  CFunction getAttr(const char* Name)
+  std::unique_ptr<CObj> getAttr(const char* Name)
   {
     return cu_getfunction(CU_, Name);
   }
@@ -373,9 +385,10 @@ PYBIND11_MODULE(pydffi, m)
     ;
 
   py::class_<FunctionType>(m, "FunctionType", type)
-    .def("returnType", &FunctionType::getReturnType, py::return_value_policy::reference_internal)
-    .def("params", &FunctionType::getParams, py::return_value_policy::reference_internal)
-    .def("getFunction", functiontype_getfunction, py::keep_alive<0,1>());
+    .def_property_readonly("returnType", &FunctionType::getReturnType, py::return_value_policy::reference_internal)
+    .def_property_readonly("params", &FunctionType::getParams, py::return_value_policy::reference_internal)
+    .def("getFunction", functiontype_getfunction, py::keep_alive<0,1>())
+    .def("__call__", functiontype_getfunction, py::keep_alive<0,1>())
     ;
 
   py::class_<CompositeField>(m, "CompositeField")
@@ -587,6 +600,10 @@ PYBIND11_MODULE(pydffi, m)
     .def("__call__", &CFunction::call)
     ;
 
+  py::class_<CVarArgsFunction>(m, "CVarArgsFunction", cobj)
+    .def("__call__", &CVarArgsFunction::call)
+    ;
+
   py::class_<CUTypes>(m, "CUTypes")
     .def("__getattr__", &CUTypes::getAttr, py::return_value_policy::reference_internal)
     .def("__dir__", &CUTypes::getList)
@@ -702,4 +719,5 @@ PYBIND11_MODULE(pydffi, m)
   py::register_exception<DLOpenError>(m, "DLOpenError");
   py::register_exception<UnknownField>(m, "UnknownField");
   py::register_exception<AllocError>(m, "AllocError");
+  py::register_exception<BadFunctionCall>(m, "BadFunctionCall");
 };

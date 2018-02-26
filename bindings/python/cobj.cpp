@@ -375,17 +375,36 @@ py::memoryview CPointerObj::getMemoryViewCStr()
   return getMemoryView(Len);
 }
 
+py::object CVarArgsFunction::call(py::args const& Args) const
+{
+  FunctionType const* FTy = getType();
+  auto const& Params = FTy->getParams();
+  const size_t NParams = Params.size();
+  const size_t VarArgsCount = Args.size() - Params.size();
+  std::vector<Type const*> VarArgs;
+  VarArgs.resize(VarArgsCount);
+  for (size_t i = 0; i < VarArgsCount; ++i) {
+    VarArgs[i] = py::cast<CObj*>(Args[NParams+i])->getType();
+  }
+  NativeFunc NF = FTy->getFunction(&VarArgs[0],VarArgs.size(),FuncPtr_);
+  return CFunction{NF}.call(Args);
+}
+
 py::object CFunction::call(py::args const& Args) const
 {
   ConvertArgsSwitch::ObjsHolder Holders;
   ConvertArgsSwitch::PyObjsHolder PyHolders;
 
-  std::vector<void*> Ptrs;
   const auto Len = py::len(Args);
-  Ptrs.reserve(Len);
-
   FunctionType const* FTy = getType();
-  assert(Len == FTy->getParams().size());
+
+  const auto NArgs = FTy->getParams().size();
+  if (Len != NArgs) {
+    ThrowError<BadFunctionCall>() << "invalid number of arguments: expected " << NArgs << ", got " << Len << ".";
+  }
+
+  std::vector<void*> Ptrs;
+  Ptrs.reserve(Len);
 
   size_t I = 0;
   for (auto& A: Args) {

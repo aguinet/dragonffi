@@ -34,6 +34,7 @@ if (BUILD_TESTS)
     system_headers
     typedef
     union
+    varargs
   )
 
   # Compile tests

@@ -60,6 +60,11 @@ struct UnknownFunctionError: public DFFIErrorStr
   UnknownFunctionError(const char* Name);
 };
 
+struct BadFunctionCall: public DFFIErrorStr
+{
+  using DFFIErrorStr::DFFIErrorStr;
+};
+
 struct AllocError: public DFFIErrorStr
 {
   using DFFIErrorStr::DFFIErrorStr;

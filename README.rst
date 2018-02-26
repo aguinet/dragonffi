@@ -141,10 +141,6 @@ Structures can also be used:
   a = CU.types.A(a=1,b=2)
   CU.funcs.print_struct(a)
 
-Note that, due to current limitation in the way Clang emits LLVM modules, types
-that are only defined but not used in any function API wont be exposed (see
-limitations below).
-
 More advanced usage examples are provided in the examples directory.
 
 Current limitations
@@ -153,9 +149,7 @@ Current limitations
 Some C features are still not supported by dffi (but will be in future releases):
 
 * C structures with bitfields
-* functions with variadic arguments
 * functions with the noreturn attribute
-* cdef of types that are not used by any function won't be visible to dffi
 * support for atomic operations
 
 The python bindings also does not support yet:

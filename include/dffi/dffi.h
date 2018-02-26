@@ -76,7 +76,12 @@ public:
   PointerType const* getPointerType(Type const* Ty);
   Type const* getType(const char* Name);
 
+  std::tuple<void*, FunctionType const*> getFunctionAddressAndTy(const char* Name);
+
   NativeFunc getFunction(const char* Name);
+  NativeFunc getFunction(void* FPtr, FunctionType const* FTy);
+  NativeFunc getFunction(const char* Name, Type const** VarArgsTys, size_t VarArgsCount);
+  NativeFunc getFunction(void* FPtr, FunctionType const* FTy, Type const** VarArgsTys, size_t VarArgsCount);
 
   std::vector<std::string> getTypes() const;
   std::vector<std::string> getFunctions() const;
@@ -107,6 +112,7 @@ public:
   ArrayType const* getArrayType(Type const* Ty, uint64_t NElements);
 
   NativeFunc getFunction(FunctionType const* FTy, void* FPtr);
+  NativeFunc getFunction(FunctionType const* FTy, Type const** VarArgsTys, size_t VarArgsCount, void* FPtr);
 
   static bool dlopen(const char* Path, std::string* Err = nullptr);
 

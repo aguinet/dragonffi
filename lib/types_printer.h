@@ -129,6 +129,9 @@ struct TypePrinter
           ss << ",";
         }
         ss << print_def(*ItLast, Full); 
+        if (FTy->hasVarArgs()) {
+          ss << ",...";
+        }
       }
       ss << ")";
       return print_def(FTy->getReturnType(), Full, ss.str().c_str());

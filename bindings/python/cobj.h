@@ -572,6 +572,27 @@ private:
   dffi::NativeFunc NF_;
 };
 
+struct CVarArgsFunction: public CObj
+{
+  CVarArgsFunction(void* FuncPtr, dffi::FunctionType const* FTy):
+    CObj(*FTy),
+    FuncPtr_(FuncPtr)
+  {
+    assert(FTy->hasVarArgs() && "function must have variadic arguments!");
+  }
+
+  pybind11::object call(pybind11::args const& Args) const;
+
+  inline dffi::FunctionType const* getType() const { return dffi::cast<dffi::FunctionType>(CObj::getType()); }
+  
+  void* dataPtr() override { return FuncPtr_; }
+
+  std::unique_ptr<CObj> cast(dffi::Type const* To) const override { return {nullptr}; }
+
+private:
+  void* FuncPtr_;
+};
+
 std::string getFormatDescriptor(dffi::Type const* Ty);
 
 namespace {

@@ -23,6 +23,8 @@
 
 #include <llvm/Support/TargetSelect.h>
 
+using namespace llvm;
+
 namespace dffi {
 
 DFFI::DFFI(CCOpts const& Opts):
@@ -65,6 +67,11 @@ ArrayType const* DFFI::getArrayType(Type const* Ty, uint64_t NElements)
 NativeFunc DFFI::getFunction(FunctionType const* FTy, void* FPtr)
 {
   return Impl_->getFunction(FTy, FPtr);
+}
+
+NativeFunc DFFI::getFunction(FunctionType const* FTy, Type const** VarArgsTys, size_t VarArgsCount, void* FPtr)
+{
+  return Impl_->getFunction(FTy, ArrayRef<Type const*>{VarArgsTys, VarArgsCount}, FPtr);
 }
 
 void DFFI::initialize()
@@ -275,10 +282,34 @@ Type const* CompilationUnit::getType(const char* Name)
   return Impl_->getType(Name);
 }
 
+std::tuple<void*, FunctionType const*> CompilationUnit::getFunctionAddressAndTy(const char* Name)
+{
+  assert(isValid());
+  return Impl_->getFunctionAddressAndTy(Name);
+}
+
 NativeFunc CompilationUnit::getFunction(const char* Name)
 {
   assert(isValid());
   return Impl_->getFunction(Name);
+}
+
+NativeFunc CompilationUnit::getFunction(void* FPtr, FunctionType const* FTy)
+{
+  assert(isValid());
+  return Impl_->getFunction(FPtr, FTy);
+}
+
+NativeFunc CompilationUnit::getFunction(const char* Name, Type const** VarArgsTys, size_t VarArgsCount)
+{
+  assert(isValid());
+  return Impl_->getFunction(Name, ArrayRef<Type const*>{VarArgsTys, VarArgsCount});
+}
+
+NativeFunc CompilationUnit::getFunction(void* FPtr, FunctionType const* FTy, Type const** VarArgsTys, size_t VarArgsCount)
+{
+  assert(isValid());
+  return Impl_->getFunction(FPtr, FTy, ArrayRef<Type const*>{VarArgsTys, VarArgsCount});
 }
 
 bool CompilationUnit::isValid() const

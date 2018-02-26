@@ -364,20 +364,40 @@ bool isWrapperFunction(StringRef const Name)
 DFFIImpl::~DFFIImpl()
 { }
 
-void DFFIImpl::genFuncTypeWrapper(TypePrinter& P, std::stringstream& ss, FunctionType const* FTy)
+std::pair<size_t, bool> DFFIImpl::getFuncTypeWrapperId(FunctionType const* FTy)
 {
-  size_t TyIdx = FuncTyWrappers_.size();
+  size_t TyIdx = WrapperIdx_;
   auto Ins = FuncTyWrappers_.try_emplace(FTy, TyIdx);
   if (!Ins.second) {
-    return;
+    return {Ins.first->second, true};
   }
+  ++WrapperIdx_;
+  return {TyIdx, false};
+}
 
-  ss << "void " << getWrapperName(TyIdx) << "(";
+std::pair<size_t, bool> DFFIImpl::getFuncTypeWrapperId(FunctionType const* FTy, ArrayRef<Type const*> VarArgs)
+{
+  size_t TyIdx = WrapperIdx_;
+  auto Ins = VarArgsFuncTyWrappers_.try_emplace(std::make_pair(FTy, VarArgs), TyIdx);
+  if (!Ins.second) {
+    return {Ins.first->second, true};
+  }
+  ++WrapperIdx_;
+  return {TyIdx, false};
+}
+
+void DFFIImpl::genFuncTypeWrapper(TypePrinter& P, size_t WrapperIdx, std::stringstream& ss, FunctionType const* FTy, ArrayRef<Type const*> VarArgs)
+{
+  ss << "void " << getWrapperName(WrapperIdx) << "(";
   auto RetTy = FTy->getReturnType();
   ss << P.print_def(getPointerType(FTy), TypePrinter::Full, "__FPtr") << ",";
   ss << P.print_def(getPointerType(RetTy), TypePrinter::Full, "__Ret") << ",";
   ss << "void** __Args";
   std::stringstream Impl;
+  ss << ") {\n  ";
+  if (RetTy) {
+    ss << "*__Ret = ";
+  }
   size_t Idx = 0;
   auto& Params = FTy->getParams();
   for (QualType ATy: Params) {
@@ -387,9 +407,13 @@ void DFFIImpl::genFuncTypeWrapper(TypePrinter& P, std::stringstream& ss, Functio
     }
     ++Idx;
   }
-  ss << ") {\n  ";
-  if (RetTy) {
-    ss << "*__Ret = ";
+  if (VarArgs.size() > 0) {
+    assert(FTy->hasVarArgs() && "function type must be variadic if VarArgsCount > 0");
+    assert(Params.size() >= 1 && "variadic arguments must have at least one defined argument");
+    for (Type const* Ty: VarArgs) {
+      Impl << ", *((" << P.print_def(getPointerType(Ty), TypePrinter::Full) << ")" << "__Args[" << Idx << "]" << ")";
+      ++Idx;
+    }
   }
   ss << "(__FPtr)(" << Impl.str() << ");\n";
   ss << "}\n";
@@ -472,8 +496,6 @@ CUImpl* DFFIImpl::compile(StringRef const Code, StringRef CUName, bool IncludeDe
       continue;
     if (F.doesNotReturn())
       continue;
-    if (F.isVarArg())
-      continue;
     StringRef FName = F.getName();
     if (FName.startswith("__dffi_force_typedef")) {
       ToRemove.push_back(&F);
@@ -496,7 +518,11 @@ CUImpl* DFFIImpl::compile(StringRef const Code, StringRef CUName, bool IncludeDe
       CU->parseFunctionAlias(F);
     }
     CU->FuncTys_[FName] = DFTy;
-    genFuncTypeWrapper(Printer, Wrappers, DFTy);
+    auto Id = getFuncTypeWrapperId(DFTy);
+    if (!Id.second) {
+      // TODO: if varag, do we always generate the wrapper for the version w/o varargs?
+      genFuncTypeWrapper(Printer, Id.first, Wrappers, DFTy, {});
+    }
   }
 
   for (Function* F: ToRemove) {
@@ -511,25 +537,58 @@ CUImpl* DFFIImpl::compile(StringRef const Code, StringRef CUName, bool IncludeDe
   EE_->generateCodeForModule(pM);
 
   // Compile wrappers
-  std::string WCode = "#include <stdint.h>\n\n";
-  WCode += Printer.getDecls() + "\n" + Wrappers.str();
-  std::stringstream ss;
-  ss << "/__dffi_private/wrappers_" << CUIdx_++ << ".c";
-  M = compile_llvm(WCode, ss.str(), Err);
-  if (!M) {
-    errs() << WCode;
-    errs() << Err;
-    llvm::report_fatal_error("unable to compile wrappers!");
-  }
-  pM = M.get();
-  EE_->addModule(std::move(M));
-  EE_->generateCodeForModule(pM);
+  compileWrappers(Printer, Wrappers.str());
 
   // We don't need these anymore
   CU->AnonTys_.clear();
 
   auto* Ret = CU.get();
   CUs_.emplace_back(std::move(CU));
+  return Ret;
+}
+
+void DFFIImpl::compileWrappers(TypePrinter& Printer, std::string const& Wrappers)
+{
+  std::string WCode = "#include <stdint.h>\n\n";
+  WCode += Printer.getDecls() + "\n" + Wrappers;
+  std::stringstream ss;
+  ss << "/__dffi_private/wrappers_" << CUIdx_++ << ".c";
+  // TODO
+  //CGO.setDebugInfo(codegenoptions::NoDebugInfo);
+  std::string Err;
+  auto M = compile_llvm(WCode, ss.str(), Err);
+  //CGO.setDebugInfo(codegenoptions::FullDebugInfo);
+  if (!M) {
+    errs() << WCode;
+    errs() << Err;
+    llvm::report_fatal_error("unable to compile wrappers!");
+  }
+  auto* pM = M.get();
+  EE_->addModule(std::move(M));
+  EE_->generateCodeForModule(pM);
+}
+
+void* DFFIImpl::getWrapperAddress(FunctionType const* FTy)
+{
+  std::string TName = getWrapperName(FuncTyWrappers_[FTy]);
+  void* Ret = (void*)EE_->getFunctionAddress(TName.c_str());
+  assert(Ret && "function wrapper does not exist!");
+  return Ret;
+}
+
+void* DFFIImpl::getWrapperAddress(FunctionType const* FTy, ArrayRef<Type const*> VarArgs)
+{
+  auto Id = getFuncTypeWrapperId(FTy, VarArgs);
+  size_t WIdx = Id.first;
+  if (!Id.second) {
+    std::stringstream ss;
+    TypePrinter P;
+    genFuncTypeWrapper(P, WIdx, ss, FTy, VarArgs);
+    compileWrappers(P, ss.str());
+  }
+  std::string TName = getWrapperName(WIdx);
+  void* Ret = (void*)EE_->getFunctionAddress(TName.c_str());
+  assert(Ret && "function wrapper does not exist!");
   return Ret;
 }
 
@@ -559,9 +618,29 @@ void* DFFIImpl::getFunctionAddress(StringRef Name)
 
 NativeFunc DFFIImpl::getFunction(FunctionType const* FTy, void* FPtr)
 {
-  std::string TName = getWrapperName(FuncTyWrappers_[FTy]);
-  auto TFPtr = (NativeFunc::TrampPtrTy)getFunctionAddress(TName);
+  auto TFPtr = (NativeFunc::TrampPtrTy)getWrapperAddress(FTy);
   assert(TFPtr && "function type trampoline doesn't exist!");
+  return {TFPtr, FPtr, FTy};
+}
+
+// TODO: QualType here!
+NativeFunc DFFIImpl::getFunction(FunctionType const* FTy, ArrayRef<Type const*> VarArgs, void* FPtr)
+{
+  if (!FTy->hasVarArgs()) {
+    return NativeFunc{};
+  }
+  auto TFPtr = (NativeFunc::TrampPtrTy)getWrapperAddress(FTy, VarArgs);
+  // Generates new function type for this list of variadic arguments
+  SmallVector<QualType, 8> Types;
+  auto const& Params = FTy->getParams();
+  Types.reserve(Params.size() + VarArgs.size());
+  for (auto const& P: Params) {
+    Types.emplace_back(P.getType());
+  }
+  for (auto T: VarArgs) {
+    Types.emplace_back(T);
+  }
+  FTy = getContext().getFunctionType(*this, FTy->getReturnType(), Types, FTy->getCC(), false);
   return {TFPtr, FPtr, FTy};
 }
 
@@ -587,7 +666,7 @@ CUImpl::CUImpl(DFFIImpl& DFFI):
   DFFI_(DFFI)
 { }
 
-NativeFunc CUImpl::getFunction(StringRef Name)
+std::tuple<void*, FunctionType const*> CUImpl::getFunctionAddressAndTy(llvm::StringRef Name)
 {
   auto ItAlias = FuncAliases_.find(Name);
   if (ItAlias != FuncAliases_.end()) {
@@ -595,13 +674,41 @@ NativeFunc CUImpl::getFunction(StringRef Name)
   }
   auto ItFTy = FuncTys_.find(Name);
   if (ItFTy == FuncTys_.end()) {
+    return std::tuple<void*, FunctionType const*>{nullptr,nullptr};
+  }
+  return std::tuple<void*, FunctionType const*>{DFFI_.getFunctionAddress(Name), ItFTy->second};
+}
+
+NativeFunc CUImpl::getFunction(llvm::StringRef Name)
+{
+  void* FPtr;
+  FunctionType const* FTy;
+  std::tie(FPtr, FTy) = getFunctionAddressAndTy(Name);
+  return getFunction(FPtr, FTy);
+}
+
+NativeFunc CUImpl::getFunction(llvm::StringRef Name, llvm::ArrayRef<Type const*> VarArgs)
+{
+  void* FPtr;
+  FunctionType const* FTy;
+  std::tie(FPtr, FTy) = getFunctionAddressAndTy(Name);
+  return getFunction(FPtr, FTy, VarArgs);
+}
+
+NativeFunc CUImpl::getFunction(void* FPtr, FunctionType const* FTy, llvm::ArrayRef<Type const*> VarArgs)
+{
+  if (!FPtr || !FTy) {
     return {};
   }
-  void* FPtr = DFFI_.getFunctionAddress(Name);
-  if (!FPtr) {
+  return DFFI_.getFunction(FTy, VarArgs, FPtr);
+}
+
+NativeFunc CUImpl::getFunction(void* FPtr, FunctionType const* FTy)
+{
+  if (!FPtr || !FTy) {
     return {};
   }
-  return DFFI_.getFunction(ItFTy->second, FPtr);
+  return DFFI_.getFunction(FTy, FPtr);
 }
 
 template <class T>
@@ -917,8 +1024,13 @@ dffi::FunctionType const* CUImpl::getFunctionType(DISubroutineType const* Ty)
     auto ATy = getQualTypeFromDIType((*ItTy).resolve());
     ParamsTy.push_back(ATy);
   }
+  bool IsVarArgs = false;
+  if (ParamsTy.size() > 1 && ParamsTy.back().getType() == nullptr) {
+    IsVarArgs = true;
+    ParamsTy.pop_back();
+  }
   auto CC = dwarfCCToDFFI(Ty->getCC());
-  return getContext().getFunctionType(DFFI_, RetTy, ParamsTy, CC);
+  return getContext().getFunctionType(DFFI_, RetTy, ParamsTy, CC, IsVarArgs);
 }
 
 void CUImpl::parseFunctionAlias(Function& F)
