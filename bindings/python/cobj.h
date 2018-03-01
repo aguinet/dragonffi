@@ -401,7 +401,7 @@ struct CPointerObj: public CObj
     return *Data_.dataPtr();
   }
 
-  inline dffi::Type const* getPointeeType() const { return dffi::cast<dffi::PointerType>(getType())->getPointee(); }
+  inline dffi::QualType getPointeeType() const { return dffi::cast<dffi::PointerType>(getType())->getPointee(); }
 
   std::unique_ptr<CObj> getObj();
 

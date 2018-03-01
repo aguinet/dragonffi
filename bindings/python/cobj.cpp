@@ -194,7 +194,10 @@ struct ConvertArgsSwitch
   static CObj* case_pointer(PointerType const* Ty, ObjsHolder& H, PyObjsHolder& PyH, py::handle O)
   {
     if (auto* PtrObj = O.dyn_cast<CPointerObj>()) {
-      return checkType(PtrObj, Ty);
+      if (!Ty->getPointee().hasConst() && PtrObj->getPointeeType().hasConst()) {
+        throw TypeError{"pointer to const type can't be converted to a pointer to a non-const value."};
+      }
+      return PtrObj;
     }
 
     auto PteTy = Ty->getPointee();
@@ -357,7 +360,7 @@ std::unique_ptr<CObj> CPointerObj::getObj() {
 
 py::memoryview CPointerObj::getMemoryView(size_t Len)
 {
-  auto* PointeeTy = getPointeeType();
+  auto PointeeTy = getPointeeType();
   const size_t PointeeSize = PointeeTy->getSize();
   // TODO: check integer overflow
   // TODO: ssize_t is an issue
@@ -367,8 +370,8 @@ py::memoryview CPointerObj::getMemoryView(size_t Len)
 py::memoryview CPointerObj::getMemoryViewCStr()
 {
   static constexpr auto CharKind = BasicType::getKind<char>();
-  auto* PteeType = getPointeeType();
-  if (!isa<BasicType>(PteeType) || static_cast<BasicType const*>(PteeType)->getBasicKind() != CharKind) {
+  auto PteeType = getPointeeType();
+  if (!isa<BasicType>(PteeType.getType()) || static_cast<BasicType const*>(PteeType.getType())->getBasicKind() != CharKind) {
     throw TypeError{"pointer must be a pointer to char*!"};
   }
   const size_t Len = strlen((const char*)getPtr());
