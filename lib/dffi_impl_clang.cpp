@@ -74,8 +74,11 @@ private:
     if (FD->hasBody()) {
       return;
     }
-    if (FD->getPreviousDecl()) {
-      return;
+
+    if (auto* Prev = FD->getPreviousDecl()) {
+      if (!Prev->isImplicit()) {
+        return;
+      }
     }
 
     auto* FTy = FD->getType()->getAs<clang::FunctionType>();
