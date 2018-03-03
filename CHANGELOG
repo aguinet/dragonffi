@@ -9,6 +9,7 @@ Bug fixes:
 
 * Some functions (like malloc, printf, ...) that are pre-declared by clang
   weren't considered by cdef
+* Support inline functions in cdef
 
 0.2.1
 -----

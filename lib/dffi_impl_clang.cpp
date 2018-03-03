@@ -71,7 +71,7 @@ private:
 
   void HandleFD(FunctionDecl* FD)
   {
-    if (FD->hasBody()) {
+    if (FD->hasBody() && !FD->isInlineSpecified()) {
       return;
     }
 

@@ -1,5 +1,4 @@
 features:
-* linkonce functions (i.e.: printf w/ MSVCRT)
 * bitfields
 * int128_t support in pybind11
 * atomic types

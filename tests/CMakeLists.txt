@@ -28,7 +28,9 @@ if (BUILD_TESTS)
     decl
     enum
     func_ptr
+    multiple_defs
     includes
+    inline
     stdint
     struct
     system_headers
