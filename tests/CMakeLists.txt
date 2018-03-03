@@ -45,7 +45,8 @@ if (BUILD_TESTS)
 
   add_lit_target(check_lib
     "Running dragonffi library tests"
-    "${CMAKE_CURRENT_BINARY_DIR}")
+    "${CMAKE_CURRENT_BINARY_DIR}"
+    ARGS -v)
   add_dependencies(check_lib ${TESTS})
   add_dependencies(check check_lib) 
 endif()

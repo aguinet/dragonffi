@@ -16,6 +16,7 @@ configure_file("lit.site.cfg.in" "${CMAKE_CURRENT_BINARY_DIR}/lit.site.cfg" @ONL
 
 add_lit_target(check_python
   "Running dragonffi python bindings tests"
-  "${CMAKE_CURRENT_BINARY_DIR}")
+  "${CMAKE_CURRENT_BINARY_DIR}"
+  ARGS -v)
 add_dependencies(check_python pydffi)
 add_dependencies(check check_python)
