@@ -16,7 +16,15 @@ matrix:
       language: cpp
       cache:
         - ccache
-      env: BUILD_TESTS=OFF PYTHON_BINDINGS=YES PYTHON_VERSION=2.7
+      env: BUILD_TESTS=OFF PYTHON_BINDINGS=YES PYTHON_VERSION=2.7 PYTHON_EXECUTABLE=python
+      before_install: tests/travis/osx_setup.sh
+      script: tests/travis/osx.sh
+    - os: osx
+      osx_image: xcode9.3beta
+      language: cpp
+      cache:
+        - ccache
+      env: BUILD_TESTS=OFF PYTHON_BINDINGS=YES PYTHON_VERSION=3.6 PYTHON_EXECUTABLE=python3
       before_install: tests/travis/osx_setup.sh
       script: tests/travis/osx.sh
     - os: linux
