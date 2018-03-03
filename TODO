@@ -1,4 +1,5 @@
 features:
+* linkonce functions (i.e.: printf w/ MSVCRT)
 * bitfields
 * int128_t support in pybind11
 * atomic types
@@ -7,6 +8,10 @@ fixes:
 * TODOs!
 * get non qualified type (whole tree)
 * tests structures with custom alignments/pack
+
+CI:
+* travis: python 2/3 for OSX and python 3 w/ Linux
+* appveyor: integrate it
 
 ideas:
 * shellcode generation (JITPacker)
