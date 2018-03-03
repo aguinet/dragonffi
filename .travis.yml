@@ -49,3 +49,16 @@ matrix:
       env: PYTHON_VERSION=2.7
       before_install: tests/travis/lnx_setup.sh
       script: tests/travis/lnx_py.sh
+    - os: linux
+      addons:
+        apt:
+          packages:
+          - ninja-build
+          - python3-dev
+          - libpython3-dev
+      language: cpp
+      cache:
+        - ccache
+      env: PYTHON_VERSION=3.4 PYTHON_EXECUTABLE=python3
+      before_install: tests/travis/lnx_setup.sh
+      script: tests/travis/lnx_py.sh
