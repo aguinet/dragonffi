@@ -32,6 +32,80 @@ namespace details {
 
 namespace {
 
+// This is from clang/AST/TypePrinter.cpp. This function isn't exported :/
+// This is used as part of a hack because the "dump" API of FunctionDecl does
+// not seem to print these attributes!
+void printFunctionAttrs(const clang::FunctionType::ExtInfo &Info,
+                           raw_ostream &OS) {
+  switch (Info.getCC()) {
+  case CC_C:
+    // The C calling convention is the default on the vast majority of platforms
+    // we support.  If the user wrote it explicitly, it will usually be printed
+    // while traversing the AttributedType.  If the type has been desugared, let
+    // the canonical spelling be the implicit calling convention.
+    // FIXME: It would be better to be explicit in certain contexts, such as a
+    // cdecl function typedef used to declare a member function with the
+    // Microsoft C++ ABI.
+    break;
+  case CC_X86StdCall:
+    OS << " __attribute__((stdcall))";
+    break;
+  case CC_X86FastCall:
+    OS << " __attribute__((fastcall))";
+    break;
+  case CC_X86ThisCall:
+    OS << " __attribute__((thiscall))";
+    break;
+  case CC_X86VectorCall:
+    OS << " __attribute__((vectorcall))";
+    break;
+  case CC_X86Pascal:
+    OS << " __attribute__((pascal))";
+    break;
+  case CC_AAPCS:
+    OS << " __attribute__((pcs(\"aapcs\")))";
+    break;
+  case CC_AAPCS_VFP:
+    OS << " __attribute__((pcs(\"aapcs-vfp\")))";
+    break;
+  case CC_IntelOclBicc:
+    OS << " __attribute__((intel_ocl_bicc))";
+    break;
+  case CC_Win64:
+    OS << " __attribute__((ms_abi))";
+    break;
+  case CC_X86_64SysV:
+    OS << " __attribute__((sysv_abi))";
+    break;
+  case CC_X86RegCall:
+    OS << " __attribute__((regcall))";
+    break;
+  case CC_SpirFunction:
+  case CC_OpenCLKernel:
+    // Do nothing. These CCs are not available as attributes.
+    break;
+  case CC_Swift:
+    OS << " __attribute__((swiftcall))";
+    break;
+  case CC_PreserveMost:
+    OS << " __attribute__((preserve_most))";
+    break;
+  case CC_PreserveAll:
+    OS << " __attribute__((preserve_all))";
+    break;
+  }
+
+  if (Info.getNoReturn())
+    OS << " __attribute__((noreturn))";
+  if (Info.getProducesResult())
+    OS << " __attribute__((ns_returns_retained))";
+  if (Info.getRegParm())
+    OS << " __attribute__((regparm ("
+       << Info.getRegParm() << ")))";
+  if (Info.getNoCallerSavedRegs())
+    OS << " __attribute__((no_caller_saved_registers))";
+}
+
 struct ASTGenWrappersConsumer: public clang::ASTConsumer
 {
   ASTGenWrappersConsumer(std::stringstream& ForceDecls, FuncAliasesMap& FuncAliases, LangOptions const& LO):
@@ -84,7 +158,8 @@ private:
     auto* FTy = FD->getType()->getAs<clang::FunctionType>();
     assert(FTy);
 
-    bool NoReturn = FTy->getExtInfo().getNoReturn();
+    auto const& FExtInfo = FTy->getExtInfo();
+    bool NoReturn = FExtInfo.getNoReturn();
     if (NoReturn) {
       return;
     }
@@ -126,6 +201,7 @@ private:
 
     std::string NewFStr;
     raw_string_ostream NewF(NewFStr);
+    printFunctionAttrs(FExtInfo, NewF);
     NewFD->print(NewF, PP_, 0, true);
     NewF << " {}\n";
 

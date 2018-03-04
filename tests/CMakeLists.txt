@@ -21,6 +21,7 @@ if (BUILD_TESTS)
     anon_union
     array
     asm_redirect
+    attrs
     bool
     cconv
     compile
