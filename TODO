@@ -9,7 +9,6 @@ fixes:
 * tests structures with custom alignments/pack
 
 CI:
-* travis: python 2/3 for OSX and python 3 w/ Linux
 * appveyor: integrate it
 
 ideas:
