@@ -89,6 +89,8 @@ struct DFFIImpl
 
   CUImpl* compile(llvm::StringRef const Code, llvm::StringRef CUName, bool IncludeDefs, std::string& Err);
 
+  std::vector<uint8_t> shellcode(llvm::StringRef const Code, std::string& Err);
+
   BasicType const* getBasicType(BasicType::BasicKind K);
   PointerType const* getPointerType(QualType Ty);
   ArrayType const* getArrayType(QualType Ty, uint64_t NElements);

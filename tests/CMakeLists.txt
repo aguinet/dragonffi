@@ -32,6 +32,7 @@ if (BUILD_TESTS)
     multiple_defs
     includes
     inline
+    shellcode
     stdint
     struct
     system_headers

@@ -114,6 +114,8 @@ public:
   NativeFunc getFunction(FunctionType const* FTy, void* FPtr);
   NativeFunc getFunction(FunctionType const* FTy, Type const** VarArgsTys, size_t VarArgsCount, void* FPtr);
 
+  std::vector<uint8_t> shellcode(const char* Code, std::string& Err);
+
   static bool dlopen(const char* Path, std::string* Err = nullptr);
 
   // Easy type access

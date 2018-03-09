@@ -422,6 +422,72 @@ void DFFIImpl::genFuncTypeWrapper(TypePrinter& P, size_t WrapperIdx, std::string
   ss << "}\n";
 }
 
+std::vector<uint8_t> DFFIImpl::shellcode(llvm::StringRef const Code, std::string& Err)
+{
+  auto M = compile_llvm(Code, "/__shellcodes/a.c", Err);
+  if (!M) {
+    return {};
+  }
+
+  SmallString<0> CodeString;
+  raw_svector_ostream OS(CodeString);
+
+  // TODO: generalize for every possible target machine. This means putting
+  // this function as a utility function out of the DFFI scope!
+  auto Triple = llvm::sys::getProcessTriple();
+  auto* TheTarget = TargetRegistry::lookupTarget(Triple, Err);
+  if (!TheTarget) {
+    return {};
+  }
+
+  //llvm::TargetMachine* llvm::Target::createTargetMachine(llvm::StringRef, llvm::StringRef, llvm::StringRef, const llvm::TargetOptions&, llvm::Optional<llvm::Reloc::Model>, llvm::CodeModel::Model, llvm::CodeGenOpt::Level)
+  TargetMachine *TM = TheTarget->createTargetMachine(Triple,
+      "", "", llvm::TargetOptions{}, Reloc::PIC_, CodeModel::Small, CodeGenOpt::Aggressive);
+
+  auto* Mod = M.get();
+
+  legacy::PassManager pass;
+  if (Mod->getDataLayout() != TM->createDataLayout()) {
+    Err = "invalid target layout!";
+    return {};
+  }
+
+  if (TM->addPassesToEmitFile(pass, OS, TargetMachine::CGFT_ObjectFile)) {
+    Err = "TargetMachine can't emit a file of this type";
+    return {};
+  }
+
+  pass.run(*Mod);
+
+  FILE* f = fopen("/tmp/a.o", "w");
+  fwrite(&CodeString[0], 1, CodeString.size(), f);
+  fclose(f);
+
+  auto MemObj = MemoryBuffer::getMemBuffer(CodeString, "", false);
+  // TODO: could we directly get this object file?
+  auto ObjOrErr = object::ObjectFile::createObjectFile(*MemObj);
+  if (!ObjOrErr) {
+    Err = "unable to parse object file!";
+    return {};
+  }
+  std::unique_ptr<object::ObjectFile> Obj(std::move(ObjOrErr.get()));
+  for (auto const& S: Obj->sections()) {
+    if (S.isText()) {
+      StringRef Data;
+      if (S.getContents(Data)) {
+        Err = "unable to get content of the text section!";
+        return {};
+      }
+      const size_t Len = Data.size();
+      std::vector<uint8_t> Ret(Len);
+      memcpy(&Ret[0], Data.data(), Len);
+      return Ret;
+    }
+  }
+
+  return {};
+}
+
 CUImpl* DFFIImpl::compile(StringRef const Code, StringRef CUName, bool IncludeDefs, std::string& Err)
 {
   std::string AnonCUName;

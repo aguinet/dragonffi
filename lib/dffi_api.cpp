@@ -86,6 +86,11 @@ bool DFFI::dlopen(const char* Path, std::string* Err)
   return !llvm::sys::DynamicLibrary::LoadLibraryPermanently(Path, Err);
 }
 
+std::vector<uint8_t> DFFI::shellcode(const char* Code, std::string& Err)
+{
+  return Impl_->shellcode(Code, Err);
+}
+
 BasicType const* DFFI::getVoidTy()
 {
   return nullptr;
