@@ -87,6 +87,7 @@ struct DFFIImpl
   DFFIImpl(CCOpts const& Opts);
   ~DFFIImpl();
 
+  CUImpl* from_dwarf(llvm::StringRef const Path, std::string& Err);
   CUImpl* compile(llvm::StringRef const Code, llvm::StringRef CUName, bool IncludeDefs, std::string& Err);
 
   BasicType const* getBasicType(BasicType::BasicKind K);

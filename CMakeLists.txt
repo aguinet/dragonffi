@@ -98,6 +98,7 @@ set(LLVM_LINK_COMPONENTS
   TransformUtils
   Vectorize
   ipo
+  DebugInfoDWARF
 )
 if (APPLE)
   set(LLVM_LINK_COMPONENTS ${LLVM_LINK_COMPONENTS} Demangle)
@@ -232,3 +233,4 @@ if (PYTHON_BINDINGS)
 endif()
 option(BUILD_TESTS "Build tests" ON)
 add_subdirectory(tests)
+add_subdirectory(tools)
