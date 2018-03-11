@@ -440,7 +440,6 @@ std::vector<uint8_t> DFFIImpl::shellcode(llvm::StringRef const Code, std::string
     return {};
   }
 
-  //llvm::TargetMachine* llvm::Target::createTargetMachine(llvm::StringRef, llvm::StringRef, llvm::StringRef, const llvm::TargetOptions&, llvm::Optional<llvm::Reloc::Model>, llvm::CodeModel::Model, llvm::CodeGenOpt::Level)
   TargetMachine *TM = TheTarget->createTargetMachine(Triple,
       "", "", llvm::TargetOptions{}, Reloc::PIC_, CodeModel::Small, CodeGenOpt::Aggressive);
 
@@ -458,10 +457,6 @@ std::vector<uint8_t> DFFIImpl::shellcode(llvm::StringRef const Code, std::string
   }
 
   pass.run(*Mod);
-
-  FILE* f = fopen("/tmp/a.o", "w");
-  fwrite(&CodeString[0], 1, CodeString.size(), f);
-  fclose(f);
 
   auto MemObj = MemoryBuffer::getMemBuffer(CodeString, "", false);
   // TODO: could we directly get this object file?
