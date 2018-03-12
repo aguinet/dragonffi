@@ -632,33 +632,35 @@ struct BasicObjConvertor<T, false>
       case dffi::BasicType::K:\
         return BasicObjConvertorImpl<T, T_, std::is_convertible<T, T_>::value>::cast(BTy, V);
       switch (BTy->getBasicKind()) {
-        HANDLE_BASICTY(Bool, bool);
-        HANDLE_BASICTY(Char, char);
-        HANDLE_BASICTY(UInt8, uint8_t);
-        HANDLE_BASICTY(UInt16, uint16_t);
-        HANDLE_BASICTY(UInt32, uint32_t);
-        HANDLE_BASICTY(UInt64, uint64_t);
+        HANDLE_BASICTY(Bool, c_bool);
+        HANDLE_BASICTY(Char, c_char);
+        HANDLE_BASICTY(UChar, c_unsigned_char);
+        HANDLE_BASICTY(UShort, c_unsigned_short);
+        HANDLE_BASICTY(UInt, c_unsigned_int);
+        HANDLE_BASICTY(ULong, c_unsigned_long);
+        HANDLE_BASICTY(ULongLong, c_unsigned_long_long);
 #ifdef DFFI_SUPPORT_I128
         HANDLE_BASICTY(UInt128, __uint128_t);
 #endif
-        HANDLE_BASICTY(Int8, int8_t);
-        HANDLE_BASICTY(Int16, int16_t);
-        HANDLE_BASICTY(Int32, int32_t);
-        HANDLE_BASICTY(Int64, int64_t);
+        HANDLE_BASICTY(SChar, c_signed_char);
+        HANDLE_BASICTY(Short, c_short);
+        HANDLE_BASICTY(Int, c_int);
+        HANDLE_BASICTY(Long, c_long);
+        HANDLE_BASICTY(LongLong, c_long_long);
 #ifdef DFFI_SUPPORT_I128
         HANDLE_BASICTY(Int128, __int128_t);
 #endif
-        HANDLE_BASICTY(Float, float);
-        HANDLE_BASICTY(Double, double);
-        HANDLE_BASICTY(LongDouble, long double);
+        HANDLE_BASICTY(Float, c_float);
+        HANDLE_BASICTY(Double, c_double);
+        HANDLE_BASICTY(LongDouble, c_long_double);
 #ifdef DFFI_SUPPORT_COMPLEX
-        HANDLE_BASICTY(ComplexFloat, _Complex float);
-        HANDLE_BASICTY(ComplexDouble, _Complex double);
-        HANDLE_BASICTY(ComplexLongDouble, _Complex long double);
+        HANDLE_BASICTY(ComplexFloat, c_complex_float);
+        HANDLE_BASICTY(ComplexDouble, c_omplex_double);
+        HANDLE_BASICTY(ComplexLongDouble, c_complex_long_double);
 #endif
+#undef HANDLE_BASICTY
         default:
           break;
-#undef HANDLE_BASICTY
       };
     }
     return {};

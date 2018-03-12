@@ -16,6 +16,7 @@
 #include <dffi/dffi.h>
 #include <dffi/composite_type.h>
 #include <dffi/casting.h>
+#include <dffi/ctypes.h>
 #include "dffi_impl.h"
 
 using namespace dffi;
@@ -33,95 +34,107 @@ BasicType::BasicType(details::DFFIImpl& Dffi, BasicKind BKind):
 unsigned BasicType::getAlign() const
 {
   switch (BKind_) {
+    case Bool:
+      return alignof(c_bool);
     case Char:
-      return alignof(char);
-    case Int8:
-      return alignof(int8_t);
-    case Int16:
-      return alignof(int16_t);
-    case Int32:
-      return alignof(int32_t);
-    case Int64:
-      return alignof(int64_t);
+      return alignof(c_char);
+    case SChar:
+      return alignof(c_signed_char);
+    case Short:
+      return alignof(c_short);
+    case Int:
+      return alignof(c_int);
+    case Long:
+      return alignof(c_long);
+    case LongLong:
+      return alignof(c_long_long);
 #ifdef DFFI_SUPPORT_I128
     case Int128:
       return alignof(__int128_t);
 #endif
-    case UInt8:
-      return alignof(uint8_t);
-    case UInt16:
-      return alignof(uint16_t);
-    case UInt32:
-      return alignof(uint32_t);
-    case UInt64:
-      return alignof(uint64_t);
+    case UChar:
+      return alignof(c_unsigned_char);
+    case UShort:
+      return alignof(c_unsigned_short);
+    case UInt:
+      return alignof(c_unsigned_int);
+    case ULong:
+      return alignof(c_unsigned_long);
+    case ULongLong:
+      return alignof(c_unsigned_long_long);
 #ifdef DFFI_SUPPORT_I128
     case UInt128:
       return alignof(__uint128_t);
 #endif
     case Float:
-      return alignof(float);
+      return alignof(c_float);
     case Double:
-      return alignof(double);
+      return alignof(c_double);
     case LongDouble:
-      return alignof(long double);
+      return alignof(c_long_double);
 #ifdef DFFI_SUPPORT_COMPLEX
     case ComplexFloat:
-      return alignof(_Complex float);
+      return alignof(c_complex_float);
     case ComplexDouble:
-      return alignof(_Complex double);
+      return alignof(c_complex_double);
     case ComplexLongDouble:
-      return alignof(_Complex long double);
+      return alignof(c_complex_long_double);
 #endif
   }
+  assert(false && "unhandled basic type!");
 }
 
 uint64_t BasicType::getSize() const
 {
   switch (BKind_) {
     case Bool:
-      return sizeof(bool);
+      return sizeof(c_bool);
     case Char:
-      return sizeof(char);
-    case Int8:
-      return 1;
-    case Int16:
-      return 2;
-    case Int32:
-      return 4;
-    case Int64:
-      return 8;
+      return sizeof(c_char);
+    case SChar:
+      return sizeof(c_signed_char);
+    case Short:
+      return sizeof(c_short);
+    case Int:
+      return sizeof(c_int);
+    case Long:
+      return sizeof(c_long);
+    case LongLong:
+      return sizeof(c_long_long);
 #ifdef DFFI_SUPPORT_I128
     case Int128:
       return 16;
 #endif
-    case UInt8:
-      return 1;
-    case UInt16:
-      return 2;
-    case UInt32:
-      return 4;
-    case UInt64:
-      return 8;
+    case UChar:
+      return sizeof(c_unsigned_char);
+    case UShort:
+      return sizeof(c_unsigned_short);
+    case UInt:
+      return sizeof(c_unsigned_int);
+    case ULong:
+      return sizeof(c_unsigned_long);
+    case ULongLong:
+      return sizeof(c_unsigned_long_long);
 #ifdef DFFI_SUPPORT_I128
     case UInt128:
       return 16;
 #endif
     case Float:
-      return sizeof(float);
+      return sizeof(c_float);
     case Double:
-      return sizeof(double);
+      return sizeof(c_double);
     case LongDouble:
-      return sizeof(long double);
+      return sizeof(c_long_double);
 #ifdef DFFI_SUPPORT_COMPLEX
     case ComplexFloat:
-      return sizeof(_Complex float);
+      return sizeof(c_complex_float);
     case ComplexDouble:
-      return sizeof(_Complex double);
+      return sizeof(c_complex_double);
     case ComplexLongDouble:
-      return sizeof(_Complex long double);
+      return sizeof(c_complex_long_double);
 #endif
   }
+  assert(false && "unhandled basic type!");
 }
 
 FunctionType::FunctionType(details::DFFIImpl& Dffi, QualType RetTy, ParamsVecTy ParamsTy, CallingConv CC, bool VarArgs):

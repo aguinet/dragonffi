@@ -53,7 +53,7 @@ m[0] = v
 # CHECK: Zello
 CU.funcs.dump(FFI.ptr(A))
 
-UIntTy = FFI.basicType(pydffi.BasicKind.UInt32)
+UIntTy = FFI.basicType(pydffi.BasicKind.UInt)
 N = 10
 ArrTy = FFI.arrayType(UIntTy, N)
 Arr=pydffi.CArrayObj(ArrTy)

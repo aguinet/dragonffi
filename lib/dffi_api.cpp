@@ -98,21 +98,25 @@ BasicType const* DFFI::getCharTy()
 {
   return getBasicType(BasicType::Char);
 }
-BasicType const* DFFI::getInt8Ty()
+BasicType const* DFFI::getSCharTy()
 {
-  return getBasicType(BasicType::Int8);
+  return getBasicType(BasicType::SChar);
 }
-BasicType const* DFFI::getInt16Ty()
+BasicType const* DFFI::getShortTy()
 {
-  return getBasicType(BasicType::Int16);
+  return getBasicType(BasicType::Short);
 }
-BasicType const* DFFI::getInt32Ty()
+BasicType const* DFFI::getIntTy()
 {
-  return getBasicType(BasicType::Int32);
+  return getBasicType(BasicType::Int);
 }
-BasicType const* DFFI::getInt64Ty()
+BasicType const* DFFI::getLongTy()
 {
-  return getBasicType(BasicType::Int64);
+  return getBasicType(BasicType::Long);
+}
+BasicType const* DFFI::getLongLongTy()
+{
+  return getBasicType(BasicType::LongLong);
 }
 #ifdef DFFI_SUPPORT_I128
 BasicType const* DFFI::getInt128Ty()
@@ -120,21 +124,25 @@ BasicType const* DFFI::getInt128Ty()
   return getBasicType(BasicType::Int128);
 }
 #endif
-BasicType const* DFFI::getUInt8Ty()
+BasicType const* DFFI::getUCharTy()
 {
-  return getBasicType(BasicType::UInt8);
+  return getBasicType(BasicType::UChar);
 }
-BasicType const* DFFI::getUInt16Ty()
+BasicType const* DFFI::getUShortTy()
 {
-  return getBasicType(BasicType::UInt16);
+  return getBasicType(BasicType::UShort);
 }
-BasicType const* DFFI::getUInt32Ty()
+BasicType const* DFFI::getUIntTy()
 {
-  return getBasicType(BasicType::UInt32);
+  return getBasicType(BasicType::UInt);
 }
-BasicType const* DFFI::getUInt64Ty()
+BasicType const* DFFI::getULongTy()
 {
-  return getBasicType(BasicType::UInt64);
+  return getBasicType(BasicType::ULong);
+}
+BasicType const* DFFI::getULongLongTy()
+{
+  return getBasicType(BasicType::ULongLong);
 }
 #ifdef DFFI_SUPPORT_I128
 BasicType const* DFFI::getUInt128Ty()
@@ -166,21 +174,25 @@ PointerType const* DFFI::getCharPtrTy()
 {
   return getPointerType(getCharTy());
 }
-PointerType const* DFFI::getInt8PtrTy()
+PointerType const* DFFI::getSCharPtrTy()
 {
-  return getPointerType(getInt8Ty());
+  return getPointerType(getSCharTy());
 }
-PointerType const* DFFI::getInt16PtrTy()
+PointerType const* DFFI::getShortPtrTy()
 {
-  return getPointerType(getInt16Ty());
+  return getPointerType(getShortTy());
 }
-PointerType const* DFFI::getInt32PtrTy()
+PointerType const* DFFI::getIntPtrTy()
 {
-  return getPointerType(getInt32Ty());
+  return getPointerType(getIntTy());
 }
-PointerType const* DFFI::getInt64PtrTy()
+PointerType const* DFFI::getLongPtrTy()
 {
-  return getPointerType(getInt64Ty());
+  return getPointerType(getLongTy());
+}
+PointerType const* DFFI::getLongLongPtrTy()
+{
+  return getPointerType(getLongLongTy());
 }
 #ifdef DFFI_SUPPORT_I128
 PointerType const* DFFI::getInt128PtrTy()
@@ -188,21 +200,25 @@ PointerType const* DFFI::getInt128PtrTy()
   return getPointerType(getInt128Ty());
 }
 #endif
-PointerType const* DFFI::getUInt8PtrTy()
+PointerType const* DFFI::getUCharPtrTy()
 {
-  return getPointerType(getUInt8Ty());
+  return getPointerType(getUCharTy());
 }
-PointerType const* DFFI::getUInt16PtrTy()
+PointerType const* DFFI::getUShortPtrTy()
 {
-  return getPointerType(getUInt16Ty());
+  return getPointerType(getUShortTy());
 }
-PointerType const* DFFI::getUInt32PtrTy()
+PointerType const* DFFI::getUIntPtrTy()
 {
-  return getPointerType(getUInt32Ty());
+  return getPointerType(getUIntTy());
 }
-PointerType const* DFFI::getUInt64PtrTy()
+PointerType const* DFFI::getULongPtrTy()
 {
-  return getPointerType(getUInt64Ty());
+  return getPointerType(getULongTy());
+}
+PointerType const* DFFI::getULongLongPtrTy()
+{
+  return getPointerType(getULongLongTy());
 }
 #ifdef DFFI_SUPPORT_I128
 PointerType const* DFFI::getUInt128PtrTy()
@@ -221,6 +237,71 @@ PointerType const* DFFI::getDoublePtrTy()
 PointerType const* DFFI::getLongDoublePtrTy()
 {
   return getPointerType(getLongDoubleTy());
+}
+
+BasicType const* DFFI::getInt8Ty()
+{
+  return getBasicType(BasicType::getKind<int8_t>());
+}
+BasicType const* DFFI::getUInt8Ty()
+{
+  return getBasicType(BasicType::getKind<uint8_t>());
+}
+PointerType const* DFFI::getInt8PtrTy()
+{
+  return getPointerType(getInt8Ty());
+}
+PointerType const* DFFI::getUInt8PtrTy()
+{
+  return getPointerType(getUInt8Ty());
+}
+BasicType const* DFFI::getInt16Ty()
+{
+  return getBasicType(BasicType::getKind<int16_t>());
+}
+BasicType const* DFFI::getUInt16Ty()
+{
+  return getBasicType(BasicType::getKind<uint16_t>());
+}
+PointerType const* DFFI::getInt16PtrTy()
+{
+  return getPointerType(getInt16Ty());
+}
+PointerType const* DFFI::getUInt16PtrTy()
+{
+  return getPointerType(getUInt16Ty());
+}
+BasicType const* DFFI::getInt32Ty()
+{
+  return getBasicType(BasicType::getKind<int32_t>());
+}
+BasicType const* DFFI::getUInt32Ty()
+{
+  return getBasicType(BasicType::getKind<uint32_t>());
+}
+PointerType const* DFFI::getInt32PtrTy()
+{
+  return getPointerType(getInt32Ty());
+}
+PointerType const* DFFI::getUInt32PtrTy()
+{
+  return getPointerType(getUInt32Ty());
+}
+BasicType const* DFFI::getInt64Ty()
+{
+  return getBasicType(BasicType::getKind<int64_t>());
+}
+BasicType const* DFFI::getUInt64Ty()
+{
+  return getBasicType(BasicType::getKind<uint64_t>());
+}
+PointerType const* DFFI::getInt64PtrTy()
+{
+  return getPointerType(getInt64Ty());
+}
+PointerType const* DFFI::getUInt64PtrTy()
+{
+  return getPointerType(getUInt64Ty());
 }
 
 // Compilation unit

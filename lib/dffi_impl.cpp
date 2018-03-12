@@ -42,8 +42,11 @@
 #include <llvm/Support/TargetSelect.h>
 #include <llvm/Support/raw_ostream.h>
 #include <llvm/Target/TargetMachine.h>
+#include <llvm/IR/LegacyPassManager.h>
+#include <llvm/Object/ObjectFile.h>
 
 #include <dffi/config.h>
+#include <dffi/ctypes.h>
 #include <dffi/dffi.h>
 #include <dffi/types.h>
 #include <dffi/composite_type.h>
@@ -549,8 +552,7 @@ CUImpl* DFFIImpl::compile(StringRef const Code, StringRef CUName, bool IncludeDe
 
 void DFFIImpl::compileWrappers(TypePrinter& Printer, std::string const& Wrappers)
 {
-  std::string WCode = "#include <stdint.h>\n\n";
-  WCode += Printer.getDecls() + "\n" + Wrappers;
+  std::string WCode = Printer.getDecls() + "\n" + Wrappers;
   std::stringstream ss;
   ss << "/__dffi_private/wrappers_" << CUIdx_++ << ".c";
   // TODO
@@ -902,7 +904,7 @@ dffi::Type const* CUImpl::getTypeFromDIType(llvm::DIType const* Ty)
   if (auto* BTy = llvm::dyn_cast<llvm::DIBasicType>(Ty)) {
 #define HANDLE_BASICTY(TySize, KTy)\
     if (Size == TySize)\
-      return DFFI_.getBasicType(KTy);
+      return DFFI_.getBasicType(BasicType::getKind<KTy>());
 
     const auto Size = BTy->getSizeInBits();
     switch (BTy->getEncoding()) {
@@ -914,12 +916,12 @@ dffi::Type const* CUImpl::getTypeFromDIType(llvm::DIType const* Ty)
         if (BTy->getName() == "char") {
           return DFFI_.getBasicType(BasicType::Char);
         }
-        HANDLE_BASICTY(8, BasicType::UInt8);
-        HANDLE_BASICTY(16, BasicType::UInt16);
-        HANDLE_BASICTY(32, BasicType::UInt32);
-        HANDLE_BASICTY(64, BasicType::UInt64);
+        HANDLE_BASICTY(8, uint8_t);
+        HANDLE_BASICTY(16, uint16_t);
+        HANDLE_BASICTY(32, uint32_t);
+        HANDLE_BASICTY(64, uint64_t);
 #ifdef DFFI_SUPPORT_I128
-        HANDLE_BASICTY(128, BasicType::UInt128);
+        HANDLE_BASICTY(128, __uint128_t);
 #endif
         break;
       }
@@ -929,25 +931,25 @@ dffi::Type const* CUImpl::getTypeFromDIType(llvm::DIType const* Ty)
         if (BTy->getName() == "char") {
           return DFFI_.getBasicType(BasicType::Char);
         }
-        HANDLE_BASICTY(8, BasicType::Int8);
-        HANDLE_BASICTY(16, BasicType::Int16);
-        HANDLE_BASICTY(32, BasicType::Int32);
-        HANDLE_BASICTY(64, BasicType::Int64);
+        HANDLE_BASICTY(8, int8_t);
+        HANDLE_BASICTY(16, int16_t);
+        HANDLE_BASICTY(32, int32_t);
+        HANDLE_BASICTY(64, int64_t);
 #ifdef DFFI_SUPPORT_I128
-        HANDLE_BASICTY(128, BasicType::Int128);
+        HANDLE_BASICTY(128, __int128_t);
 #endif
         break;
       }
       case llvm::dwarf::DW_ATE_float:
-        HANDLE_BASICTY(sizeof(float)*8, BasicType::Float);
-        HANDLE_BASICTY(sizeof(double)*8, BasicType::Double);
-        HANDLE_BASICTY(sizeof(long double)*8, BasicType::LongDouble);
+        HANDLE_BASICTY(sizeof(float)*8, c_float);
+        HANDLE_BASICTY(sizeof(double)*8, c_double);
+        HANDLE_BASICTY(sizeof(long double)*8, c_long_double);
         break;
 #ifdef DFFI_SUPPORT_COMPLEX
       case llvm::dwarf::DW_ATE_complex_float:
-        HANDLE_BASICTY(sizeof(_Complex float)*8, BasicType::ComplexFloat);
-        HANDLE_BASICTY(sizeof(_Complex double)*8, BasicType::ComplexDouble);
-        HANDLE_BASICTY(sizeof(_Complex long double)*8, BasicType::ComplexLongDouble);
+        HANDLE_BASICTY(sizeof(_Complex float)*8, c_complex_float);
+        HANDLE_BASICTY(sizeof(_Complex double)*8, c_complex_double);
+        HANDLE_BASICTY(sizeof(_Complex long double)*8, c_complex_long_double);
         break;
 #endif
       default:

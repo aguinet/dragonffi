@@ -120,17 +120,19 @@ public:
   BasicType const* getVoidTy();
   BasicType const* getBoolTy();
   BasicType const* getCharTy();
-  BasicType const* getInt8Ty();
-  BasicType const* getInt16Ty();
-  BasicType const* getInt32Ty();
-  BasicType const* getInt64Ty();
+  BasicType const* getSCharTy();
+  BasicType const* getShortTy();
+  BasicType const* getIntTy();
+  BasicType const* getLongTy();
+  BasicType const* getLongLongTy();
 #ifdef DFFI_SUPPORT_I128
   BasicType const* getInt128Ty();
 #endif
-  BasicType const* getUInt8Ty();
-  BasicType const* getUInt16Ty();
-  BasicType const* getUInt32Ty();
-  BasicType const* getUInt64Ty();
+  BasicType const* getUCharTy();
+  BasicType const* getUShortTy();
+  BasicType const* getUIntTy();
+  BasicType const* getULongTy();
+  BasicType const* getULongLongTy();
 #ifdef DFFI_SUPPORT_I128
   BasicType const* getUInt128Ty();
 #endif
@@ -141,19 +143,38 @@ public:
   PointerType const* getVoidPtrTy();
   PointerType const* getBoolPtrTy();
   PointerType const* getCharPtrTy();
-  PointerType const* getInt8PtrTy();
-  PointerType const* getInt16PtrTy();
-  PointerType const* getInt32PtrTy();
-  PointerType const* getInt64PtrTy();
+  PointerType const* getSCharPtrTy();
+  PointerType const* getShortPtrTy();
+  PointerType const* getIntPtrTy();
+  PointerType const* getLongPtrTy();
+  PointerType const* getLongLongPtrTy();
   PointerType const* getInt128PtrTy();
-  PointerType const* getUInt8PtrTy();
-  PointerType const* getUInt16PtrTy();
-  PointerType const* getUInt32PtrTy();
-  PointerType const* getUInt64PtrTy();
+  PointerType const* getUCharPtrTy();
+  PointerType const* getUShortPtrTy();
+  PointerType const* getUIntPtrTy();
+  PointerType const* getULongPtrTy();
+  PointerType const* getULongLongPtrTy();
   PointerType const* getUInt128PtrTy();
   PointerType const* getFloatPtrTy();
   PointerType const* getDoublePtrTy();
   PointerType const* getLongDoublePtrTy();
+
+  BasicType const* getInt8Ty();
+  BasicType const* getInt16Ty();
+  BasicType const* getInt32Ty();
+  BasicType const* getInt64Ty();
+  BasicType const* getUInt8Ty();
+  BasicType const* getUInt16Ty();
+  BasicType const* getUInt32Ty();
+  BasicType const* getUInt64Ty();
+  PointerType const* getInt8PtrTy();
+  PointerType const* getInt16PtrTy();
+  PointerType const* getInt32PtrTy();
+  PointerType const* getInt64PtrTy();
+  PointerType const* getUInt8PtrTy();
+  PointerType const* getUInt16PtrTy();
+  PointerType const* getUInt32PtrTy();
+  PointerType const* getUInt64PtrTy();
 
 private:
   std::unique_ptr<details::DFFIImpl> Impl_;

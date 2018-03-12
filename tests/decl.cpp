@@ -119,7 +119,7 @@ typedef uint32_t MyInt;
     std::cerr << "type MyInt isn't a basic type!" << std::endl;
     return 1;
   }
-  if (BTy->getBasicKind() != BasicType::UInt32) {
+  if (BTy->getBasicKind() != BasicType::getKind<uint32_t>()) {
     std::cerr << "type MyInt isn't an uint32_t!" << std::endl;
     return 1;
   }

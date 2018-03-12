@@ -23,6 +23,7 @@
 
 #include <dffi/casting.h>
 #include <dffi/config.h>
+#include <dffi/ctypes.h>
 #include <dffi/cc.h>
 #include <dffi/exports.h>
 #include <dffi/native_func.h>
@@ -73,18 +74,18 @@ public:
   enum BasicKind: uint8_t {
     Bool,
     Char,
-    Int8,
-    Int16,
-    Int32,
-    Int64,
+    SChar,
+    UChar,
+    Short,
+    UShort,
+    Int,
+    UInt,
+    Long,
+    ULong,
+    LongLong,
+    ULongLong,
 #ifdef DFFI_SUPPORT_I128
     Int128,
-#endif
-    UInt8,
-    UInt16,
-    UInt32,
-    UInt64,
-#ifdef DFFI_SUPPORT_I128
     UInt128,
 #endif
     Float,
@@ -107,73 +108,45 @@ public:
   uint64_t getSize() const override;
 
   template <class T>
-  static constexpr BasicKind getKind() { return getKindDefault<T>(); }
+  static constexpr BasicKind getKind(); 
 
 protected:
   BasicType(details::DFFIImpl& Dffi, BasicKind BKind);
 
 private:
-
-  template <class T>
-  static constexpr BasicKind getKindDefault();
-
   BasicKind BKind_;
 };
 
 #define BASICTY_GETKIND(Ty, K)\
   template <>\
   constexpr BasicType::BasicKind BasicType::getKind<Ty>() { return BasicType::K; }
-BASICTY_GETKIND(bool, Bool)
-BASICTY_GETKIND(char, Char)
-BASICTY_GETKIND(int8_t, Int8)
-BASICTY_GETKIND(int16_t, Int16)
-BASICTY_GETKIND(int32_t, Int32)
-BASICTY_GETKIND(int64_t, Int64)
+BASICTY_GETKIND(c_bool, Bool)
+BASICTY_GETKIND(c_char, Char)
+BASICTY_GETKIND(c_signed_char, SChar)
+BASICTY_GETKIND(c_short, Short)
+BASICTY_GETKIND(c_int, Int)
+BASICTY_GETKIND(c_long, Long)
+BASICTY_GETKIND(c_long_long, LongLong)
 #ifdef DFFI_SUPPORT_I128
-BASICTY_GETKIND(__int128_t, Int128)
+BASICTY_GETKIND(c___int128_t, Int128)
 #endif
-BASICTY_GETKIND(uint8_t, UInt8)
-BASICTY_GETKIND(uint16_t, UInt16)
-BASICTY_GETKIND(uint32_t, UInt32)
-BASICTY_GETKIND(uint64_t, UInt64)
+BASICTY_GETKIND(c_unsigned_char, UChar)
+BASICTY_GETKIND(c_unsigned_short, UShort)
+BASICTY_GETKIND(c_unsigned_int, UInt)
+BASICTY_GETKIND(c_unsigned_long, ULong)
+BASICTY_GETKIND(c_unsigned_long_long, ULongLong)
 #ifdef DFFI_SUPPORT_I128
 BASICTY_GETKIND(__uint128_t, UInt128)
 #endif
-BASICTY_GETKIND(float, Float)
-BASICTY_GETKIND(double, Double)
-BASICTY_GETKIND(long double, LongDouble)
+BASICTY_GETKIND(c_float, Float)
+BASICTY_GETKIND(c_double, Double)
+BASICTY_GETKIND(c_long_double, LongDouble)
 #ifdef DFFI_SUPPORT_COMPLEX
-BASICTY_GETKIND(_Complex float, ComplexFloat)
-BASICTY_GETKIND(_Complex double, ComplexDouble)
-BASICTY_GETKIND(_Complex long double, ComplexLongDouble)
+BASICTY_GETKIND(c_complex_float, ComplexFloat)
+BASICTY_GETKIND(c_complex_double, ComplexDouble)
+BASICTY_GETKIND(c_complex_long_double, ComplexLongDouble)
 #endif
 
-namespace details {
-template <bool, size_t, bool>
-struct KindDefault;
-
-#define BASICTY_GETKIND_DEFAULT(Size, Signed, K)\
-  template <>\
-  struct KindDefault<true, Size, Signed> {\
-    static constexpr BasicType::BasicKind Kind = K;\
-  };
-
-BASICTY_GETKIND_DEFAULT(1, false, BasicType::Int8)
-BASICTY_GETKIND_DEFAULT(1, true, BasicType::UInt8)
-BASICTY_GETKIND_DEFAULT(2, false, BasicType::Int16)
-BASICTY_GETKIND_DEFAULT(2, true, BasicType::UInt16)
-BASICTY_GETKIND_DEFAULT(4, false, BasicType::Int32)
-BASICTY_GETKIND_DEFAULT(4, true, BasicType::UInt32)
-BASICTY_GETKIND_DEFAULT(8, false, BasicType::Int64)
-BASICTY_GETKIND_DEFAULT(8, true, BasicType::UInt64)
-
-} // details
-
-template <class T>
-constexpr BasicType::BasicKind BasicType::getKindDefault() {
-  return details::KindDefault<std::is_integral<T>::value, sizeof(T), std::is_signed<T>::value>::Kind;
-}
-    
 // The concept of this qualified type is mapped on the clang::QualType one. The
 // overall idea is that this object is basically a pointer whose lowest bits
 // are used to carry information on the qualifiers of the type.

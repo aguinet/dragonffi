@@ -5,11 +5,17 @@ Features:
 
 * Support for variadic functions
 
+Improvements:
+
+* Use the real C basic types as DFFI's basic types. This has a side effect that
+  stdint.h isn't needed anymore for the wrappers code!
+
 Bug fixes:
 
 * Some functions (like malloc, printf, ...) that are pre-declared by clang
   weren't considered by cdef
 * Support inline functions in cdef
+
 
 0.2.1
 -----

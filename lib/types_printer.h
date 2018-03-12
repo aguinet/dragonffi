@@ -35,7 +35,7 @@ struct TypePrinter
     Forward,
     None
   };
-  // Print the type definition. It supposes <stdint.h> is included!
+  // Print the type definition.
   std::string print_def(dffi::Type const* Ty, DeclMode DMode, const char* Name = nullptr)
   {
     if (Ty == nullptr) {
@@ -58,22 +58,40 @@ struct TypePrinter
         case BasicType::Char:
           ss << "char";
           break;
-        case BasicType::Int8:
-        case BasicType::Int16:
-        case BasicType::Int32:
-        case BasicType::Int64:
-          ss << "int" << BTy->getSize() * 8 << "_t";
+        case BasicType::SChar:
+          ss << "signed char";
+          break;
+        case BasicType::Short:
+          ss << "short";
+          break;
+        case BasicType::Int:
+          ss << "int";
+          break;
+        case BasicType::Long:
+          ss << "long";
+          break;
+        case BasicType::LongLong:
+          ss << "long long";
           break;
 #ifdef DFFI_SUPPORT_I128
         case BasicType::Int128:
           ss << "__int128_t";
           break;
 #endif
-        case BasicType::UInt8:
-        case BasicType::UInt16:
-        case BasicType::UInt32:
-        case BasicType::UInt64:
-          ss << "uint" << BTy->getSize() * 8 << "_t";
+        case BasicType::UChar:
+          ss << "unsigned char";
+          break;
+        case BasicType::UShort:
+          ss << "unsigned short";
+          break;
+        case BasicType::UInt:
+          ss << "unsigned int";
+          break;
+        case BasicType::ULong:
+          ss << "unsigned long";
+          break;
+        case BasicType::ULongLong:
+          ss << "unsigned long long";
           break;
 #ifdef DFFI_SUPPORT_I128
         case BasicType::UInt128:

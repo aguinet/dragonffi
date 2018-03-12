@@ -316,19 +316,23 @@ std::string getFormatDescriptor(Type const* Ty)
       return py::format_descriptor<CTy>::format();
 
     switch (BTy->getBasicKind()) {
-      HANDLE_BASICTY(Char, char);
-      HANDLE_BASICTY(UInt8, uint8_t);
-      HANDLE_BASICTY(UInt16, uint16_t);
-      HANDLE_BASICTY(UInt32, uint32_t);
-      HANDLE_BASICTY(UInt64, uint64_t);
-      HANDLE_BASICTY(Int8, int8_t);
-      HANDLE_BASICTY(Int16, int16_t);
-      HANDLE_BASICTY(Int32, int32_t);
-      HANDLE_BASICTY(Int64, int64_t);
-      HANDLE_BASICTY(Float, float);
-      HANDLE_BASICTY(Double, double);
+      HANDLE_BASICTY(Bool, c_bool);
+      HANDLE_BASICTY(Char, c_char);
+      HANDLE_BASICTY(UChar, c_unsigned_char);
+      HANDLE_BASICTY(UShort, c_unsigned_short);
+      HANDLE_BASICTY(UInt, c_unsigned_int);
+      HANDLE_BASICTY(ULong, c_unsigned_long);
+      HANDLE_BASICTY(ULongLong, c_unsigned_long_long);
+      HANDLE_BASICTY(SChar, c_signed_char);
+      HANDLE_BASICTY(Short, c_short);
+      HANDLE_BASICTY(Int, c_int);
+      HANDLE_BASICTY(Long, c_long);
+      HANDLE_BASICTY(LongLong, c_long_long);
+      HANDLE_BASICTY(Float, c_float);
+      HANDLE_BASICTY(Double, c_double);
+#undef HANDLE_BASICTY
       default:
-      break;
+        break;
     };
   }
   return std::to_string(Ty->getSize()) + "B";

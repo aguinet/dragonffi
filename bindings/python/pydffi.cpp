@@ -126,20 +126,20 @@ std::unique_ptr<CArrayObj> dffi_view(DFFI& D, py::buffer& B)
       case Format:\
         PteTy = D.getBasicType(BasicType::getKind<CTy>());\
         break;
-    HANDLE_BTY('c', char)
-    HANDLE_BTY('b', signed char)
-    HANDLE_BTY('B', unsigned char)
-    HANDLE_BTY('?', bool)
-    HANDLE_BTY('h', short)
-    HANDLE_BTY('H', unsigned short)
-    HANDLE_BTY('i', int)
-    HANDLE_BTY('I', unsigned int)
-    HANDLE_BTY('l', long)
-    HANDLE_BTY('L', unsigned long)
-    HANDLE_BTY('q', long long)
-    HANDLE_BTY('Q', unsigned long long)
-    HANDLE_BTY('f', float)
-    HANDLE_BTY('d', double)
+    HANDLE_BTY('c', c_char)
+    HANDLE_BTY('b', c_signed_char)
+    HANDLE_BTY('B', c_unsigned_char)
+    HANDLE_BTY('?', c_bool)
+    HANDLE_BTY('h', c_short)
+    HANDLE_BTY('H', c_unsigned_short)
+    HANDLE_BTY('i', c_int)
+    HANDLE_BTY('I', c_unsigned_int)
+    HANDLE_BTY('l', c_long)
+    HANDLE_BTY('L', c_unsigned_long)
+    HANDLE_BTY('q', c_long_long)
+    HANDLE_BTY('Q', c_unsigned_long_long)
+    HANDLE_BTY('f', c_float)
+    HANDLE_BTY('d', c_double)
     HANDLE_BTY('P', uintptr_t)
     default:
       ThrowError<TypeError>() << "unsupported format character " << Format[0];
@@ -261,30 +261,33 @@ py::object basictype_new(BasicType const& BTy, py::handle O)
   case BasicType::K:\
     return basictype_new_impl<CTy>(BTy, O);
   switch (BTy.getBasicKind()) {
-    HANDLE_BASICTY(Bool, bool);
-    HANDLE_BASICTY(Char, char);
-    HANDLE_BASICTY(UInt8, uint8_t);
-    HANDLE_BASICTY(UInt16, uint16_t);
-    HANDLE_BASICTY(UInt32, uint32_t);
-    HANDLE_BASICTY(UInt64, uint64_t);
+    HANDLE_BASICTY(Bool, c_bool);
+    HANDLE_BASICTY(Char, c_char);
+    HANDLE_BASICTY(UChar, c_unsigned_char);
+    HANDLE_BASICTY(UShort, c_unsigned_short);
+    HANDLE_BASICTY(UInt, c_unsigned_int);
+    HANDLE_BASICTY(ULong, c_unsigned_long);
+    HANDLE_BASICTY(ULongLong, c_unsigned_long_long);
 #ifdef DFFI_SUPPORT_I128
     HANDLE_BASICTY(UInt128, __uint128_t);
 #endif
-    HANDLE_BASICTY(Int8, int8_t);
-    HANDLE_BASICTY(Int16, int16_t);
-    HANDLE_BASICTY(Int32, int32_t);
-    HANDLE_BASICTY(Int64, int64_t);
+    HANDLE_BASICTY(SChar, c_signed_char);
+    HANDLE_BASICTY(Short, c_short);
+    HANDLE_BASICTY(Int, c_int);
+    HANDLE_BASICTY(Long, c_long);
+    HANDLE_BASICTY(LongLong, c_long_long);
 #ifdef DFFI_SUPPORT_I128
     HANDLE_BASICTY(Int128, __int128_t);
 #endif
-    HANDLE_BASICTY(Float, float);
-    HANDLE_BASICTY(Double, double);
-    HANDLE_BASICTY(LongDouble, long double);
+    HANDLE_BASICTY(Float, c_float);
+    HANDLE_BASICTY(Double, c_double);
+    HANDLE_BASICTY(LongDouble, c_long_double);
 #ifdef DFFI_SUPPORT_COMPLEX
-    HANDLE_BASICTY(ComplexFloat, _Complex float);
-    HANDLE_BASICTY(ComplexDouble, _Complex double);
-    HANDLE_BASICTY(ComplexLongDouble, _Complex long double);
+    HANDLE_BASICTY(ComplexFloat, c_complex_float);
+    HANDLE_BASICTY(ComplexDouble, c_omplex_double);
+    HANDLE_BASICTY(ComplexLongDouble, c_complex_long_double);
 #endif
+#undef HANDLE_BASICTY
   };
   return py::none();
 }
@@ -352,14 +355,16 @@ PYBIND11_MODULE(pydffi, m)
 
   py::enum_<BasicType::BasicKind>(m, "BasicKind")
     .value("Bool", BasicType::Bool)
-    .value("Int8", BasicType::Int8)
-    .value("Int16", BasicType::Int16)
-    .value("Int32", BasicType::Int32)
-    .value("Int64", BasicType::Int64)
-    .value("UInt8", BasicType::UInt8)
-    .value("UInt16", BasicType::UInt16)
-    .value("UInt32", BasicType::UInt32)
-    .value("UInt64", BasicType::UInt64)
+    .value("SChar", BasicType::SChar)
+    .value("Short", BasicType::Short)
+    .value("Int", BasicType::Int)
+    .value("Long", BasicType::Long)
+    .value("LongLong", BasicType::LongLong)
+    .value("UChar", BasicType::UChar)
+    .value("UShort", BasicType::UShort)
+    .value("UInt", BasicType::UInt)
+    .value("ULong", BasicType::ULong)
+    .value("ULongLong", BasicType::ULongLong)
     .value("Float", BasicType::Float)
     .value("Double", BasicType::Double)
     .value("LongDouble", BasicType::LongDouble)
@@ -514,17 +519,17 @@ PYBIND11_MODULE(pydffi, m)
     .def(py::self >= bool())
     ;
     
-  DECL_CBASICOBJ_INT(uint8_t, "UInt8", "__int__");
-  DECL_CBASICOBJ_INT(uint16_t, "UInt16", "__int__");
-  DECL_CBASICOBJ_INT(uint32_t, "UInt32", "__int__");
-  DECL_CBASICOBJ_INT(uint64_t, "UInt64", sizeof(long) <= sizeof(int64_t) ? "__int__":"__long__");
+  DECL_CBASICOBJ_INT(uint8_t, "UChar", "__int__");
+  DECL_CBASICOBJ_INT(uint16_t, "UShort", "__int__");
+  DECL_CBASICOBJ_INT(uint32_t, "UInt", "__int__");
+  DECL_CBASICOBJ_INT(uint64_t, "ULongLong", sizeof(long) <= sizeof(int64_t) ? "__int__":"__long__");
 #ifdef DFFI_SUPPORT_I128
   DECL_CBASICOBJ_INT(__uint128_t, "UInt128", "__long__");
 #endif
-  DECL_CBASICOBJ_INT(int8_t, "Int8", "__int__");
-  DECL_CBASICOBJ_INT(int16_t, "Int16", "__int__");
-  DECL_CBASICOBJ_INT(int32_t, "Int32", "__int__");
-  DECL_CBASICOBJ_INT(int64_t, "Int64", sizeof(long) <= sizeof(int64_t) ? "__int__":"__long__");
+  DECL_CBASICOBJ_INT(int8_t, "SChar", "__int__");
+  DECL_CBASICOBJ_INT(int16_t, "Short", "__int__");
+  DECL_CBASICOBJ_INT(int32_t, "Int", "__int__");
+  DECL_CBASICOBJ_INT(int64_t, "LongLong", sizeof(long) <= sizeof(int64_t) ? "__int__":"__long__");
 #ifdef DFFI_SUPPORT_I128
   DECL_CBASICOBJ_INT(__int128_t, "Int128", "__long__");
 #endif
@@ -646,39 +651,52 @@ PYBIND11_MODULE(pydffi, m)
     .def("getFunction", dffi_getfunction, py::keep_alive<0,1>())
 
     // Basic values
-    .def("Int8", createBasicObj<int8_t>, py::keep_alive<0,1>())
-    .def("Int16", createBasicObj<int16_t>, py::keep_alive<0,1>())
-    .def("Int32", createBasicObj<int32_t>, py::keep_alive<0,1>())
-    .def("Int64", createBasicObj<int64_t>, py::keep_alive<0,1>())
+    .def("SChar", createBasicObj<c_signed_char>, py::keep_alive<0,1>())
+    .def("Short", createBasicObj<c_short>, py::keep_alive<0,1>())
+    .def("Int", createBasicObj<c_int>, py::keep_alive<0,1>())
+    .def("Long", createBasicObj<c_long>, py::keep_alive<0,1>())
+    .def("LongLong", createBasicObj<c_long_long>, py::keep_alive<0,1>())
 #ifdef DFFI_SUPPORT_I128
     .def("Int128", createBasicObj<__int128_t>, py::keep_alive<0,1>())
 #endif
-    .def("UInt8", createBasicObj<uint8_t>, py::keep_alive<0,1>())
-    .def("UInt16", createBasicObj<uint16_t>, py::keep_alive<0,1>())
-    .def("UInt32", createBasicObj<uint32_t>, py::keep_alive<0,1>())
-    .def("UInt64", createBasicObj<uint64_t>, py::keep_alive<0,1>())
+    .def("UChar", createBasicObj<c_unsigned_char>, py::keep_alive<0,1>())
+    .def("UShort", createBasicObj<c_unsigned_short>, py::keep_alive<0,1>())
+    .def("UInt", createBasicObj<c_unsigned_int>, py::keep_alive<0,1>())
+    .def("ULong", createBasicObj<c_unsigned_long>, py::keep_alive<0,1>())
+    .def("ULongLong", createBasicObj<c_unsigned_long_long>, py::keep_alive<0,1>())
 #ifdef DFFI_SUPPORT_I128
     .def("UInt128", createBasicObj<__uint128_t>, py::keep_alive<0,1>())
 #endif
-    .def("Float", createBasicObj<float>, py::keep_alive<0,1>())
-    .def("Double", createBasicObj<double>, py::keep_alive<0,1>())
-    .def("LongDouble", createBasicObj<long double>, py::keep_alive<0,1>())
+    .def("Float", createBasicObj<c_float>, py::keep_alive<0,1>())
+    .def("Double", createBasicObj<c_double>, py::keep_alive<0,1>())
+    .def("LongDouble", createBasicObj<c_long_double>, py::keep_alive<0,1>())
+
+    .def("Int8", createBasicObj<int8_t>, py::keep_alive<0,1>())
+    .def("UInt8", createBasicObj<uint8_t>, py::keep_alive<0,1>())
+    .def("Int16", createBasicObj<int16_t>, py::keep_alive<0,1>())
+    .def("UInt16", createBasicObj<uint16_t>, py::keep_alive<0,1>())
+    .def("Int32", createBasicObj<int32_t>, py::keep_alive<0,1>())
+    .def("UInt32", createBasicObj<uint32_t>, py::keep_alive<0,1>())
+    .def("Int64", createBasicObj<int64_t>, py::keep_alive<0,1>())
+    .def("UInt64", createBasicObj<uint64_t>, py::keep_alive<0,1>())
 
     // Type helpers
     .def_property_readonly("VoidTy", &DFFI::getVoidTy, py::return_value_policy::reference_internal)
     .def_property_readonly("BoolTy", &DFFI::getBoolTy, py::return_value_policy::reference_internal)
     .def_property_readonly("CharTy", &DFFI::getCharTy, py::return_value_policy::reference_internal)
-    .def_property_readonly("Int8Ty", &DFFI::getInt8Ty, py::return_value_policy::reference_internal)
-    .def_property_readonly("Int16Ty", &DFFI::getInt16Ty, py::return_value_policy::reference_internal)
-    .def_property_readonly("Int32Ty", &DFFI::getInt32Ty, py::return_value_policy::reference_internal)
-    .def_property_readonly("Int64Ty", &DFFI::getInt64Ty, py::return_value_policy::reference_internal)
+    .def_property_readonly("SCharTy", &DFFI::getSCharTy, py::return_value_policy::reference_internal)
+    .def_property_readonly("ShortTy", &DFFI::getShortTy, py::return_value_policy::reference_internal)
+    .def_property_readonly("IntTy", &DFFI::getIntTy, py::return_value_policy::reference_internal)
+    .def_property_readonly("LongTy", &DFFI::getLongTy, py::return_value_policy::reference_internal)
+    .def_property_readonly("LongLongTy", &DFFI::getLongLongTy, py::return_value_policy::reference_internal)
 #ifdef DFFI_SUPPORT_I128
     .def_property_readonly("Int128Ty", &DFFI::getInt128Ty, py::return_value_policy::reference_internal)
 #endif
-    .def_property_readonly("UInt8Ty", &DFFI::getUInt8Ty, py::return_value_policy::reference_internal)
-    .def_property_readonly("UInt16Ty", &DFFI::getUInt16Ty, py::return_value_policy::reference_internal)
-    .def_property_readonly("UInt32Ty", &DFFI::getUInt32Ty, py::return_value_policy::reference_internal)
-    .def_property_readonly("UInt64Ty", &DFFI::getUInt64Ty, py::return_value_policy::reference_internal)
+    .def_property_readonly("UCharTy", &DFFI::getUCharTy, py::return_value_policy::reference_internal)
+    .def_property_readonly("UShortTy", &DFFI::getUShortTy, py::return_value_policy::reference_internal)
+    .def_property_readonly("UIntTy", &DFFI::getUIntTy, py::return_value_policy::reference_internal)
+    .def_property_readonly("ULongTy", &DFFI::getULongTy, py::return_value_policy::reference_internal)
+    .def_property_readonly("ULongLongTy", &DFFI::getULongLongTy, py::return_value_policy::reference_internal)
 #ifdef DFFI_SUPPORT_I128
     .def_property_readonly("UInt128Ty", &DFFI::getUInt128Ty, py::return_value_policy::reference_internal)
 #endif
@@ -690,23 +708,42 @@ PYBIND11_MODULE(pydffi, m)
     .def_property_readonly("VoidPtrTy", &DFFI::getVoidPtrTy, py::return_value_policy::reference_internal)
     .def_property_readonly("BoolPtrTy", &DFFI::getBoolPtrTy, py::return_value_policy::reference_internal)
     .def_property_readonly("CharPtrTy", &DFFI::getCharPtrTy, py::return_value_policy::reference_internal)
-    .def_property_readonly("Int8PtrTy", &DFFI::getInt8PtrTy, py::return_value_policy::reference_internal)
-    .def_property_readonly("Int16PtrTy", &DFFI::getInt16PtrTy, py::return_value_policy::reference_internal)
-    .def_property_readonly("Int32PtrTy", &DFFI::getInt32PtrTy, py::return_value_policy::reference_internal)
-    .def_property_readonly("Int64PtrTy", &DFFI::getInt64PtrTy, py::return_value_policy::reference_internal)
+    .def_property_readonly("SCharPtrTy", &DFFI::getSCharPtrTy, py::return_value_policy::reference_internal)
+    .def_property_readonly("ShortPtrTy", &DFFI::getShortPtrTy, py::return_value_policy::reference_internal)
+    .def_property_readonly("IntPtrTy", &DFFI::getIntPtrTy, py::return_value_policy::reference_internal)
+    .def_property_readonly("LongPtrTy", &DFFI::getLongPtrTy, py::return_value_policy::reference_internal)
+    .def_property_readonly("LongLongPtrTy", &DFFI::getLongLongPtrTy, py::return_value_policy::reference_internal)
 #ifdef DFFI_SUPPORT_I128
     .def_property_readonly("Int128PtrTy", &DFFI::getInt128PtrTy, py::return_value_policy::reference_internal)
 #endif
-    .def_property_readonly("UInt8PtrTy", &DFFI::getUInt8PtrTy, py::return_value_policy::reference_internal)
-    .def_property_readonly("UInt16PtrTy", &DFFI::getUInt16PtrTy, py::return_value_policy::reference_internal)
-    .def_property_readonly("UInt32PtrTy", &DFFI::getUInt32PtrTy, py::return_value_policy::reference_internal)
-    .def_property_readonly("UInt64PtrTy", &DFFI::getUInt64PtrTy, py::return_value_policy::reference_internal)
+    .def_property_readonly("UCharPtrTy", &DFFI::getUCharPtrTy, py::return_value_policy::reference_internal)
+    .def_property_readonly("UShortPtrTy", &DFFI::getUShortPtrTy, py::return_value_policy::reference_internal)
+    .def_property_readonly("UIntPtrTy", &DFFI::getUIntPtrTy, py::return_value_policy::reference_internal)
+    .def_property_readonly("ULongPtrTy", &DFFI::getULongPtrTy, py::return_value_policy::reference_internal)
+    .def_property_readonly("ULongLongPtrTy", &DFFI::getULongLongPtrTy, py::return_value_policy::reference_internal)
 #ifdef DFFI_SUPPORT_I128
     .def_property_readonly("UInt128PtrTy", &DFFI::getUInt128PtrTy, py::return_value_policy::reference_internal)
 #endif
     .def_property_readonly("FloatPtrTy", &DFFI::getFloatPtrTy, py::return_value_policy::reference_internal)
     .def_property_readonly("DoublePtrTy", &DFFI::getDoublePtrTy, py::return_value_policy::reference_internal)
     .def_property_readonly("LongDoublePtrTy", &DFFI::getLongDoublePtrTy, py::return_value_policy::reference_internal)
+
+    .def_property_readonly("Int8Ty", &DFFI::getInt8Ty, py::return_value_policy::reference_internal)
+    .def_property_readonly("UInt8Ty", &DFFI::getUInt8Ty, py::return_value_policy::reference_internal)
+    .def_property_readonly("Int8PtrTy", &DFFI::getInt8PtrTy, py::return_value_policy::reference_internal)
+    .def_property_readonly("UInt8PtrTy", &DFFI::getUInt8PtrTy, py::return_value_policy::reference_internal)
+    .def_property_readonly("Int16Ty", &DFFI::getInt16Ty, py::return_value_policy::reference_internal)
+    .def_property_readonly("UInt16Ty", &DFFI::getUInt16Ty, py::return_value_policy::reference_internal)
+    .def_property_readonly("Int16PtrTy", &DFFI::getInt16PtrTy, py::return_value_policy::reference_internal)
+    .def_property_readonly("UInt16PtrTy", &DFFI::getUInt16PtrTy, py::return_value_policy::reference_internal)
+    .def_property_readonly("Int32Ty", &DFFI::getInt32Ty, py::return_value_policy::reference_internal)
+    .def_property_readonly("UInt32Ty", &DFFI::getUInt32Ty, py::return_value_policy::reference_internal)
+    .def_property_readonly("Int32PtrTy", &DFFI::getInt32PtrTy, py::return_value_policy::reference_internal)
+    .def_property_readonly("UInt32PtrTy", &DFFI::getUInt32PtrTy, py::return_value_policy::reference_internal)
+    .def_property_readonly("Int64Ty", &DFFI::getInt64Ty, py::return_value_policy::reference_internal)
+    .def_property_readonly("UInt64Ty", &DFFI::getUInt64Ty, py::return_value_policy::reference_internal)
+    .def_property_readonly("Int64PtrTy", &DFFI::getInt64PtrTy, py::return_value_policy::reference_internal)
+    .def_property_readonly("UInt64PtrTy", &DFFI::getUInt64PtrTy, py::return_value_policy::reference_internal)
     ;
 
 
