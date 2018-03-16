@@ -30,8 +30,12 @@ matrix:
     - os: linux
       addons:
         apt:
+          sources:
+            - ubuntu-toolchain-r-test
+            - llvm-toolchain-trusty-6.0
           packages:
-          - ninja-build
+            - ninja-build
+            - clang-6.0
       language: cpp
       cache:
         - ccache
@@ -41,8 +45,12 @@ matrix:
     - os: linux
       addons:
         apt:
+          sources:
+            - ubuntu-toolchain-r-test
+            - llvm-toolchain-trusty-6.0
           packages:
-          - ninja-build
+            - ninja-build
+            - clang-6.0
       language: cpp
       cache:
         - ccache
@@ -52,10 +60,14 @@ matrix:
     - os: linux
       addons:
         apt:
+          sources:
+            - ubuntu-toolchain-r-test
+            - llvm-toolchain-trusty-6.0
           packages:
-          - ninja-build
-          - python3-dev
-          - libpython3-dev
+            - ninja-build
+            - clang-6.0
+            - python3-dev
+            - libpython3-dev
       language: cpp
       cache:
         - ccache
@@ -69,9 +81,9 @@ matrix:
             - ubuntu-toolchain-r-test
             - llvm-toolchain-trusty-6.0
           packages:
-          - ninja-build
-          - qemu-user
-          - clang-6.0
+            - ninja-build
+            - qemu-user
+            - clang-6.0
       language: cpp
       env: BUILD_TESTS=ON PYTHON_BINDINGS=NO ARCH=aarch64
       before_install: tests/travis/lnx_setup.sh
