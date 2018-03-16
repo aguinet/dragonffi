@@ -30,8 +30,12 @@ matrix:
     - os: linux
       addons:
         apt:
+          sources:
+            - ubuntu-toolchain-r-test
+            - llvm-toolchain-trusty-6.0
           packages:
-          - ninja-build
+            - ninja-build
+            - clang-6.0
       language: cpp
       cache:
         - ccache
@@ -41,8 +45,12 @@ matrix:
     - os: linux
       addons:
         apt:
+          sources:
+            - ubuntu-toolchain-r-test
+            - llvm-toolchain-trusty-6.0
           packages:
-          - ninja-build
+            - ninja-build
+            - clang-6.0
       language: cpp
       cache:
         - ccache
@@ -52,13 +60,30 @@ matrix:
     - os: linux
       addons:
         apt:
+          sources:
+            - ubuntu-toolchain-r-test
+            - llvm-toolchain-trusty-6.0
           packages:
-          - ninja-build
-          - python3-dev
-          - libpython3-dev
+            - ninja-build
+            - clang-6.0
+            - python3-dev
+            - libpython3-dev
       language: cpp
       cache:
         - ccache
       env: PYTHON_VERSION=3.4 PYTHON_EXECUTABLE=python3
       before_install: tests/travis/lnx_setup.sh
       script: tests/travis/lnx_py.sh
+    - os: linux
+      sudo: required
+      services:
+        - docker
+      addons:
+        apt:
+          packages:
+            - realpath
+            - binfmt-support
+      language: cpp
+      env: BUILD_TESTS=ON PYTHON_BINDINGS=NO ARCH=aarch64
+      before_install: tests/travis/lnx_docker_setup.sh
+      script: tests/travis/lnx_docker.sh
