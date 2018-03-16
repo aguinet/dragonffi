@@ -4,7 +4,7 @@
 DIR=$(dirname $(readlink -f $0))
 . "$DIR/common.sh"
 
-get_llvm lnx$ARCH 291ae264965240493f0d5f2e154ab7dbfcf2c7de23291ba415822594ca6cfecb
+get_llvm lnx$ARCH 2b839e9e16d9c3c8b3f5573dc8b108c65c12597e69377684e67f3ef2a4f17aa6
 configure_pip
 
 if [ ! -z $ARCH ]; then
