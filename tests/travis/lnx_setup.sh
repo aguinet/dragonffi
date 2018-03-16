@@ -27,7 +27,7 @@ deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports/ trusty-updates universe
 deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports/ trusty multiverse
 deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports/ trusty-updates multiverse
 EOF
-  ) >> /etc/apt/sources.list
+  ) |sudo tee /etc/apt/sources.list
 
   sudo dpkg --add-architecture $DEB_ARCH
   sudo apt-get update
