@@ -75,6 +75,7 @@ matrix:
       before_install: tests/travis/lnx_setup.sh
       script: tests/travis/lnx_py.sh
     - os: linux
+      sudo: required
       addons:
         apt:
           sources:
