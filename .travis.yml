@@ -71,9 +71,6 @@ matrix:
           packages:
           - ninja-build
           - qemu-user
-          - libstdc++-dev:arm64
-          - libxml2-dev:arm64
-          - binutils-aarch64-linux-gnu
           - clang-6.0
       language: cpp
       env: BUILD_TESTS=ON PYTHON_BINDINGS=NO ARCH=aarch64
