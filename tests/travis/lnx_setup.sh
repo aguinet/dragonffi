@@ -19,6 +19,16 @@ get_llvm lnx$ARCH $LLVM_HASH
 configure_pip
 
 if [ ! -z $ARCH ]; then
+  ( cat <<EOF
+deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports/ trusty main restricted
+deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports/ trusty-updates main restricted
+deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports/ trusty universe
+deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports/ trusty-updates universe
+deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports/ trusty multiverse
+deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports/ trusty-updates multiverse
+EOF
+  ) >> /etc/apt/sources.list
+
   sudo dpkg --add-architecture $DEB_ARCH
   sudo apt-get update
   sudo apt-get install libstdc++-dev:$DEB_ARCH libxml2-dev:$DEB_ARCH binutils-$ARCH-linux-gnu
