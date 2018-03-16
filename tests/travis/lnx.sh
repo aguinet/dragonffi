@@ -4,7 +4,7 @@
 DIR=$(dirname $(readlink -f $0))
 . "$DIR/common.sh"
 
-if [ ! -z $ARCH ]; then
+if [ -z $ARCH ]; then
   ARCH="x86_64"
 fi
 
