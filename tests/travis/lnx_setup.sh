@@ -31,5 +31,5 @@ EOF
 
   sudo dpkg --add-architecture $DEB_ARCH
   sudo apt-get update
-  sudo apt-get install libstdc++-7-dev:$DEB_ARCH libxml2-dev:$DEB_ARCH #binutils-$ARCH-linux-gnu
+  sudo apt-get install libstdc++-6-dev:$DEB_ARCH libxml2-dev:$DEB_ARCH #binutils-$ARCH-linux-gnu
 fi
