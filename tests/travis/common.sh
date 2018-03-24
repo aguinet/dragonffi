@@ -20,5 +20,8 @@ function configure_pip {
   if [ -z $VIRTUAL_ENV ]; then
     USER="--user"
   fi
-  pip install $USER lit
+  if [ ! -z $ARCH ]; then
+    SUDO="sudo"
+  fi
+  $SUDO pip install $USER lit
 }
