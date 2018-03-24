@@ -16,12 +16,12 @@ function get_llvm {
 }
 
 function configure_pip {
-  pip install --upgrade pip
-  if [ -z $VIRTUAL_ENV ]; then
-    USER="--user"
-  fi
   if [ ! -z $ARCH ]; then
     SUDO="sudo"
+  fi
+  $SUDO pip install --upgrade pip
+  if [ -z $VIRTUAL_ENV ]; then
+    USER="--user"
   fi
   $SUDO pip install $USER lit
 }
