@@ -19,7 +19,6 @@ function configure_pip {
   if [ ! -z $ARCH ]; then
     SUDO="sudo"
   fi
-  $SUDO pip install --upgrade pip
   if [ -z $VIRTUAL_ENV ]; then
     USER="--user"
   fi
