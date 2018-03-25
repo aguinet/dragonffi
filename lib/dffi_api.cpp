@@ -49,6 +49,11 @@ CompilationUnit DFFI::cdef(const char* Code, const char* CUName, std::string& Er
   return CompilationUnit{Impl_->compile(Code, CUName ? CUName : llvm::StringRef{}, true, Err)};
 }
 
+CompilationUnit DFFI::from_dwarf(const char* Path, std::string& Err)
+{
+  return CompilationUnit{Impl_->from_dwarf(Path, Err)};
+}
+
 BasicType const* DFFI::getBasicType(BasicType::BasicKind K)
 {
   return Impl_->getBasicType(K);

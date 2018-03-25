@@ -28,10 +28,11 @@ if (BUILD_TESTS)
     compile_error
     decl
     enum
+    from_dwarf
     func_ptr
-    multiple_defs
     includes
     inline
+    multiple_defs
     stdint
     struct
     system_headers

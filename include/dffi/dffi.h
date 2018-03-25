@@ -101,6 +101,7 @@ public:
 
   CompilationUnit compile(const char* Code, std::string& Err);
   CompilationUnit cdef(const char* Code, const char* CUName, std::string& Err);
+  CompilationUnit from_dwarf(const char* Path, std::string& Err);
 
   BasicType const* getBasicType(BasicType::BasicKind K);
   template <class T>
