@@ -18,4 +18,7 @@ esac
 get_llvm lnx$ARCH $LLVM_HASH
 
 # Build multiarch docker
+sudo apt-get update
+sudo apt-get -y -o Dpkg::Options::="--force-confnew" install docker-ce
+
 "$DIR/../dockers/multiarch/build.sh"
