@@ -78,6 +78,10 @@ matrix:
       sudo: required
       services:
         - docker
+      addons:
+        apt:
+          packages:
+            - realpath
       language: cpp
       env: BUILD_TESTS=ON PYTHON_BINDINGS=NO ARCH=aarch64
       before_install: tests/travis/lnx_docker_setup.sh
