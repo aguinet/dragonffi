@@ -896,26 +896,20 @@ dffi::QualType CUImpl::getQualTypeFromDIType(llvm::DIType const* Ty)
   return getTypeFromDIType(Ty);
 }
 
-dffi::Type const* CUImpl::getTypeFromDIType(llvm::DIType const* Ty)
+dffi::Type const* CUImpl::getBasicTypeFromDWARF(unsigned Encoding, unsigned SizeInBits, StringRef const Name)
 {
-  Ty = getCanonicalDIType(Ty);
-  if (!Ty) {
-    return nullptr;
-  }
-
-  if (auto* BTy = llvm::dyn_cast<llvm::DIBasicType>(Ty)) {
 #define HANDLE_BASICTY(TySize, KTy)\
     if (Size == TySize)\
       return DFFI_.getBasicType(BasicType::getKind<KTy>());
+#undef HANDLE_BASICTY
 
-    const auto Size = BTy->getSizeInBits();
-    switch (BTy->getEncoding()) {
-      case llvm::dwarf::DW_ATE_boolean:
-        return DFFI_.getBasicType(BasicType::Bool);
-      case llvm::dwarf::DW_ATE_unsigned:
-      case llvm::dwarf::DW_ATE_unsigned_char:
+  switch (Encoding) {
+    case llvm::dwarf::DW_ATE_boolean:
+      return DFFI_.getBasicType(BasicType::Bool);
+    case llvm::dwarf::DW_ATE_unsigned:
+    case llvm::dwarf::DW_ATE_unsigned_char:
       {
-        if (BTy->getName() == "char") {
+        if (Name == "char") {
           return DFFI_.getBasicType(BasicType::Char);
         }
         HANDLE_BASICTY(8, uint8_t);
@@ -927,10 +921,10 @@ dffi::Type const* CUImpl::getTypeFromDIType(llvm::DIType const* Ty)
 #endif
         break;
       }
-      case llvm::dwarf::DW_ATE_signed:
-      case llvm::dwarf::DW_ATE_signed_char:
+    case llvm::dwarf::DW_ATE_signed:
+    case llvm::dwarf::DW_ATE_signed_char:
       {
-        if (BTy->getName() == "char") {
+        if (Name == "char") {
           return DFFI_.getBasicType(BasicType::Char);
         }
         HANDLE_BASICTY(8, int8_t);
@@ -942,25 +936,39 @@ dffi::Type const* CUImpl::getTypeFromDIType(llvm::DIType const* Ty)
 #endif
         break;
       }
-      case llvm::dwarf::DW_ATE_float:
-        HANDLE_BASICTY(sizeof(float)*8, c_float);
-        HANDLE_BASICTY(sizeof(double)*8, c_double);
-        HANDLE_BASICTY(sizeof(long double)*8, c_long_double);
-        break;
+    case llvm::dwarf::DW_ATE_float:
+      HANDLE_BASICTY(sizeof(float)*8, c_float);
+      HANDLE_BASICTY(sizeof(double)*8, c_double);
+      HANDLE_BASICTY(sizeof(long double)*8, c_long_double);
+      break;
 #ifdef DFFI_SUPPORT_COMPLEX
-      case llvm::dwarf::DW_ATE_complex_float:
-        HANDLE_BASICTY(sizeof(_Complex float)*8, c_complex_float);
-        HANDLE_BASICTY(sizeof(_Complex double)*8, c_complex_double);
-        HANDLE_BASICTY(sizeof(_Complex long double)*8, c_complex_long_double);
-        break;
+    case llvm::dwarf::DW_ATE_complex_float:
+      HANDLE_BASICTY(sizeof(_Complex float)*8, c_complex_float);
+      HANDLE_BASICTY(sizeof(_Complex double)*8, c_complex_double);
+      HANDLE_BASICTY(sizeof(_Complex long double)*8, c_complex_long_double);
+      break;
 #endif
-      default:
-        break;
-    };
+    default:
+      break;
+  };
 #ifdef LLVM_DEBUG
-    Ty->dump();
+  Ty->dump();
 #endif
-    llvm::report_fatal_error("unsupported type");
+  llvm::report_fatal_error("unsupported basic type");
+}
+
+dffi::Type const* CUImpl::getTypeFromDIType(llvm::DIType const* Ty)
+{
+  Ty = getCanonicalDIType(Ty);
+  if (!Ty) {
+    return nullptr;
+  }
+
+  if (auto* BTy = llvm::dyn_cast<llvm::DIBasicType>(Ty)) {
+    const auto Size = BTy->getSizeInBits();
+    const auto Enc = BTy->getEncoding();
+    StringRef const Name = BTy->getName();
+    return getBasicTypeFromDWARF(Size, Enc, Name);
   }
 
   if (auto* PtrTy = llvm::dyn_cast<llvm::DIDerivedType>(Ty)) {
