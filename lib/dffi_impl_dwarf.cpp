@@ -21,7 +21,55 @@ namespace details {
 
 namespace {
 
-dffi::Type const* getTypeFromDIE(DWARFDie const& Die)
+enum class DWARFError {
+  EncodingMissing,
+  NameMissing,
+  ByteSizeMissing,
+  ValueNotUnsigned,
+  ValueNotString,
+};
+
+class DWARFErrorCategory: public std::error_category
+{
+  const char* name() const noexcept override { return "DWARF parsing"; }
+  std::string message(int ev) const noexcept override {
+    return "TODO";
+  }
+};
+
+const DWARFErrorCategory g_DWARFerrorCategory;
+
+std::error_code make_error_code(DWARFError Err) {
+  return {static_cast<int>(Err), g_DWARFerrorCategory};
+}
+
+template <class Func>
+auto getDwarfField(DWARFDie const& D, dwarf::Attribute Field, Func Transform, DWARFError NotFound, DWARFError BadFormat)
+  -> ErrorOr<typename decltype(Transform(DWARFFormValue{}))::value_type>
+{
+  auto Opt = D.find(Field);
+  if (!Opt) {
+    return make_error_code(NotFound);
+  }
+  auto const& V = Opt.getValue();
+  auto Ret = Transform(V);
+  if (!Ret) {
+    return make_error_code(BadFormat);
+  }
+  return Ret.getValue();
+}
+
+ErrorOr<uint64_t> getDwarfFieldAsUnsigned(DWARFDie const& D, dwarf::Attribute Field, DWARFError NotFound)
+{
+  return getDwarfField(D, Field, [](DWARFFormValue const& V) { return V.getAsUnsignedConstant(); }, NotFound, DWARFError::ValueNotUnsigned);
+}
+
+ErrorOr<const char*> getDwarfFieldAsCString(DWARFDie const& D, dwarf::Attribute Field, DWARFError NotFound)
+{
+  return getDwarfField(D, Field, [](DWARFFormValue const& V) { return V.getAsCString(); }, NotFound, DWARFError::ValueNotString);
+}
+
+ErrorOr<dffi::QualType> getTypeFromDIE(CUImpl& CU, DWARFDie const& Die)
 {
   auto Tag = Die.getTag();
   switch (Tag) {
@@ -29,28 +77,27 @@ dffi::Type const* getTypeFromDIE(DWARFDie const& Die)
       break;
     case dwarf::DW_TAG_base_type:
     {
-      auto OptEnc = Die.find(dwarf::DW_AT_encoding);
-      if (!OptEnc) {
-        report_fatal_error("no encoding");
-      }
-      auto Enc = OptEnc->getAsUnsignedConstant();
+      auto Enc = getDwarfFieldAsUnsigned(Die, dwarf::DW_AT_encoding, DWARFError::EncodingMissing);
       if (!Enc) {
-        report_fatal_error("encoding not integer");
+        return Enc.getError();
       }
-      errs() << "basic type, encoding " << Enc.getValue() << "\n";
-      break;
+      auto ByteSize = getDwarfFieldAsUnsigned(Die, dwarf::DW_AT_byte_size, DWARFError::ByteSizeMissing);
+      if (!ByteSize) {
+        return ByteSize.getError();
+      }
+      auto Name = getDwarfFieldAsCString(Die, dwarf::DW_AT_name, DWARFError::NameMissing);
+      if (!Name) {
+        return Name.getError();
+      }
+      return CU.getBasicTypeFromDWARF(Enc.get(), ByteSize.get(), Name.get());
     }
     case dwarf::DW_TAG_subprogram:
     {
-      auto OptName = Die.find(dwarf::DW_AT_name);
-      if (!OptName) {
-        report_fatal_error("no name");
-      }
-      auto Name = OptName->getAsCString();
+      auto Name = getDwarfFieldAsCString(Die, dwarf::DW_AT_name, DWARFError::NameMissing);
       if (!Name) {
-        report_fatal_error("function w/ no name!");
+        return Name.getError();
       }
-      errs() << "function " << Name.getValue() << "\n";
+      errs() << "function " << Name.get() << "\n";
       break;
     }
     default:
@@ -87,7 +134,7 @@ CUImpl* DFFIImpl::from_dwarf(StringRef const Path, std::string& Err)
   auto* Obj = cast<object::ObjectFile>(B.get());
   std::unique_ptr<DWARFContextInMemory> DICtx(new DWARFContextInMemory(*Obj));
 
-  //std::unique_ptr<CUImpl> CU(new CUImpl{*this});
+  std::unique_ptr<CUImpl> NewCU(new CUImpl{*this});
 
   for (const auto &CU : DICtx->compile_units()) {
     auto DIE = CU->getUnitDIE(false);
@@ -96,11 +143,12 @@ CUImpl* DFFIImpl::from_dwarf(StringRef const Path, std::string& Err)
     assert(DIE.getTag() == dwarf::DW_TAG_compile_unit);
     // TODO: check language?
 
-    //dump_die(DIE);
     DWARFDie Child = DIE.getFirstChild();
     while (Child) {
-      //dump_die(Child);
-      getTypeFromDIE(Child);
+      auto ErrOrTy = getTypeFromDIE(*NewCU, Child);
+      if (!ErrOrTy)
+        continue;
+      // TODO: add function type!
       Child = Child.getSibling();
     }
 
