@@ -87,6 +87,16 @@ CompilationUnit dffi_compile(DFFI& C, const char* Code)
   return CU;
 }
 
+CompilationUnit dffi_from_dwarf(DFFI& C, const char* Path)
+{
+  std::string Err;
+  auto CU = C.from_dwarf(Path, Err);
+  if (!CU) {
+    throwCompileErr(std::move(Err));
+  }
+  return CU;
+}
+
 std::unique_ptr<CObj> cu_getfunction(CompilationUnit& CU, const char* Name)
 {
   void* FPtr;
@@ -657,6 +667,7 @@ PYBIND11_MODULE(pydffi, m)
     .def("cdef", dffi_cdef, py::keep_alive<0,1>())
     .def("cdef", dffi_cdef_no_name, py::keep_alive<0,1>())
     .def("compile", dffi_compile, py::keep_alive<0,1>())
+    .def("from_dwarf", dffi_from_dwarf, py::keep_alive<0,1>())
     .def("ptr", [](DFFI& D, CObj* O) {
       return std::unique_ptr<CPointerObj>{new CPointerObj{O}};
     }, py::keep_alive<0,1>(), py::keep_alive<0,2>())

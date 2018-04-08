@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <cstdint>
+
 #include <clang/CodeGen/CodeGenAction.h>
 #include <clang/Driver/Compilation.h>
 #include <clang/Driver/Driver.h>
@@ -60,7 +62,9 @@ using namespace clang;
 
 namespace dffi {
 
-static CallingConv dwarfCCToDFFI(uint8_t DwCC)
+namespace details {
+
+CallingConv dwarfCCToDFFI(uint8_t DwCC)
 {
   // This is the inverse of the getDwarfCC function in clang/lib/CodeGen/CGDebugInfo.cpp!
   switch (DwCC) {
@@ -103,7 +107,6 @@ static CallingConv dwarfCCToDFFI(uint8_t DwCC)
   return CC_C;
 }
 
-namespace details {
 
 namespace {
 const char* WrapperPrefix = "__dffi_wrapper_";
@@ -670,6 +673,9 @@ CUImpl::CUImpl(DFFIImpl& DFFI):
   DFFI_(DFFI)
 { }
 
+CUImpl::~CUImpl()
+{ }
+
 std::tuple<void*, FunctionType const*> CUImpl::getFunctionAddressAndTy(llvm::StringRef Name)
 {
   auto ItAlias = FuncAliases_.find(Name);
@@ -899,9 +905,8 @@ dffi::QualType CUImpl::getQualTypeFromDIType(llvm::DIType const* Ty)
 dffi::Type const* CUImpl::getBasicTypeFromDWARF(unsigned Encoding, unsigned SizeInBits, StringRef const Name)
 {
 #define HANDLE_BASICTY(TySize, KTy)\
-    if (Size == TySize)\
+    if (SizeInBits == TySize)\
       return DFFI_.getBasicType(BasicType::getKind<KTy>());
-#undef HANDLE_BASICTY
 
   switch (Encoding) {
     case llvm::dwarf::DW_ATE_boolean:
@@ -952,9 +957,10 @@ dffi::Type const* CUImpl::getBasicTypeFromDWARF(unsigned Encoding, unsigned Size
       break;
   };
 #ifdef LLVM_DEBUG
-  Ty->dump();
+  errs() << "Encoding: " << Encoding << "\n";
 #endif
   llvm::report_fatal_error("unsupported basic type");
+#undef HANDLE_BASICTY
 }
 
 dffi::Type const* CUImpl::getTypeFromDIType(llvm::DIType const* Ty)
@@ -968,7 +974,7 @@ dffi::Type const* CUImpl::getTypeFromDIType(llvm::DIType const* Ty)
     const auto Size = BTy->getSizeInBits();
     const auto Enc = BTy->getEncoding();
     StringRef const Name = BTy->getName();
-    return getBasicTypeFromDWARF(Size, Enc, Name);
+    return getBasicTypeFromDWARF(Enc, Size, Name);
   }
 
   if (auto* PtrTy = llvm::dyn_cast<llvm::DIDerivedType>(Ty)) {
@@ -1021,6 +1027,11 @@ dffi::Type const* CUImpl::getTypeFromDIType(llvm::DIType const* Ty)
   Ty->dump();
 #endif
   llvm::report_fatal_error("unsupported type");
+}
+
+dffi::FunctionType const* CUImpl::getFunctionType(QualType RetTy, llvm::ArrayRef<QualType> ParamsTy, CallingConv CC, bool VarArgs)
+{
+  return getContext().getFunctionType(DFFI_, RetTy, ParamsTy, CC, VarArgs);
 }
 
 dffi::FunctionType const* CUImpl::getFunctionType(DISubroutineType const* Ty)
