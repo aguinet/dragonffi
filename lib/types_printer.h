@@ -35,93 +35,97 @@ struct TypePrinter
     Forward,
     None
   };
+
+  TypePrinter():
+    Decls_(DeclsStr_)
+  { }
+
   // Print the type definition.
-  std::string print_def(dffi::Type const* Ty, DeclMode DMode, const char* Name = nullptr)
+  llvm::raw_ostream& print_def(llvm::raw_ostream& OS, dffi::Type const* Ty, DeclMode DMode, const char* Name = nullptr)
   {
     if (Ty == nullptr) {
-      std::string Ret = "void";
+      OS << "void";
       if (Name) {
-        Ret += " ";
-        Ret += Name;
+        OS << ' ';
+        OS << Name;
       }
-      return Ret;
+      return OS;
     }
     switch (Ty->getKind()) {
     case dffi::Type::TY_Basic:
     {
       auto* BTy = cast<BasicType>(Ty);
-      std::stringstream ss;
       switch (BTy->getBasicKind()) {
         case BasicType::Bool:
-          ss << "_Bool";
+          OS << "_Bool";
           break;
         case BasicType::Char:
-          ss << "char";
+          OS << "char";
           break;
         case BasicType::SChar:
-          ss << "signed char";
+          OS << "signed char";
           break;
         case BasicType::Short:
-          ss << "short";
+          OS << "short";
           break;
         case BasicType::Int:
-          ss << "int";
+          OS << "int";
           break;
         case BasicType::Long:
-          ss << "long";
+          OS << "long";
           break;
         case BasicType::LongLong:
-          ss << "long long";
+          OS << "long long";
           break;
 #ifdef DFFI_SUPPORT_I128
         case BasicType::Int128:
-          ss << "__int128_t";
+          OS << "__int128_t";
           break;
 #endif
         case BasicType::UChar:
-          ss << "unsigned char";
+          OS << "unsigned char";
           break;
         case BasicType::UShort:
-          ss << "unsigned short";
+          OS << "unsigned short";
           break;
         case BasicType::UInt:
-          ss << "unsigned int";
+          OS << "unsigned int";
           break;
         case BasicType::ULong:
-          ss << "unsigned long";
+          OS << "unsigned long";
           break;
         case BasicType::ULongLong:
-          ss << "unsigned long long";
+          OS << "unsigned long long";
           break;
 #ifdef DFFI_SUPPORT_I128
         case BasicType::UInt128:
-          ss << "__uint128_t";
+          OS << "__uint128_t";
           break;
 #endif
         case BasicType::Float:
-          ss << "float";
+          OS << "float";
           break;
         case BasicType::Double:
-          ss << "double";
+          OS << "double";
           break;
         case BasicType::LongDouble:
-          ss << "long double";
+          OS << "long double";
           break;
 #ifdef DFFI_SUPPORT_COMPLEX
         case BasicType::ComplexFloat:
-          ss << "_Complex float";
+          OS << "_Complex float";
           break;
         case BasicType::ComplexDouble:
-          ss << "_Complex double";
+          OS << "_Complex double";
           break;
         case BasicType::ComplexLongDouble:
-          ss << "_Complex long double";
+          OS << "_Complex long double";
           break;
 #endif
       };
       if (Name)
-        ss << " " << Name;
-      return ss.str();
+        OS << ' ' << Name;
+      return OS; 
     }
     case dffi::Type::TY_Pointer:
     {
@@ -130,29 +134,30 @@ struct TypePrinter
       std::string PtrName = "*";
       if (Name)
         PtrName += Name;
-      return print_def(Pointee,Forward,PtrName.c_str());
+      return print_def(OS,Pointee,Forward,PtrName.c_str());
     }
     case dffi::Type::TY_Function:
     {
       auto* FTy = cast<FunctionType>(Ty);
-      std::stringstream ss;
+      std::string Buf;
+      llvm::raw_string_ostream ss(Buf);
 
-      ss << "(" << CCToClangAttribute(FTy->getCC()) << " " << (Name ? Name:"") << ")";
-      ss << "(";
+      ss << '(' << CCToClangAttribute(FTy->getCC()) << ' ' << (Name ? Name:"") << ')';
+      ss << '(';
       if (FTy->getParams().size() > 0) {
         auto const& Params = FTy->getParams();
         auto ItLast = --Params.end();
         for (auto It = Params.begin(); It != ItLast; ++It) {
-          ss << print_def(*It, Full); 
-          ss << ",";
+          print_def(ss, *It, Full); 
+          ss << ',';
         }
-        ss << print_def(*ItLast, Full); 
+        print_def(ss, *ItLast, Full); 
         if (FTy->hasVarArgs()) {
           ss << ",...";
         }
       }
-      ss << ")";
-      return print_def(FTy->getReturnType(), Full, ss.str().c_str());
+      ss << ')';
+      return print_def(OS, FTy->getReturnType(), Full, ss.str().c_str());
     }
     case dffi::Type::TY_Struct:
     case dffi::Type::TY_Union:
@@ -164,42 +169,40 @@ struct TypePrinter
       if (DMode == Forward)
         add_forward_decl(Ty);
 
-      std::stringstream ss;
       if (isa<dffi::StructType>(Ty))
-        ss << "struct ";
+        OS << "struct ";
       else
       if (isa<dffi::UnionType>(Ty))
-        ss << "union ";
+        OS << "union ";
       else
       if (isa<dffi::EnumType>(Ty))
-        ss << "enum ";
+        OS << "enum ";
 
       auto It = NamedTys_.find(Ty);
       if (It != NamedTys_.end()) {
-        ss << It->second;
+        OS << It->second;
       }
       else {
         std::string NameTy = "__dffi_ty_" + std::to_string(NamedTys_.size());
         NamedTys_.insert(std::make_pair(Ty, NameTy));
-        ss << NameTy;
+        OS << NameTy;
       }
       if (Name) {
-        ss << " " << Name;
+        OS << ' ' << Name;
       }
-      return ss.str();
+      return OS;
     }
     case dffi::Type::TY_Array:
     {
       auto* ArTy = cast<ArrayType>(Ty);
-      std::stringstream ss;
-      ss << print_def(ArTy->getElementType(), Full, Name);
-      ss << "[" << ArTy->getNumElements() << "]";
-      return ss.str();
+      print_def(OS, ArTy->getElementType(), Full, Name);
+      OS << '[' << ArTy->getNumElements() << ']';
+      return OS;
     }
     };
   }
 
-  std::string getDecls() { return Decls_.str(); }
+  std::string& getDecls() { return Decls_.str(); }
 
 private:
   void add_decl(dffi::Type const* Ty)
@@ -213,15 +216,14 @@ private:
       return;
     }
 
-    std::stringstream ss;
     if (auto* STy = dyn_cast<dffi::CompositeType>(Ty)) {
-      print_decl_impl(ss, STy);
+      print_decl_impl(Decls_, STy);
     }
     else
     if (auto* ETy = dyn_cast<dffi::EnumType>(Ty)) {
-      print_decl_impl(ss, ETy);
+      print_decl_impl(Decls_, ETy);
     }
-    Decls_ << ss.str() << "\n";
+    Decls_ << '\n';
   }
 
   void add_forward_decl(dffi::Type const* Ty)
@@ -236,25 +238,26 @@ private:
     if (!It.second) {
       return;
     }
-    Decls_ << print_def(Ty, None) << ";\n";
+    print_def(Decls_, Ty, None) << ";\n";
   }
 
 private:
-  void print_decl_impl(std::stringstream& ss, dffi::CompositeType const* Ty)
+  void print_decl_impl(llvm::raw_string_ostream& ss, dffi::CompositeType const* Ty)
   {
-    ss << print_def(Ty, None) << " {\n";
+    print_def(ss, Ty, None) << " {\n";
     size_t Idx = 0;
     for (auto const& F: Ty->getFields()) {
       std::string Name = "__Field_" + std::to_string(Idx);
-      ss << "  " << print_def(F.getType(), Full, Name.c_str()) << ";\n";
+      ss << "  ";
+      print_def(ss, F.getType(), Full, Name.c_str()) << ";\n";
       ++Idx;
     }
     ss << "};\n";
   }
 
-  void print_decl_impl(std::stringstream& ss, dffi::EnumType const* Ty)
+  void print_decl_impl(llvm::raw_string_ostream& ss, dffi::EnumType const* Ty)
   {
-    ss << print_def(Ty, None) << " {\n";
+    print_def(ss, Ty, None) << " {\n";
     for (auto const& F: Ty->getFields()) {
       ss << "  " << F.first << " = " << F.second << ",\n";
     }
@@ -265,7 +268,8 @@ private:
   llvm::DenseMap<dffi::Type const*, std::string> NamedTys_;
   llvm::DenseSet<dffi::Type const*> Declared_;
   llvm::DenseSet<dffi::Type const*> ForwardDeclared_;
-  std::stringstream Decls_;
+  std::string DeclsStr_;
+  llvm::raw_string_ostream Decls_;
 };
 
 } // dffi

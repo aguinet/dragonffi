@@ -106,7 +106,7 @@ private:
 
   std::pair<size_t, bool> getFuncTypeWrapperId(FunctionType const* FTy);
   std::pair<size_t, bool> getFuncTypeWrapperId(FunctionType const* FTy, llvm::ArrayRef<Type const*> VarArgs);
-  void genFuncTypeWrapper(TypePrinter& P, size_t WrapperIdx, std::stringstream& ss, FunctionType const* FTy, llvm::ArrayRef<Type const*> VarArgs);
+  void genFuncTypeWrapper(TypePrinter& P, size_t WrapperIdx, llvm::raw_string_ostream& ss, FunctionType const* FTy, llvm::ArrayRef<Type const*> VarArgs);
   void getCompileError(std::string& Err);
   void setNewDiagnostics();
   void compileWrappers(TypePrinter& P, std::string const& Wrappers);
@@ -195,17 +195,19 @@ struct ASTGenWrappersAction: public clang::ASTFrontendAction
 {
   ASTGenWrappersAction(FuncAliasesMap& FuncAliases):
     clang::ASTFrontendAction(),
-    FuncAliases_(FuncAliases)
+    FuncAliases_(FuncAliases),
+    ForceDecls_(ForceDeclsStr_)
   { }
 
   std::unique_ptr<clang::ASTConsumer> CreateASTConsumer(clang::CompilerInstance &Compiler, llvm::StringRef InFile) override;
 
-  std::string getForceDecls() const; 
+  std::string& forceDecls(); 
 
   llvm::IntrusiveRefCntPtr<clang::ASTContext> releaseAST() { return std::move(ASTCtxt_); }
 
 private:
-  std::stringstream ForceDecls_;
+  std::string ForceDeclsStr_;
+  llvm::raw_string_ostream ForceDecls_;
   llvm::IntrusiveRefCntPtr<clang::ASTContext> ASTCtxt_;
   FuncAliasesMap& FuncAliases_;
 };
