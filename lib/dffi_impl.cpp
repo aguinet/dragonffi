@@ -321,7 +321,7 @@ std::unique_ptr<llvm::Module> DFFIImpl::compile_llvm_with_decls(StringRef const 
     return nullptr;
   }
 
-  auto BufForceDecl = Code.str() + "\n" + Action->getForceDecls();
+  auto BufForceDecl = Code.str() + "\n" + Action->forceDecls();
   SmallString<128> PrivateCU;
   ("/__dffi_private/force_decls/" + CUName).toStringRef(PrivateCU);
   return compile_llvm(BufForceDecl, PrivateCU, Err);
@@ -389,24 +389,24 @@ std::pair<size_t, bool> DFFIImpl::getFuncTypeWrapperId(FunctionType const* FTy, 
   return {TyIdx, false};
 }
 
-void DFFIImpl::genFuncTypeWrapper(TypePrinter& P, size_t WrapperIdx, std::stringstream& ss, FunctionType const* FTy, ArrayRef<Type const*> VarArgs)
+void DFFIImpl::genFuncTypeWrapper(TypePrinter& P, size_t WrapperIdx, llvm::raw_string_ostream& ss, FunctionType const* FTy, ArrayRef<Type const*> VarArgs)
 {
   ss << "void " << getWrapperName(WrapperIdx) << "(";
   auto RetTy = FTy->getReturnType();
-  ss << P.print_def(getPointerType(FTy), TypePrinter::Full, "__FPtr") << ",";
-  ss << P.print_def(getPointerType(RetTy), TypePrinter::Full, "__Ret") << ",";
-  ss << "void** __Args";
-  std::stringstream Impl;
-  ss << ") {\n  ";
+  P.print_def(ss, getPointerType(FTy), TypePrinter::Full, "__FPtr") << ",";
+  P.print_def(ss, getPointerType(RetTy), TypePrinter::Full, "__Ret") << ",";
+  ss << "void** __Args) {\n  ";
   if (RetTy) {
     ss << "*__Ret = ";
   }
+  ss << "(__FPtr)(";
   size_t Idx = 0;
   auto& Params = FTy->getParams();
   for (QualType ATy: Params) {
-    Impl << "*((" << P.print_def(getPointerType(ATy), TypePrinter::Full) << ")" << "__Args[" << Idx << "]" << ")";
+    ss << "*((";
+    P.print_def(ss, getPointerType(ATy), TypePrinter::Full) << ')' << "__Args[" << Idx << ']' << ')';
     if (Idx < Params.size()-1) {
-      Impl << ",";
+      ss << ',';
     }
     ++Idx;
   }
@@ -414,12 +414,12 @@ void DFFIImpl::genFuncTypeWrapper(TypePrinter& P, size_t WrapperIdx, std::string
     assert(FTy->hasVarArgs() && "function type must be variadic if VarArgsCount > 0");
     assert(Params.size() >= 1 && "variadic arguments must have at least one defined argument");
     for (Type const* Ty: VarArgs) {
-      Impl << ", *((" << P.print_def(getPointerType(Ty), TypePrinter::Full) << ")" << "__Args[" << Idx << "]" << ")";
+      ss << ", *((";
+      P.print_def(ss, getPointerType(Ty), TypePrinter::Full) << ')' << "__Args[" << Idx << ']' << ')';
       ++Idx;
     }
   }
-  ss << "(__FPtr)(" << Impl.str() << ");\n";
-  ss << "}\n";
+  ss << ");\n}\n";
 }
 
 CUImpl* DFFIImpl::compile(StringRef const Code, StringRef CUName, bool IncludeDefs, std::string& Err)
@@ -491,7 +491,8 @@ CUImpl* DFFIImpl::compile(StringRef const Code, StringRef CUName, bool IncludeDe
   }
 
   // Generate function types
-  std::stringstream Wrappers;
+  std::string Buf;
+  llvm::raw_string_ostream Wrappers(Buf);
   TypePrinter Printer;
   SmallVector<Function*, 16> ToRemove;
   for (Function& F: *M) {
@@ -583,7 +584,8 @@ void* DFFIImpl::getWrapperAddress(FunctionType const* FTy, ArrayRef<Type const*>
   auto Id = getFuncTypeWrapperId(FTy, VarArgs);
   size_t WIdx = Id.first;
   if (!Id.second) {
-    std::stringstream ss;
+    std::string Buf;
+    llvm::raw_string_ostream ss(Buf);
     TypePrinter P;
     genFuncTypeWrapper(P, WIdx, ss, FTy, VarArgs);
     compileWrappers(P, ss.str());

@@ -108,7 +108,7 @@ void printFunctionAttrs(const clang::FunctionType::ExtInfo &Info,
 
 struct ASTGenWrappersConsumer: public clang::ASTConsumer
 {
-  ASTGenWrappersConsumer(std::stringstream& ForceDecls, FuncAliasesMap& FuncAliases, LangOptions const& LO):
+  ASTGenWrappersConsumer(raw_string_ostream& ForceDecls, FuncAliasesMap& FuncAliases, LangOptions const& LO):
     ForceDecls_(ForceDecls),
     FuncAliases_(FuncAliases),
     PP_(LO),
@@ -199,17 +199,13 @@ private:
     }
     NewFD->setParams(NewParams);
 
-    std::string NewFStr;
-    raw_string_ostream NewF(NewFStr);
-    printFunctionAttrs(FExtInfo, NewF);
-    NewFD->print(NewF, PP_, 0, true);
-    NewF << " {}\n";
-
-    ForceDecls_ << NewF.str();
+    printFunctionAttrs(FExtInfo, ForceDecls_);
+    NewFD->print(ForceDecls_, PP_, 0, true);
+    ForceDecls_ << " {}\n";
   }
 
 private:
-  std::stringstream& ForceDecls_;
+  raw_string_ostream& ForceDecls_;
   FuncAliasesMap& FuncAliases_;
   PrintingPolicy PP_;
   unsigned ForceIdx_;
@@ -224,7 +220,7 @@ std::unique_ptr<clang::ASTConsumer> ASTGenWrappersAction::CreateASTConsumer(clan
   return llvm::make_unique<ASTGenWrappersConsumer>(ForceDecls_, FuncAliases_, Compiler.getLangOpts());
 }
 
-std::string ASTGenWrappersAction::getForceDecls() const
+std::string& ASTGenWrappersAction::forceDecls()
 {
   return ForceDecls_.str();
 }
