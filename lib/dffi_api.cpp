@@ -51,6 +51,9 @@ CompilationUnit DFFI::cdef(const char* Code, const char* CUName, std::string& Er
 
 CompilationUnit DFFI::from_dwarf(const char* Path, std::string& Err)
 {
+  if (!dlopen(Path, &Err)) {
+    return CompilationUnit{nullptr};
+  }
   return CompilationUnit{Impl_->from_dwarf(Path, Err)};
 }
 

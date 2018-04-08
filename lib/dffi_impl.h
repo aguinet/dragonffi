@@ -68,6 +68,7 @@ void getFuncTrampolineName(llvm::SmallVectorImpl<char>& Ret, llvm::StringRef con
 void getFuncWrapperName(llvm::SmallVectorImpl<char>& Ret, llvm::StringRef const Name);
 llvm::StringRef getFuncNameFromWrapper(llvm::StringRef const Name);
 bool isWrapperFunction(llvm::StringRef const Name);
+CallingConv dwarfCCToDFFI(uint8_t DwCC);
 
 typedef llvm::StringMap<dffi::FunctionType const*> FuncTysMap;
 typedef llvm::StringMap<std::unique_ptr<dffi::CanOpaqueType>> CompositeTysMap;
@@ -142,6 +143,7 @@ private:
 struct CUImpl
 {
   CUImpl(DFFIImpl& DFFI);
+  ~CUImpl();
 
   dffi::Type const* getType(llvm::StringRef Name) const;
 
@@ -158,9 +160,11 @@ struct CUImpl
 
   dffi::FunctionType const* getFunctionType(llvm::DISubroutineType const* Ty);
   dffi::FunctionType const* getFunctionType(llvm::Function& F);
+  dffi::FunctionType const* getFunctionType(QualType RetTy, llvm::ArrayRef<QualType> ParamsTy, CallingConv CC, bool VarArgs);
 
   QualType getQualTypeFromDIType(llvm::DIType const* Ty);
   dffi::Type const* getTypeFromDIType(llvm::DIType const* Ty);
+  dffi::Type const* getBasicTypeFromDWARF(unsigned Encoding, unsigned SizeInBits, llvm::StringRef const Name);
 
   std::tuple<void*, FunctionType const*> getFunctionAddressAndTy(llvm::StringRef Name);
 

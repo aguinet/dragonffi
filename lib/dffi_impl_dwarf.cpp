@@ -11,6 +11,7 @@
 #include <llvm/BinaryFormat/Dwarf.h>
 
 #include "dffi_impl.h"
+#include "types_printer.h"
 
 using namespace llvm;
 
@@ -21,10 +22,15 @@ namespace details {
 
 namespace {
 
+using TypesCacheTy = DenseMap<uint64_t, QualType>;
+
 enum class DWARFError {
+  NoError = 0,
   EncodingMissing,
   NameMissing,
   ByteSizeMissing,
+  TypeMissing,
+  FieldMissing,
   ValueNotUnsigned,
   ValueNotString,
 };
@@ -42,6 +48,8 @@ const DWARFErrorCategory g_DWARFerrorCategory;
 std::error_code make_error_code(DWARFError Err) {
   return {static_cast<int>(Err), g_DWARFerrorCategory};
 }
+
+ErrorOr<dffi::QualType> getTypeFromDIE(CUImpl& CU, DWARFDie const& Die, TypesCacheTy& Cache);
 
 template <class Func>
 auto getDwarfField(DWARFDie const& D, dwarf::Attribute Field, Func Transform, DWARFError NotFound, DWARFError BadFormat)
@@ -69,12 +77,36 @@ ErrorOr<const char*> getDwarfFieldAsCString(DWARFDie const& D, dwarf::Attribute 
   return getDwarfField(D, Field, [](DWARFFormValue const& V) { return V.getAsCString(); }, NotFound, DWARFError::ValueNotString);
 }
 
-ErrorOr<dffi::QualType> getTypeFromDIE(CUImpl& CU, DWARFDie const& Die)
+ErrorOr<dffi::QualType> getDwarfFieldAsType(CUImpl& CU, TypesCacheTy& Cache, DWARFDie const& D, dwarf::Attribute Field, DWARFError NotFound)
 {
+  auto NewDie = D.getAttributeValueAsReferencedDie(Field);
+  if (!NewDie) {
+    return make_error_code(NotFound);
+  }
+  return getTypeFromDIE(CU, NewDie, Cache);
+}
+
+ErrorOr<dffi::QualType> getTypeFromDIE(CUImpl& CU, DWARFDie const& Die, TypesCacheTy& Cache)
+{
+  auto ItCache = Cache.find(Die.getOffset());
+  if (ItCache != Cache.end()) {
+    return ItCache->second;
+  }
+
   auto Tag = Die.getTag();
+  QualType QRetTy(nullptr);
   switch (Tag) {
     case dwarf::DW_TAG_pointer_type:
       break;
+    case dwarf::DW_TAG_formal_parameter:
+    {
+      auto Ty = getDwarfFieldAsType(CU, Cache, Die, dwarf::DW_AT_type, DWARFError::TypeMissing);
+      if (!Ty) {
+        return Ty.getError();
+      }
+      QRetTy = Ty.get();
+      break;
+    }
     case dwarf::DW_TAG_base_type:
     {
       auto Enc = getDwarfFieldAsUnsigned(Die, dwarf::DW_AT_encoding, DWARFError::EncodingMissing);
@@ -89,22 +121,55 @@ ErrorOr<dffi::QualType> getTypeFromDIE(CUImpl& CU, DWARFDie const& Die)
       if (!Name) {
         return Name.getError();
       }
-      return CU.getBasicTypeFromDWARF(Enc.get(), ByteSize.get(), Name.get());
+      QRetTy = CU.getBasicTypeFromDWARF(Enc.get(), ByteSize.get() * CHAR_BIT, Name.get());
+      break;
     }
     case dwarf::DW_TAG_subprogram:
     {
-      auto Name = getDwarfFieldAsCString(Die, dwarf::DW_AT_name, DWARFError::NameMissing);
-      if (!Name) {
-        return Name.getError();
+      // TODO: what to do if not implemented?
+#if 0
+      auto Prototyped = getDwarfFieldAsUnsigned(dwarf::DW_AT_prototyped, DWARFError::FieldMissing);
+      if (!Prototyed) {
+        return Prototyped.getError();
       }
-      errs() << "function " << Name.get() << "\n";
+      if (!Prototyped.get()) {
+        return nullptr;
+      }
+#endif
+      auto RetTy = getDwarfFieldAsType(CU, Cache, Die, dwarf::DW_AT_type, DWARFError::TypeMissing);
+      if (!RetTy) {
+        return RetTy.getError();
+      }
+      llvm::SmallVector<QualType, 8> ParamsTy;
+      for (auto Child: Die.children()) {
+        auto ErrOrTy = getTypeFromDIE(CU, Child, Cache);
+        if (!ErrOrTy)
+          return ErrOrTy.getError();
+        ParamsTy.push_back(ErrOrTy.get());
+      }
+
+      // Get calling convention. Defaults to C!
+      auto CCOrErr = getDwarfFieldAsUnsigned(Die, dwarf::DW_AT_calling_convention, DWARFError::NoError);
+      auto CC = CC_C;
+      if (!CCOrErr) {
+        auto Err = CCOrErr.getError();
+        if (Err != make_error_code(DWARFError::NoError)) {
+          return Err;
+        }
+      }
+      else {
+        CC = dwarfCCToDFFI(CCOrErr.get());
+      }
+      // TODO: varargs
+      QRetTy = CU.getFunctionType(RetTy.get(), ParamsTy, CC, false);
       break;
     }
     default:
       errs() << "tag: " << TagString(Tag) << "\n";
-      break;
+      return nullptr;
   }
-  return nullptr;
+  Cache.insert(std::make_pair(Die.getOffset(), QRetTy));
+  return QRetTy;
 }
 
 }
@@ -136,25 +201,45 @@ CUImpl* DFFIImpl::from_dwarf(StringRef const Path, std::string& Err)
 
   std::unique_ptr<CUImpl> NewCU(new CUImpl{*this});
 
+  std::stringstream Wrappers;
+  TypePrinter Printer;
   for (const auto &CU : DICtx->compile_units()) {
-    auto DIE = CU->getUnitDIE(false);
-    if (!DIE)
+    TypesCacheTy TypesCache;
+    auto Die = CU->getUnitDIE(false);
+    if (!Die)
       continue;
-    assert(DIE.getTag() == dwarf::DW_TAG_compile_unit);
+    assert(Die.getTag() == dwarf::DW_TAG_compile_unit);
     // TODO: check language?
 
-    DWARFDie Child = DIE.getFirstChild();
-    while (Child) {
-      auto ErrOrTy = getTypeFromDIE(*NewCU, Child);
-      if (!ErrOrTy)
+    for (auto Child: Die.children()) {
+      auto ErrOrTy = getTypeFromDIE(*NewCU, Child, TypesCache);
+      if (!ErrOrTy) {
+        errs() << "error: " << ErrOrTy.getError().value() << "\n";
         continue;
-      // TODO: add function type!
-      Child = Child.getSibling();
+      }
+      // Depending on the type, save the associated names!
+      // TODO: isSubroutineDie?
+      if (Child.isSubprogramDIE()) {
+        auto Name = getDwarfFieldAsCString(Child, dwarf::DW_AT_name, DWARFError::NameMissing);
+        if (!Name) {
+          errs() << "unable to get function name!\n";
+          continue;
+        }
+        auto* DFTy = cast<FunctionType const>(ErrOrTy->getType());
+        NewCU->FuncTys_[Name.get()] = DFTy;
+        auto Id = getFuncTypeWrapperId(DFTy);
+        if (!Id.second) {
+          genFuncTypeWrapper(Printer, Id.first, Wrappers, DFTy, {});
+        }
+      }
     }
-
-    //CU->dump(outs(), DIDumpOptions{});
   }
-  return nullptr;
+
+  compileWrappers(Printer, Wrappers.str());
+
+  auto* Ret = NewCU.get();
+  CUs_.emplace_back(std::move(NewCU));
+  return Ret;
 }
 
 } // impl
