@@ -16,7 +16,6 @@ function get_llvm {
 }
 
 function configure_pip {
-  pip install --upgrade pip
   if [ -z $VIRTUAL_ENV ]; then
     USER="--user"
   fi
