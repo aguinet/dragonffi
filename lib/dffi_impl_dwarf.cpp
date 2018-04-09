@@ -201,7 +201,8 @@ CUImpl* DFFIImpl::from_dwarf(StringRef const Path, std::string& Err)
 
   std::unique_ptr<CUImpl> NewCU(new CUImpl{*this});
 
-  std::stringstream Wrappers;
+  std::string SBuf;
+  raw_string_ostream Wrappers(SBuf);
   TypePrinter Printer;
   for (const auto &CU : DICtx->compile_units()) {
     TypesCacheTy TypesCache;
