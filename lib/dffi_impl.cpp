@@ -848,7 +848,7 @@ void CUImpl::parseDIComposite(DICompositeType const* DCTy, llvm::Module& M)
 
   if (auto* CTy = dffi::dyn_cast<CompositeType>(CATy)) {
     // Parse the structure/union and create the associated StructType/UnionType
-    std::vector<CompositeField> Fields; 
+    std::vector<CompositeField> Fields;
     unsigned Align = 1;
     for (auto const* Op: DCTy->getElements()) {
       auto const* DOp = llvm::cast<DIDerivedType>(Op);

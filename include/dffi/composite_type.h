@@ -42,6 +42,8 @@ class DFFI_API CompositeField
 
 public:
   CompositeField(CompositeField&&) = default;
+  // TODO: this should be protected
+  CompositeField(const char* Name, Type const* Ty, unsigned Offset);
 
   Type const* getType() const { return Ty_; }
   const char* getName() const { return Name_.c_str(); }
@@ -49,7 +51,6 @@ public:
   unsigned getOffset() const { return Offset_; }
 
 protected:
-  CompositeField(const char* Name, Type const* Ty, unsigned Offset);
   CompositeField(CompositeField const&) = delete;
 
 private:
@@ -95,12 +96,14 @@ public:
 
   CompositeType(CompositeType&&) = default;
 
+  // TODO: this should be protected
+  void setBody(std::vector<CompositeField>&& Fields, uint64_t Size, unsigned Align);
+
 protected:
   // Generate opaque composite type
   CompositeType(details::DFFIImpl& Dffi, TypeKind Ty);
   CompositeType(CompositeType const&) = delete;
 
-  void setBody(std::vector<CompositeField>&& Fields, uint64_t Size, unsigned Align);
 
 protected:
   std::vector<CompositeField> Fields_;
