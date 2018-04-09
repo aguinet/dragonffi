@@ -97,6 +97,10 @@ struct DFFIImpl
   NativeFunc getFunction(FunctionType const* FTy, void* FPtr);
   NativeFunc getFunction(FunctionType const* FTy, llvm::ArrayRef<Type const*> VarArgs, void* FPtr);
 
+  std::pair<size_t, bool> getFuncTypeWrapperId(FunctionType const* FTy);
+  std::pair<size_t, bool> getFuncTypeWrapperId(FunctionType const* FTy, llvm::ArrayRef<Type const*> VarArgs);
+  void genFuncTypeWrapper(TypePrinter& P, size_t WrapperIdx, llvm::raw_string_ostream& ss, FunctionType const* FTy, llvm::ArrayRef<Type const*> VarArgs);
+
 protected:
   DFFICtx& getContext() { return DCtx_; }
   DFFICtx const& getContext() const { return DCtx_; }
@@ -106,9 +110,6 @@ private:
   std::unique_ptr<llvm::Module> compile_llvm_with_decls(llvm::StringRef const Code, llvm::StringRef const CUName, FuncAliasesMap& FuncAliases, std::string& Err);
   std::unique_ptr<llvm::Module> compile_llvm(llvm::StringRef const Code, llvm::StringRef const CUName, std::string& Err);
 
-  std::pair<size_t, bool> getFuncTypeWrapperId(FunctionType const* FTy);
-  std::pair<size_t, bool> getFuncTypeWrapperId(FunctionType const* FTy, llvm::ArrayRef<Type const*> VarArgs);
-  void genFuncTypeWrapper(TypePrinter& P, size_t WrapperIdx, llvm::raw_string_ostream& ss, FunctionType const* FTy, llvm::ArrayRef<Type const*> VarArgs);
   void getCompileError(std::string& Err);
   void setNewDiagnostics();
   void compileWrappers(TypePrinter& P, std::string const& Wrappers);
