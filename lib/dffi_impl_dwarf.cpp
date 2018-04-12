@@ -34,6 +34,7 @@ enum class DWARFError {
   TypeMissing,
   FieldMissing,
   OffsetMissing,
+  ValueMissing,
   ValueNotUnsigned,
   ValueNotString,
 };
@@ -134,6 +135,12 @@ private:
   static ErrorOr<uint64_t> getDwarfFieldAsUnsigned(DWARFDie const& D, dwarf::Attribute Field, DV&& DefValue)
   {
     return getDwarfField(D, Field, [](DWARFFormValue const& V) { return V.getAsUnsignedConstant(); }, std::forward<DV>(DefValue), DWARFError::ValueNotUnsigned);
+  }
+
+  template <class DV>
+  static ErrorOr<int64_t> getDwarfFieldAsSigned(DWARFDie const& D, dwarf::Attribute Field, DV&& DefValue)
+  {
+    return getDwarfField(D, Field, [](DWARFFormValue const& V) { return V.getAsSignedConstant(); }, std::forward<DV>(DefValue), DWARFError::ValueNotUnsigned);
   }
 
   template <class DV>
@@ -249,6 +256,35 @@ ErrorOr<dffi::QualType> DWARFCUParser::getTypeFromDIE(DWARFDie const& Die)
       // TODO: varargs
       QRetTy = CU_.getFunctionType(RetTy.get(), ParamsTy, CC, false);
       break;
+    }
+    case dwarf::DW_TAG_enumeration_type:
+    {
+      auto Name = getDwarfFieldAsCString(Die, dwarf::DW_AT_name, DWARFError::NameMissing);
+      if (!Name) {
+        return Name.getError();
+      }
+
+      std::unique_ptr<EnumType> NewTy(new EnumType{getDFFI()});
+      Cache_.insert(std::make_pair(Die.getOffset(), NewTy.get()));
+      EnumType::Fields Fields;
+      for (auto Field: Die.children()) {
+        if (Field.getTag() != dwarf::DW_TAG_enumerator) {
+          return make_error_code(DWARFError::InvalidTag);
+        }
+        auto Name = getDwarfFieldAsCString(Field, dwarf::DW_AT_name, DWARFError::NameMissing);
+        if (!Name) {
+          return Name.getError();
+        }
+        auto Value = getDwarfFieldAsSigned(Field, dwarf::DW_AT_const_value, DWARFError::ValueMissing);
+        if (!Value) {
+          return Value.getError();
+        }
+        Fields[Name.get()] = Value.get();
+      }
+      NewTy->setBody(std::move(Fields));
+      auto* Ret = NewTy.get();
+      CU_.CompositeTys_.insert(std::make_pair(Name.get(), std::move(NewTy)));
+      return Ret;
     }
     case dwarf::DW_TAG_union_type:
     case dwarf::DW_TAG_structure_type:
