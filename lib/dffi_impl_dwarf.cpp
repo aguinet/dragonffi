@@ -164,7 +164,7 @@ private:
 
 ErrorOr<dffi::QualType> DWARFCUParser::getTypeFromDIE(DWARFDie const& Die)
 {
-  auto Tag = Die.getTag();
+  const auto Tag = Die.getTag();
   // First, parse tags that do not need caching
   switch (Tag) {
     case dwarf::DW_TAG_const_type:
@@ -250,12 +250,22 @@ ErrorOr<dffi::QualType> DWARFCUParser::getTypeFromDIE(DWARFDie const& Die)
       QRetTy = CU_.getFunctionType(RetTy.get(), ParamsTy, CC, false);
       break;
     }
+    case dwarf::DW_TAG_union_type:
     case dwarf::DW_TAG_structure_type:
     {
       // Create an empty structure type and register it earlier in the cache.
       auto& DFFI = getDFFI();
-      std::unique_ptr<StructType> NewTy(new StructType{DFFI});
-      // TODO: support anonymous structures
+      std::unique_ptr<CompositeType> NewTy;
+      switch (Tag) {
+        case dwarf::DW_TAG_union_type:
+          NewTy.reset(new UnionType{DFFI});
+          break;
+        case dwarf::DW_TAG_structure_type:
+          NewTy.reset(new StructType{DFFI});
+          break;
+      };
+
+      // TODO: support anonymous union/structures
       auto Name = getDwarfFieldAsCString(Die, dwarf::DW_AT_name, DWARFError::NameMissing);
       if (!Name) {
         return Name.getError();
