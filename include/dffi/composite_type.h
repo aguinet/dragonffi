@@ -179,11 +179,11 @@ public:
 
   BasicType const* getBasicType() const;
 
+  void setBody(Fields&& Fields);
+
 protected:
   EnumType(EnumType const&) = delete;
   EnumType(EnumType&&) = default;
-
-  void setBody(Fields&& Fields);
 
 private:
   Fields Fields_;
