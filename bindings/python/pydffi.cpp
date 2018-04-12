@@ -304,6 +304,18 @@ std::unique_ptr<CStructObj> structtype_new(StructType const& STy, py::kwargs KW)
   return Ret;
 } 
 
+std::unique_ptr<CUnionObj> uniontype_new(UnionType const& UTy)
+{
+  return std::unique_ptr<CUnionObj>{new CUnionObj{UTy}};
+} 
+
+std::unique_ptr<CUnionObj> uniontype_new(UnionType const& UTy, const char* Field, py::object O)
+{
+  auto Ret = uniontype_new(UTy);
+  Ret->setValue(Field, O);
+  return Ret;
+} 
+
 std::unique_ptr<CPointerObj> cpointerobj_new(PointerType const& PTy)
 {
   return std::unique_ptr<CPointerObj>{new CPointerObj{PTy, Data<void*>::emplace_owned(nullptr)}};
@@ -377,7 +389,7 @@ PYBIND11_MODULE(pydffi, m)
 
   py::class_<BasicType>(m, "BasicType", type)
     .def_property_readonly("kind", &BasicType::getBasicKind)
-    .def("__call__", basictype_new)
+    .def("__call__", basictype_new, py::keep_alive<0,1>())
     ;
 
   py::class_<PointerType>(m, "PointerType", type)
@@ -415,9 +427,13 @@ PYBIND11_MODULE(pydffi, m)
     ;
 
   py::class_<StructType>(m, "StructType", CompType)
-    .def("__call__", structtype_new)
+    .def("__call__", structtype_new, py::keep_alive<0,1>())
     ;
-  py::class_<UnionType>(m, "UnionType", CompType);
+  py::class_<UnionType>(m, "UnionType", CompType)
+    .def("__call__", (std::unique_ptr<CUnionObj>(*)(UnionType const&)) uniontype_new, py::keep_alive<0,1>())
+    .def("__call__", (std::unique_ptr<CUnionObj>(*)(UnionType const&, const char*, py::object)) uniontype_new, py::keep_alive<0,1>())
+    ;
+
   py::class_<EnumType>(m, "EnumType", type)
     .def("__getattr__", enumtype_get)
     .def("__iter__", [](EnumType const& ETy) {

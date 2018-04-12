@@ -9,6 +9,7 @@ Improvements:
 
 * Use the real C basic types as DFFI's basic types. This has a side effect that
   stdint.h isn't needed anymore for the wrappers code!
+* Python bindings: create a union object from its python type
 
 Bug fixes:
 
