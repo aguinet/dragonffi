@@ -340,9 +340,9 @@ std::string const& field_get_name(It const& I) {
   return I.first;
 }
 template <class T>
-py::tuple list_fields(T const& Fields)
+py::list list_fields(T const& Fields)
 {
-  py::tuple Ret(Fields.size());
+  py::list Ret(Fields.size());
   size_t I = 0;
   for (auto const& F: Fields) {
     Ret[I++] = py::str(field_get_name(F));
