@@ -158,6 +158,9 @@ struct CUImpl
   PointerType const* getPointerType(QualType Ty) const {
     return DFFI_.getPointerType(Ty);
   }
+  ArrayType const* getArrayType(QualType Ty, uint64_t NElements) {
+    return DFFI_.getArrayType(Ty, NElements);
+  }
 
   dffi::FunctionType const* getFunctionType(llvm::DISubroutineType const* Ty);
   dffi::FunctionType const* getFunctionType(llvm::Function& F);

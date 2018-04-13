@@ -50,6 +50,12 @@ public:
   
   unsigned getOffset() const { return Offset_; }
 
+  bool isSame(CompositeField const& O) const {
+    return Offset_ == O.Offset_ && 
+      Name_ == O.Name_ &&
+      Ty_->isSame(*O.Ty_);
+  }
+
 protected:
   CompositeField(CompositeField const&) = delete;
 
@@ -98,6 +104,15 @@ public:
 
   // TODO: this should be protected
   void setBody(std::vector<CompositeField>&& Fields, uint64_t Size, unsigned Align);
+  void moveBody(CompositeType& O)
+  {
+    Fields_ = std::move(O.Fields_);
+    FieldsMap_ = std::move(O.FieldsMap_);
+    setAsDefined();
+  }
+
+  using Type::isSame;
+  bool isSame(CompositeType const&) const;
 
 protected:
   // Generate opaque composite type

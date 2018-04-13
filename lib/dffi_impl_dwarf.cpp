@@ -34,6 +34,7 @@ enum class DWARFError {
   TypeMissing,
   FieldMissing,
   OffsetMissing,
+  CountMissing,
   ValueMissing,
   ValueNotUnsigned,
   ValueNotString,
@@ -89,13 +90,17 @@ private:
       if (Err == make_error_code(DWARFError::Skip)) {
         return {};
       }
+      errs() << "error " << Err.value() << " while parsing\n";
       Die.dump(errs(), 1);
+      errs() << "========\n";
       return Err;
     }
     auto Ty = ErrOrTy.get();
     if (auto* DFTy = dyn_cast<dffi::FunctionType>(Ty.getType())) {
       auto Name = getDwarfFieldAsCString(Die, dwarf::DW_AT_name, DWARFError::NameMissing);
       if (!Name) {
+        if (Name.getError() == make_error_code(DWARFError::NameMissing))
+          return {};
         errs() << "unable to get function name!\n";
         return Name.getError();
       }
@@ -167,6 +172,7 @@ private:
   raw_string_ostream Wrappers_;
   TypePrinter Printer_;
   TypesCacheTy Cache_;
+  size_t AnonID_ = 0;
 };
 
 ErrorOr<dffi::QualType> DWARFCUParser::getTypeFromDIE(DWARFDie const& Die)
@@ -176,7 +182,7 @@ ErrorOr<dffi::QualType> DWARFCUParser::getTypeFromDIE(DWARFDie const& Die)
   switch (Tag) {
     case dwarf::DW_TAG_const_type:
     {
-      auto Ty = getDwarfFieldAsType(Die, dwarf::DW_AT_type, DWARFError::TypeMissing);
+      auto Ty = getDwarfFieldAsType(Die, dwarf::DW_AT_type, dffi::QualType{nullptr});
       if (!Ty) {
         return Ty.getError();
       }
@@ -195,13 +201,30 @@ ErrorOr<dffi::QualType> DWARFCUParser::getTypeFromDIE(DWARFDie const& Die)
   }
   QualType QRetTy(nullptr);
   switch (Tag) {
+    case dwarf::DW_TAG_array_type:
+      {
+      auto EltTy = getDwarfFieldAsType(Die, dwarf::DW_AT_type, DWARFError::TypeMissing);
+      if (!EltTy) {
+        return EltTy.getError();
+      }
+      auto Child = Die.getFirstChild();
+      if (!Child || Child.getTag() != dwarf::DW_TAG_subrange_type) {
+        return make_error_code(DWARFError::InvalidTag);
+      }
+      auto NElts = getDwarfFieldAsUnsigned(Child, dwarf::DW_AT_count, DWARFError::CountMissing);
+      if (!NElts) {
+        return NElts.getError();
+      }
+      QRetTy = CU_.getArrayType(EltTy.get(), NElts.get());
+      break;
+    }
     case dwarf::DW_TAG_pointer_type:
     {
-      auto PtyTy = getDwarfFieldAsType(Die, dwarf::DW_AT_type, DWARFError::TypeMissing);
-      if (!PtyTy) {
-        return PtyTy.getError();
+      auto EltTy = getDwarfFieldAsType(Die, dwarf::DW_AT_type, dffi::QualType{nullptr});
+      if (!EltTy) {
+        return EltTy.getError();
       }
-      QRetTy = CU_.getPointerType(PtyTy.get());
+      QRetTy = CU_.getPointerType(EltTy.get());
       break;
     }
     case dwarf::DW_TAG_base_type:
@@ -212,6 +235,7 @@ ErrorOr<dffi::QualType> DWARFCUParser::getTypeFromDIE(DWARFDie const& Die)
       }
       auto ByteSize = getDwarfFieldAsUnsigned(Die, dwarf::DW_AT_byte_size, DWARFError::ByteSizeMissing);
       if (!ByteSize) {
+        errs() << "base type size missing\n";
         return ByteSize.getError();
       }
       auto Name = getDwarfFieldAsCString(Die, dwarf::DW_AT_name, DWARFError::NameMissing);
@@ -221,24 +245,25 @@ ErrorOr<dffi::QualType> DWARFCUParser::getTypeFromDIE(DWARFDie const& Die)
       QRetTy = CU_.getBasicTypeFromDWARF(Enc.get(), ByteSize.get() * CHAR_BIT, Name.get());
       break;
     }
+    case dwarf::DW_TAG_subroutine_type:
     case dwarf::DW_TAG_subprogram:
     {
-      // TODO: what to do if not implemented?
       auto Prototyped = getDwarfFieldAsUnsigned(Die, dwarf::DW_AT_prototyped, 0);
       if (!Prototyped) {
         return Prototyped.getError();
       }
       if (!Prototyped.get()) {
+        // TODO: what to really do if not implemented?
         return make_error_code(DWARFError::Skip);
       }
 
-      auto RetTy = getDwarfFieldAsType(Die, dwarf::DW_AT_type, nullptr);
+      auto RetTy = getDwarfFieldAsType(Die, dwarf::DW_AT_type, dffi::QualType{nullptr});
       if (!RetTy) {
         return RetTy.getError();
       }
       llvm::SmallVector<QualType, 8> ParamsTy;
       for (auto Child: Die.children()) {
-        if (Child.getTag() == dwarf::DW_TAG_inlined_subroutine) {
+        if (Child.getTag() != dwarf::DW_TAG_formal_parameter) {
           continue;
         }
         auto ErrOrTy = getTypeFromDIE(Child);
@@ -300,13 +325,33 @@ ErrorOr<dffi::QualType> DWARFCUParser::getTypeFromDIE(DWARFDie const& Die)
           NewTy.reset(new StructType{DFFI});
           break;
       };
+      auto* Ret = NewTy.get();
 
-      // TODO: support anonymous union/structures
-      auto Name = getDwarfFieldAsCString(Die, dwarf::DW_AT_name, DWARFError::NameMissing);
-      if (!Name) {
-        return Name.getError();
+      auto Name_ = getDwarfFieldAsCString(Die, dwarf::DW_AT_name, DWARFError::NameMissing);
+      std::string Name;
+      if (!Name_) {
+        if (Name_.getError() == make_error_code(DWARFError::NameMissing)) {
+          // Anonymous union/struct
+          auto ID = AnonID_++;
+          std::stringstream ss;
+          ss << "__dffi_anon_struct_" << ID;
+          Name = ss.str();
+        }
+        else
+          return Name_.getError();
+      }
+      else {
+        Name = Name_.get();
       }
       Cache_.insert(std::make_pair(Die.getOffset(), NewTy.get()));
+
+      auto IsOpaque = getDwarfFieldAsUnsigned(Die, dwarf::DW_AT_declaration, 0);
+      if (!IsOpaque) {
+        return IsOpaque.getError();
+      }
+      if (IsOpaque.get()) {
+        return Ret;
+      }
 
       std::vector<CompositeField> Fields;
       unsigned Align = 1;
@@ -334,18 +379,33 @@ ErrorOr<dffi::QualType> DWARFCUParser::getTypeFromDIE(DWARFDie const& Die)
 
       auto Size = getDwarfFieldAsUnsigned(Die, dwarf::DW_AT_byte_size, DWARFError::ByteSizeMissing);
       if (!Size) {
+        errs() << "byte size missing in\n";
+        Die.dump(errs(), 1);
         return Size.getError();
       }
       NewTy->setBody(std::move(Fields), Size.get(), Align);
 
-      auto* Ret = NewTy.get();
-      CU_.CompositeTys_.insert(std::make_pair(Name.get(), std::move(NewTy)));
+      auto InsRet = CU_.CompositeTys_.try_emplace(Name, std::move(NewTy));
+      if (!InsRet.second) {
+        auto* Other = cast<CompositeType>(InsRet.first->second.get());
+        if (Other->isOpaque()) {
+          *Other = std::move(*NewTy);
+        }
+        else
+        if (!Other->isSame(*Ret)) {
+          unreachable("two types with the same name are different!");
+        }
+      }
       // Return directly as we have already populated the cache!
       return Ret;
     }
+    case dwarf::DW_TAG_variable:
+      return make_error_code(DWARFError::Skip);
     default:
+    {
       errs() << "tag: " << TagString(Tag) << "\n";
-      return nullptr;
+      return make_error_code(DWARFError::Skip);
+    }
   }
   Cache_.insert(std::make_pair(Die.getOffset(), QRetTy));
   return QRetTy;
