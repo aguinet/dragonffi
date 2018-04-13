@@ -63,6 +63,10 @@ public:
   virtual unsigned getAlign() const { return 1; }
   virtual uint64_t getSize() const { return 1; }
 
+  // This function makes a full tree comparaison of two types to check whether they are the same.
+  // WARNING: this is very costly! Pointer comparaison should be used for inner-CU comparaisons!
+  bool isSame(Type const& O) const;
+
   details::DFFIImpl& getDFFI() const { return Dffi_; }
 };
 
@@ -106,6 +110,9 @@ public:
 
   unsigned getAlign() const override;
   uint64_t getSize() const override;
+
+  using Type::isSame;
+  bool isSame(BasicType const&) const;
 
   template <class T>
   static constexpr BasicKind getKind(); 
@@ -198,6 +205,13 @@ public:
   bool operator>(QualType const& O) const { return Ty_ > O.Ty_; }
   bool operator==(QualType const& O) const { return Ty_ == O.Ty_; }
 
+  bool isSame(QualType O) const {
+    if (getQualifiers() != O.getQualifiers()) {
+      return false;
+    }
+    return O->isSame(*O.getType());
+  }
+
   uintptr_t getRawValue() const { return Ty_; }
 private:
   static constexpr uintptr_t QMask = 1;
@@ -237,6 +251,9 @@ public:
 
   static PointerType const* get(QualType Ty);
 
+  using Type::isSame;
+  bool isSame(PointerType const&) const;
+
 private:
   PointerType(details::DFFIImpl& Dffi, QualType Pointee);
 
@@ -262,6 +279,9 @@ public:
 
   NativeFunc getFunction(void* Ptr) const;
   NativeFunc getFunction(Type const** VarArgsTys, size_t VarArgsCount, void* Ptr) const;
+
+  using Type::isSame;
+  bool isSame(FunctionType const&) const;
 
 protected:
   FunctionType(details::DFFIImpl& Dffi, QualType RetTy, ParamsVecTy ParamsTy, CallingConv CC, bool VarArgs);
@@ -290,6 +310,9 @@ public:
   Type const* getElementType() const { return Ty_; }
   uint64_t getNumElements() const { return NElements_; }
   uint64_t getSize() const override { return Ty_->getSize()*NElements_; }
+
+  using Type::isSame;
+  bool isSame(ArrayType const&) const;
 
 protected:
   ArrayType(details::DFFIImpl& Dffi, QualType Ty, uint64_t NElements);

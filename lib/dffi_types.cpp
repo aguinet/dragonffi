@@ -26,10 +26,40 @@ Type::Type(details::DFFIImpl& Dffi, TypeKind K):
   Dffi_(Dffi)
 { }
 
+bool Type::isSame(Type const& O) const
+{
+  const auto Kind = getKind();
+  if (Kind != O.getKind()) {
+    return false;
+  }
+
+  switch (Kind) {
+#define HANDLE_TY(Kind, Ty)\
+    case Kind:\
+      return cast<Ty>(*this).isSame(cast<Ty>(O));
+    HANDLE_TY(TY_Basic, BasicType)
+    HANDLE_TY(TY_Pointer, PointerType)
+    HANDLE_TY(TY_Function, FunctionType)
+    HANDLE_TY(TY_Array, ArrayType)
+    HANDLE_TY(TY_Struct, StructType)
+    HANDLE_TY(TY_Union, UnionType)
+    HANDLE_TY(TY_Enum, EnumType)
+    default:
+      unreachable("unknown type kind!");
+#undef HANDLE_TY
+  };
+  return false;
+}
+
 BasicType::BasicType(details::DFFIImpl& Dffi, BasicKind BKind):
   Type(Dffi, TY_Basic),
   BKind_(BKind)
 { }
+
+bool BasicType::isSame(BasicType const& O) const
+{
+  return getBasicKind() == O.getBasicKind();
+}
 
 unsigned BasicType::getAlign() const
 {
@@ -146,6 +176,28 @@ FunctionType::FunctionType(details::DFFIImpl& Dffi, QualType RetTy, ParamsVecTy 
   Flags_.D.VarArgs = VarArgs;
 }
 
+bool FunctionType::isSame(FunctionType const& O) const
+{
+  if (Flags_.V != O.Flags_.V) {
+    return false;
+  }
+  if (!RetTy_.isSame(O.RetTy_)) {
+    return false;
+  }
+  if (ParamsTy_.size() != O.ParamsTy_.size()) {
+    return false;
+  }
+  auto It = ParamsTy_.begin();
+  const auto ItEnd = ParamsTy_.end();
+  auto ItO = O.ParamsTy_.begin();
+  for (; It != ItEnd; ++It, ++ItO) {
+    if (!It->isSame(*ItO)) {
+      return false;
+    }
+  }
+  return true;
+}
+
 NativeFunc FunctionType::getFunction(void* Ptr) const
 {
   return getDFFI().getFunction(this, Ptr);
@@ -171,6 +223,11 @@ PointerType::PointerType(details::DFFIImpl& Dffi, QualType Pointee):
   Pointee_(Pointee)
 { }
 
+bool PointerType::isSame(PointerType const& O) const
+{
+  return getPointee() == O.getPointee();
+}
+
 PointerType const* PointerType::get(QualType Ty)
 {
   return Ty->getDFFI().getPointerType(Ty);
@@ -187,11 +244,41 @@ ArrayType::ArrayType(details::DFFIImpl& Dffi, QualType Ty, uint64_t NElements):
   NElements_(NElements)
 { }
 
+bool ArrayType::isSame(ArrayType const& O) const
+{
+  if (NElements_ != O.NElements_) {
+    return false;
+  }
+  return Ty_ == O.Ty_;
+}
+
 CompositeField::CompositeField(const char* Name, Type const* Ty, unsigned Offset):
   Name_(Name),
   Ty_(Ty),
   Offset_(Offset)
 { }
+
+bool CompositeType::isSame(CompositeType const& O) const
+{
+  if (getKind() != O.getKind() || Size_ != O.Size_ || Align_ != O.Align_) {
+    return false;
+  }
+  if (FieldsMap_.size() != O.FieldsMap_.size()) {
+    return false;
+  }
+  auto ItThis = FieldsMap_.begin();
+  const auto ItThisEnd = FieldsMap_.end();
+  auto ItO = O.FieldsMap_.end();
+  for (; ItThis != ItThisEnd; ++ItThis, ++ItO) {
+    if (ItThis->first != ItO->first) {
+      return false;
+    }
+    if (!ItThis->second->isSame(*ItO->second)) {
+      return false;
+    }
+  }
+  return true;
+}
 
 CanOpaqueType::CanOpaqueType(details::DFFIImpl& Dffi, TypeKind Ty):
   Type(Dffi, Ty),
