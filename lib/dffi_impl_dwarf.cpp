@@ -96,7 +96,7 @@ private:
       return Err;
     }
     auto Ty = ErrOrTy.get();
-    if (auto* DFTy = dyn_cast<dffi::FunctionType>(Ty.getType())) {
+    if (auto* DFTy = dyn_cast_or_null<dffi::FunctionType>(Ty.getType())) {
       auto Name = getDwarfFieldAsCString(Die, dwarf::DW_AT_name, DWARFError::NameMissing);
       if (!Name) {
         if (Name.getError() == make_error_code(DWARFError::NameMissing))
@@ -190,7 +190,8 @@ ErrorOr<dffi::QualType> DWARFCUParser::getTypeFromDIE(DWARFDie const& Die)
     }
     case dwarf::DW_TAG_typedef:
     case dwarf::DW_TAG_formal_parameter:
-      return getDwarfFieldAsType(Die, dwarf::DW_AT_type, DWARFError::TypeMissing);
+    case dwarf::DW_TAG_volatile_type:
+      return getDwarfFieldAsType(Die, dwarf::DW_AT_type, dffi::QualType{nullptr});
     default:
       break;
   };
@@ -213,6 +214,8 @@ ErrorOr<dffi::QualType> DWARFCUParser::getTypeFromDIE(DWARFDie const& Die)
       }
       auto NElts = getDwarfFieldAsUnsigned(Child, dwarf::DW_AT_count, DWARFError::CountMissing);
       if (!NElts) {
+        errs() << "count missing\n";
+        Child.dump(errs(), 1);
         return NElts.getError();
       }
       QRetTy = CU_.getArrayType(EltTy.get(), NElts.get());
@@ -283,58 +286,22 @@ ErrorOr<dffi::QualType> DWARFCUParser::getTypeFromDIE(DWARFDie const& Die)
       break;
     }
     case dwarf::DW_TAG_enumeration_type:
-    {
-      auto Name = getDwarfFieldAsCString(Die, dwarf::DW_AT_name, DWARFError::NameMissing);
-      if (!Name) {
-        return Name.getError();
-      }
-
-      std::unique_ptr<EnumType> NewTy(new EnumType{getDFFI()});
-      Cache_.insert(std::make_pair(Die.getOffset(), NewTy.get()));
-      EnumType::Fields Fields;
-      for (auto Field: Die.children()) {
-        if (Field.getTag() != dwarf::DW_TAG_enumerator) {
-          return make_error_code(DWARFError::InvalidTag);
-        }
-        auto Name = getDwarfFieldAsCString(Field, dwarf::DW_AT_name, DWARFError::NameMissing);
-        if (!Name) {
-          return Name.getError();
-        }
-        auto Value = getDwarfFieldAsSigned(Field, dwarf::DW_AT_const_value, DWARFError::ValueMissing);
-        if (!Value) {
-          return Value.getError();
-        }
-        Fields[Name.get()] = Value.get();
-      }
-      NewTy->setBody(std::move(Fields));
-      auto* Ret = NewTy.get();
-      CU_.CompositeTys_.insert(std::make_pair(Name.get(), std::move(NewTy)));
-      return Ret;
-    }
     case dwarf::DW_TAG_union_type:
     case dwarf::DW_TAG_structure_type:
     {
-      // Create an empty structure type and register it earlier in the cache.
-      auto& DFFI = getDFFI();
-      std::unique_ptr<CompositeType> NewTy;
-      switch (Tag) {
-        case dwarf::DW_TAG_union_type:
-          NewTy.reset(new UnionType{DFFI});
-          break;
-        case dwarf::DW_TAG_structure_type:
-          NewTy.reset(new StructType{DFFI});
-          break;
-      };
-      auto* Ret = NewTy.get();
-
       auto Name_ = getDwarfFieldAsCString(Die, dwarf::DW_AT_name, DWARFError::NameMissing);
+      auto IsOpaque = getDwarfFieldAsUnsigned(Die, dwarf::DW_AT_declaration, 0);
+      if (!IsOpaque) {
+        return IsOpaque.getError();
+      }
+
       std::string Name;
       if (!Name_) {
         if (Name_.getError() == make_error_code(DWARFError::NameMissing)) {
           // Anonymous union/struct
           auto ID = AnonID_++;
           std::stringstream ss;
-          ss << "__dffi_anon_struct_" << ID;
+          ss << "__dffi_anon_" << ID;
           Name = ss.str();
         }
         else
@@ -343,59 +310,96 @@ ErrorOr<dffi::QualType> DWARFCUParser::getTypeFromDIE(DWARFDie const& Die)
       else {
         Name = Name_.get();
       }
-      Cache_.insert(std::make_pair(Die.getOffset(), NewTy.get()));
 
-      auto IsOpaque = getDwarfFieldAsUnsigned(Die, dwarf::DW_AT_declaration, 0);
-      if (!IsOpaque) {
-        return IsOpaque.getError();
+      CanOpaqueType* Ret;
+      auto ItFind = CU_.CompositeTys_.find(Name);
+
+      if (ItFind != CU_.CompositeTys_.end()) {
+        Ret = ItFind->second.get();
+        if (Ret->isOpaque() && !IsOpaque.get()) {
+          // Do the process
+        }
+        else {
+          // TODO: check they are the same!
+          return Ret;
+        }
       }
+      else {
+        auto& DFFI = getDFFI();
+        std::unique_ptr<CanOpaqueType> NewTy;
+        switch (Tag) {
+          case dwarf::DW_TAG_union_type:
+            NewTy.reset(new UnionType{DFFI});
+            break;
+          case dwarf::DW_TAG_structure_type:
+            NewTy.reset(new StructType{DFFI});
+            break;
+          case dwarf::DW_TAG_enumeration_type:
+            NewTy.reset(new EnumType{DFFI});
+            break;
+        };
+        Ret = NewTy.get();
+        CU_.CompositeTys_[Name] = std::move(NewTy);
+      }
+
+      Cache_.insert(std::make_pair(Die.getOffset(), Ret));
+
       if (IsOpaque.get()) {
         return Ret;
       }
 
-      std::vector<CompositeField> Fields;
-      unsigned Align = 1;
-      // Parse the structure! Every children must be a TAG_member
-      for (auto Field: Die.children()) {
-        if (Field.getTag() != dwarf::DW_TAG_member) {
-          return make_error_code(DWARFError::InvalidTag);
+      if (Tag == dwarf::DW_TAG_enumeration_type) {
+        EnumType::Fields Fields;
+        for (auto Field: Die.children()) {
+          if (Field.getTag() != dwarf::DW_TAG_enumerator) {
+            continue;
+          }
+          auto Name = getDwarfFieldAsCString(Field, dwarf::DW_AT_name, DWARFError::NameMissing);
+          if (!Name) {
+            return Name.getError();
+          }
+          auto Value = getDwarfFieldAsSigned(Field, dwarf::DW_AT_const_value, DWARFError::ValueMissing);
+          if (!Value) {
+            return Value.getError();
+          }
+          Fields[Name.get()] = Value.get();
         }
-        auto Name = getDwarfFieldAsCString(Field, dwarf::DW_AT_name, DWARFError::NameMissing);
-        if (!Name) {
-          return Name.getError();
-        }
-        auto Offset = getDwarfFieldAsUnsigned(Field, dwarf::DW_AT_data_member_location, DWARFError::OffsetMissing);
-        if (!Offset) {
-          return Offset.getError();
-        }
-        auto FTy = getDwarfFieldAsType(Field, dwarf::DW_AT_type, DWARFError::TypeMissing);
-        if (!FTy) {
-          return FTy.getError();
-        }
-        Fields.emplace_back(CompositeField{Name.get(), FTy.get(), static_cast<unsigned>(Offset.get())});
+        cast<EnumType>(Ret)->setBody(std::move(Fields));
+      }
+      else {
+        std::vector<CompositeField> Fields;
+        unsigned Align = 1;
+        // Parse the structure! Every children must be a TAG_member
+        for (auto Field: Die.children()) {
+          if (Field.getTag() != dwarf::DW_TAG_member) {
+            continue;
+          }
+          auto Name = getDwarfFieldAsCString(Field, dwarf::DW_AT_name, DWARFError::NameMissing);
+          if (!Name) {
+            return Name.getError();
+          }
+          auto Offset = getDwarfFieldAsUnsigned(Field, dwarf::DW_AT_data_member_location, DWARFError::OffsetMissing);
+          if (!Offset) {
+            return Offset.getError();
+          }
+          auto FTy = getDwarfFieldAsType(Field, dwarf::DW_AT_type, DWARFError::TypeMissing);
+          if (!FTy) {
+            return FTy.getError();
+          }
+          Fields.emplace_back(CompositeField{Name.get(), FTy.get(), static_cast<unsigned>(Offset.get())});
 
-        Align = std::max(Align, FTy->getType()->getAlign());
+          Align = std::max(Align, FTy->getType()->getAlign());
+        }
+
+        auto Size = getDwarfFieldAsUnsigned(Die, dwarf::DW_AT_byte_size, DWARFError::ByteSizeMissing);
+        if (!Size) {
+          errs() << "byte size missing in\n";
+          Die.dump(errs(), 1);
+          return Size.getError();
+        }
+        cast<CompositeType>(Ret)->setBody(std::move(Fields), Size.get(), Align);
       }
 
-      auto Size = getDwarfFieldAsUnsigned(Die, dwarf::DW_AT_byte_size, DWARFError::ByteSizeMissing);
-      if (!Size) {
-        errs() << "byte size missing in\n";
-        Die.dump(errs(), 1);
-        return Size.getError();
-      }
-      NewTy->setBody(std::move(Fields), Size.get(), Align);
-
-      auto InsRet = CU_.CompositeTys_.try_emplace(Name, std::move(NewTy));
-      if (!InsRet.second) {
-        auto* Other = cast<CompositeType>(InsRet.first->second.get());
-        if (Other->isOpaque()) {
-          *Other = std::move(*NewTy);
-        }
-        else
-        if (!Other->isSame(*Ret)) {
-          unreachable("two types with the same name are different!");
-        }
-      }
       // Return directly as we have already populated the cache!
       return Ret;
     }

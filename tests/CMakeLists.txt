@@ -28,7 +28,6 @@ if (BUILD_TESTS)
     compile_error
     decl
     enum
-    from_dwarf
     func_ptr
     includes
     inline
