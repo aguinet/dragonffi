@@ -14,6 +14,8 @@ case $ARCH in
     ;;
 esac
 
+cat /proc/sys/fs/binfmt_misc/status
+
 # Get LLVM
 get_llvm lnx$ARCH $LLVM_HASH
 
