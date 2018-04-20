@@ -1,8 +1,15 @@
 #ifndef DFFI_CONFIG_H
 #define DFFI_CONFIG_H
 
-#cmakedefine DFFI_SUPPORT_I128
-#cmakedefine DFFI_SUPPORT_COMPLEX
-#cmakedefine LLVM_DEBUG
+#cmakedefine HAVE_INT128_T
+#cmakedefine HAVE_COMPLEX_T
+
+#ifdef HAVE_INT128_T
+#define DFFI_SUPPORT_I128
+#endif
+
+#ifdef HAVE_COMPLEX_T
+#define DFFI_SUPPORT_COMPLEX
+#endif
 
 #endif

@@ -1,6 +1,8 @@
 #ifndef DFFI_CTYPES
 #define DFFI_CTYPES
 
+#include <dffi/config.h>
+
 // Nothing states in the C++ standard that C basic types are the same than C++
 // basic types. We thus typedef them using extern "C" here!
 
@@ -21,6 +23,10 @@ typedef unsigned long long c_unsigned_long_long;
 typedef float c_float;
 typedef double c_double;
 typedef long double c_long_double;
+#ifdef DFFI_SUPPORT_I128
+typedef __uint128_t c___uint128_t;
+typedef __int128_t c___int128_t;
+#endif
 #ifdef DFFI_SUPPORT_COMPLEX
 typedef _Complex float c_complex_float;
 typedef _Complex double c_complex_double;
