@@ -284,7 +284,7 @@ py::object basictype_new(BasicType const& BTy, py::handle O)
     HANDLE_BASICTY(LongDouble, c_long_double);
 #ifdef DFFI_SUPPORT_COMPLEX
     HANDLE_BASICTY(ComplexFloat, c_complex_float);
-    HANDLE_BASICTY(ComplexDouble, c_omplex_double);
+    HANDLE_BASICTY(ComplexDouble, c_complex_double);
     HANDLE_BASICTY(ComplexLongDouble, c_complex_long_double);
 #endif
 #undef HANDLE_BASICTY
