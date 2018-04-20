@@ -191,6 +191,7 @@ ErrorOr<dffi::QualType> DWARFCUParser::getTypeFromDIE(DWARFDie const& Die)
     case dwarf::DW_TAG_typedef:
     case dwarf::DW_TAG_formal_parameter:
     case dwarf::DW_TAG_volatile_type:
+    case dwarf::DW_TAG_restrict_type:
       return getDwarfFieldAsType(Die, dwarf::DW_AT_type, dffi::QualType{nullptr});
     default:
       break;
@@ -212,13 +213,23 @@ ErrorOr<dffi::QualType> DWARFCUParser::getTypeFromDIE(DWARFDie const& Die)
       if (!Child || Child.getTag() != dwarf::DW_TAG_subrange_type) {
         return make_error_code(DWARFError::InvalidTag);
       }
-      auto NElts = getDwarfFieldAsUnsigned(Child, dwarf::DW_AT_count, DWARFError::CountMissing);
-      if (!NElts) {
-        errs() << "count missing\n";
-        Child.dump(errs(), 1);
-        return NElts.getError();
+      auto LowerBound = getDwarfFieldAsUnsigned(Child, dwarf::DW_AT_lower_bound, 0);
+      if (!LowerBound) {
+        return LowerBound.getError();
       }
-      QRetTy = CU_.getArrayType(EltTy.get(), NElts.get());
+      size_t Count;
+      auto NElts = getDwarfFieldAsUnsigned(Child, dwarf::DW_AT_count, DWARFError::CountMissing);
+      if (!NElts && NElts.getError() == make_error_code(DWARFError::CountMissing)) {
+        auto HighBound = getDwarfFieldAsUnsigned(Child, dwarf::DW_AT_upper_bound, 0);
+        if (!HighBound) {
+          return HighBound.getError();
+        }
+        Count = HighBound.get()-LowerBound.get()+1;
+      }
+      else {
+        Count = NElts.get() + LowerBound.get();
+      }
+      QRetTy = CU_.getArrayType(EltTy.get(), Count);
       break;
     }
     case dwarf::DW_TAG_pointer_type:
@@ -380,7 +391,13 @@ ErrorOr<dffi::QualType> DWARFCUParser::getTypeFromDIE(DWARFDie const& Die)
           }
           auto Offset = getDwarfFieldAsUnsigned(Field, dwarf::DW_AT_data_member_location, DWARFError::OffsetMissing);
           if (!Offset) {
-            return Offset.getError();
+            // No offset in union is fine!
+            if (Tag == dwarf::DW_TAG_union_type && Offset.getError() == make_error_code(DWARFError::OffsetMissing)) {
+              Offset = 0;
+            }
+            else {
+              return Offset.getError();
+            }
           }
           auto FTy = getDwarfFieldAsType(Field, dwarf::DW_AT_type, DWARFError::TypeMissing);
           if (!FTy) {
@@ -403,6 +420,7 @@ ErrorOr<dffi::QualType> DWARFCUParser::getTypeFromDIE(DWARFDie const& Die)
       // Return directly as we have already populated the cache!
       return Ret;
     }
+    case dwarf::DW_TAG_dwarf_procedure:
     case dwarf::DW_TAG_variable:
       return make_error_code(DWARFError::Skip);
     default:
