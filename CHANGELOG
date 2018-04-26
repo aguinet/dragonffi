@@ -1,9 +1,10 @@
-0.3.0
+0.2.2
 -----
 
 Features:
 
 * Support for variadic functions
+* Official support of the library for Linux/AArch64
 
 Improvements:
 
@@ -16,7 +17,7 @@ Bug fixes:
 * Some functions (like malloc, printf, ...) that are pre-declared by clang
   weren't considered by cdef
 * Support inline functions in cdef
-
+* Fix support for (u)int128_t and complex types!
 
 0.2.1
 -----

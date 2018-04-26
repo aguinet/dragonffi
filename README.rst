@@ -17,6 +17,7 @@ considered stable yet!
 Supported OSes/architectures:
 
 * Linux i386/x64, with bindings for python 2/3
+* Linux/AArch64. Python bindings are known to work but aren't tested yet with Travis.
 * OSX i386/x64, with bindings for python 2/3
 * Windows x64, with bindings for python 3
 
