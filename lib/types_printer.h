@@ -131,9 +131,10 @@ struct TypePrinter
     {
       auto* PTy = cast<PointerType>(Ty);
       auto* Pointee = PTy->getPointee().getType();
-      std::string PtrName = "*";
+      std::string PtrName = "(*";
       if (Name)
         PtrName += Name;
+      PtrName += ")";
       return print_def(OS,Pointee,Forward,PtrName.c_str());
     }
     case dffi::Type::TY_Function:
