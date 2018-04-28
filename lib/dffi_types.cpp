@@ -187,10 +187,11 @@ ArrayType::ArrayType(details::DFFIImpl& Dffi, QualType Ty, uint64_t NElements):
   NElements_(NElements)
 { }
 
-CompositeField::CompositeField(const char* Name, Type const* Ty, unsigned Offset):
+CompositeField::CompositeField(const char* Name, Type const* Ty, unsigned OffsetBits, unsigned SizeBits):
   Name_(Name),
   Ty_(Ty),
-  Offset_(Offset)
+  OffsetBits_(OffsetBits),
+  SizeBits_(SizeBits)
 { }
 
 CanOpaqueType::CanOpaqueType(details::DFFIImpl& Dffi, TypeKind Ty):
@@ -232,7 +233,7 @@ void UnionType::setBody(std::vector<CompositeField>&& Fields, uint64_t Size, uns
   CompositeType::setBody(std::move(Fields), Size, Align);
 #ifndef NDEBUG
   for (auto const& F: Fields_) {
-    assert(F.getOffset() == 0 && "offset of an union field must be 0!");
+    assert(F.getOffsetBits() == 0 && "offset of an union field must be 0!");
   }
 #endif
 }

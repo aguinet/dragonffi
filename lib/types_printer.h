@@ -19,6 +19,7 @@
 #include <dffi/cc.h>
 #include <dffi/types.h>
 #include <dffi/casting.h>
+#include "tools.h"
 
 using dffi::cast;
 using dffi::dyn_cast;
@@ -249,7 +250,12 @@ private:
     for (auto const& F: Ty->getFields()) {
       std::string Name = "__Field_" + std::to_string(Idx);
       ss << "  ";
-      print_def(ss, F.getType(), Full, Name.c_str()) << ";\n";
+      print_def(ss, F.getType(), Full, Name.c_str());
+      unsigned SizeBits = F.getSizeBits();
+      if (SizeBits != F.getType()->getSize()*CHAR_BIT) {
+        ss << ": " << SizeBits;
+      }
+      ss << ";\n";
       ++Idx;
     }
     ss << "};\n";

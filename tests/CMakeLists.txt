@@ -22,6 +22,7 @@ if (BUILD_TESTS)
     array
     asm_redirect
     attrs
+    bitfield
     bool
     cconv
     compile

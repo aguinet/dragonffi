@@ -849,17 +849,18 @@ void CUImpl::parseDIComposite(DICompositeType const* DCTy, llvm::Module& M)
       assert(DOp->getTag() == llvm::dwarf::DW_TAG_member && "element of a struct/union must be a DW_TAG_member!");
 
       StringRef FName = DOp->getName();
-      unsigned FOffset = DOp->getOffsetInBits()/8;
+      unsigned FOffset = DOp->getOffsetInBits();
 #ifndef NDEBUG
       if (DCTy->getTag() == dwarf::DW_TAG_union_type) {
         assert(FOffset == 0 && "union field member must have an offset of 0!");
       }
 #endif
+      unsigned FSize = DOp->getSizeInBits();
 
       DIType const* FDITy = getCanonicalDIType(DOp->getBaseType().resolve());
       dffi::Type const* FTy = getTypeFromDIType(FDITy);
 
-      Fields.emplace_back(CompositeField{FName.str().c_str(), FTy, FOffset});
+      Fields.emplace_back(CompositeField{FName.str().c_str(), FTy, FOffset, FSize});
 
       Align = std::max(Align, FTy->getAlign());
     }

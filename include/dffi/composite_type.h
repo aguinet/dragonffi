@@ -46,16 +46,18 @@ public:
   Type const* getType() const { return Ty_; }
   const char* getName() const { return Name_.c_str(); }
   
-  unsigned getOffset() const { return Offset_; }
+  unsigned getOffsetBits() const { return OffsetBits_; }
+  unsigned getSizeBits()   const { return SizeBits_; }
 
 protected:
-  CompositeField(const char* Name, Type const* Ty, unsigned Offset);
+  CompositeField(const char* Name, Type const* Ty, unsigned OffsetBits, unsigned SizeBits);
   CompositeField(CompositeField const&) = delete;
 
 private:
   std::string Name_;
   Type const* Ty_;
-  unsigned Offset_;
+  unsigned OffsetBits_;
+  unsigned SizeBits_;
 };
 
 class DFFI_API CanOpaqueType: public Type
