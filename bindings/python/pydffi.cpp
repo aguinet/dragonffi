@@ -321,6 +321,11 @@ std::unique_ptr<CPointerObj> cpointerobj_new(PointerType const& PTy)
   return std::unique_ptr<CPointerObj>{new CPointerObj{PTy, Data<void*>::emplace_owned(nullptr)}};
 }
 
+std::unique_ptr<CArrayObj> carraytype_new(ArrayType const& ATy)
+{
+  return std::unique_ptr<CArrayObj>{new CArrayObj{ATy}};
+}
+
 std::unique_ptr<CBasicObj<int>> enumtype_get(EnumType const& ETy, const char* Name)
 {
   auto const& Fields = ETy.getFields();
@@ -399,6 +404,7 @@ PYBIND11_MODULE(pydffi, m)
 
   py::class_<ArrayType>(m, "ArrayType", type)
     .def("elementType", &ArrayType::getElementType, py::return_value_policy::reference_internal)
+    .def("__call__", carraytype_new, py::keep_alive<0,1>())
     ;
 
   py::class_<FunctionType>(m, "FunctionType", type)
@@ -601,6 +607,8 @@ PYBIND11_MODULE(pydffi, m)
   // Array object
   py::class_<CArrayObj>(m, "CArrayObj", py::buffer_protocol(), cobj)
     .def(py::init<ArrayType const&>(), py::keep_alive<1, 2>())
+    .def("__setitem__", &CArrayObj::set)
+    .def("__getitem__", &CArrayObj::get)
     .def("set", &CArrayObj::set)
     .def("get", &CArrayObj::get)
     .def("elementType", &CArrayObj::getElementType, py::return_value_policy::reference_internal)

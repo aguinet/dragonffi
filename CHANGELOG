@@ -1,6 +1,10 @@
 0.2.3-dev
 ---------
 
+Improvements:
+
+* Better python API for arrays
+
 Bug fixes:
 
 * Support pointer to arrays as function arguments
