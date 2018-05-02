@@ -431,7 +431,6 @@ struct CArrayObj: public CObj
     if (!Ptr) {
       throw AllocError{"allocation failure!"};
     }
-    memset(Ptr, 0xDD, Size);
     Data_ = Data<void>::owned_free(Ptr);
   }
 

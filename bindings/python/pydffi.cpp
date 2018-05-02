@@ -619,7 +619,7 @@ PYBIND11_MODULE(pydffi, m)
           // TODO: using ssize_t is a concern here!
           static_cast<ssize_t>(EltTy->getSize()),
           getFormatDescriptor(EltTy),
-          static_cast<ssize_t>(O.getType()->getSize())
+          static_cast<ssize_t>(O.getType()->getNumElements())
         };
       })
     ;
