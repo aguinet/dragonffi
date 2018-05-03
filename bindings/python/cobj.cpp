@@ -358,6 +358,55 @@ py::object CCompositeObj::getValue(CompositeField const& Field)
   return TypeDispatcher<ValueGetter>::switch_(Field.getType(), Ptr);
 }
 
+py::object CStructObj::getValue(CompositeField const& Field)
+{
+  auto* FTy = Field.getType();
+  if (auto* BFTy = dyn_cast_or_null<BasicType>(FTy)) {
+    const auto TySizeBits = BFTy->getSize()*8;
+    if ((Field.getOffsetBits() & 7 != 0) ||
+        TySizeBits != Field.getSizeBits()) {
+      return getValueBits(Field);
+    }
+  }
+  return getValue(Field);
+}
+
+template <class T>
+py::object getValueBits(void* Ptr, CompositeField const& Field)
+{
+  T Ret = 0;
+  return py::cast(Ret);
+}
+
+py::object CStructObj::getValueBits(CompositeField const& Field)
+{
+  auto* Ty = cast<BasicType>(Field.getType());
+#define HANDLE_BASICTY(DTy, CTy)\
+  case BasicType::DTy:\
+    return getValueBits<CTy>(getData(), Field);
+
+  switch (BTy->getBasicKind()) {
+    HANDLE_BASICTY(Bool, c_bool);
+    HANDLE_BASICTY(Char, c_char);
+    HANDLE_BASICTY(UChar, c_unsigned_char);
+    HANDLE_BASICTY(UShort, c_unsigned_short);
+    HANDLE_BASICTY(UInt, c_unsigned_int);
+    HANDLE_BASICTY(ULong, c_unsigned_long);
+    HANDLE_BASICTY(ULongLong, c_unsigned_long_long);
+    HANDLE_BASICTY(SChar, c_signed_char);
+    HANDLE_BASICTY(Short, c_short);
+    HANDLE_BASICTY(Int, c_int);
+    HANDLE_BASICTY(Long, c_long);
+    HANDLE_BASICTY(LongLong, c_long_long);
+    HANDLE_BASICTY(Float, c_float);
+    HANDLE_BASICTY(Double, c_double);
+#undef HANDLE_BASICTY
+    default:
+      break;
+  };
+  report_fatal_error("unknown basic type!");
+}
+
 std::unique_ptr<CObj> CPointerObj::getObj() {
   return TypeDispatcher<PtrToObjView>::switch_(getPointeeType(), getPtr());
 }

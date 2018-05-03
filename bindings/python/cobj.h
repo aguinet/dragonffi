@@ -538,6 +538,8 @@ struct CStructObj: public CCompositeObj
   CStructObj(dffi::StructType const& Ty):
     CCompositeObj(Ty)
   { }
+
+  pybind11::object getValue(dffi::CompositeField const& Field);
 };
 
 struct CUnionObj: public CCompositeObj
