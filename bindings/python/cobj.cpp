@@ -361,20 +361,43 @@ py::object CCompositeObj::getValue(CompositeField const& Field)
 py::object CStructObj::getValue(CompositeField const& Field)
 {
   auto* FTy = Field.getType();
-  if (auto* BFTy = dyn_cast_or_null<BasicType>(FTy)) {
-    const auto TySizeBits = BFTy->getSize()*8;
-    if ((Field.getOffsetBits() & 7 != 0) ||
-        TySizeBits != Field.getSizeBits()) {
-      return getValueBits(Field);
-    }
+  if (Field.isBitField()) {
+    return getValueBits(Field);
   }
   return getValue(Field);
 }
 
 template <class T>
-py::object getValueBits(void* Ptr, CompositeField const& Field)
+static py::object getValueBits(uint8_t* Ptr, CompositeField const& Field)
 {
-  T Ret = 0;
+  T Ret;
+  auto OffsetBits = Field.getOffsetBits();
+  auto SizeBits = Field.getSizeBits();
+
+  // First bits
+  Ret = Ptr[OffsetBits>>3];
+  const auto OffRemBits = OffsetBits & 7;
+  if (OffRemBits != 0) {
+    Ret >>= OffRemBits;
+    SizeBits -= OffRemBits;
+  }
+  else {
+    SizeBits -= 8;
+  }
+  OffsetBits = (OffsetBits + 8) & 7;
+
+  // Plain bytes
+  T Tmp;
+  memcpy(&Tmp, &Ptr[OffsetBits>>3], SizeBits>>3);
+  Ret |= Tmp<<(8-OffRemBits);
+
+  // Last bits
+  OffsetBits += SizeBits & (~7ULL);
+  SizeRemBits = SizeBits & 7;
+  if (SizeRemBits != 0) {
+    Ret |= Ptr[OffsetBits>>3] & ((1U<<SizeRemBits)-1);
+  }
+
   return py::cast(Ret);
 }
 
