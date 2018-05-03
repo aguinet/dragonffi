@@ -48,9 +48,10 @@ public:
   
   unsigned getOffsetBits() const { return OffsetBits_; }
   unsigned getSizeBits()   const { return SizeBits_; }
+  bool isBitField()        const { return IsBitField_; }
 
 protected:
-  CompositeField(const char* Name, Type const* Ty, unsigned OffsetBits, unsigned SizeBits);
+  CompositeField(const char* Name, Type const* Ty, unsigned OffsetBits, unsigned SizeBits, bool IsBitField);
   CompositeField(CompositeField const&) = delete;
 
 private:
@@ -58,6 +59,7 @@ private:
   Type const* Ty_;
   unsigned OffsetBits_;
   unsigned SizeBits_;
+  bool IsBitField_;
 };
 
 class DFFI_API CanOpaqueType: public Type

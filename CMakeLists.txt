@@ -228,7 +228,7 @@ add_custom_target(check)
 
 option(PYTHON_BINDINGS "Compile python bindings with cmake" ON)
 if (PYTHON_BINDINGS)
-  #add_subdirectory(bindings)
+  add_subdirectory(bindings)
 endif()
 option(BUILD_TESTS "Build tests" ON)
 add_subdirectory(tests)

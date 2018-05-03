@@ -187,11 +187,12 @@ ArrayType::ArrayType(details::DFFIImpl& Dffi, QualType Ty, uint64_t NElements):
   NElements_(NElements)
 { }
 
-CompositeField::CompositeField(const char* Name, Type const* Ty, unsigned OffsetBits, unsigned SizeBits):
+CompositeField::CompositeField(const char* Name, Type const* Ty, unsigned OffsetBits, unsigned SizeBits, bool IsBitField):
   Name_(Name),
   Ty_(Ty),
   OffsetBits_(OffsetBits),
-  SizeBits_(SizeBits)
+  SizeBits_(SizeBits),
+  IsBitField_(IsBitField)
 { }
 
 CanOpaqueType::CanOpaqueType(details::DFFIImpl& Dffi, TypeKind Ty):

@@ -500,7 +500,7 @@ struct CCompositeObj: public CObj
     setValue(getField(Field), Obj);
   }
 
-  pybind11::object getValue(dffi::CompositeField const& Field);
+  virtual pybind11::object getValue(dffi::CompositeField const& Field);
   pybind11::object getValue(const char* Field)
   {
     return getValue(getField(Field));
@@ -518,7 +518,8 @@ struct CCompositeObj: public CObj
 private:
   void* getFieldData(dffi::CompositeField const& F)
   {
-    return reinterpret_cast<uint8_t*>(getData()) + F.getOffset();
+    assert(F.getOffsetBits() & 7 == 0 && "getFieldData on unaligned bitfield!");
+    return reinterpret_cast<uint8_t*>(getData()) + (F.getOffsetBits() >> 3);
   }
 
   void const* getFieldData(dffi::CompositeField const& F) const
@@ -539,7 +540,8 @@ struct CStructObj: public CCompositeObj
     CCompositeObj(Ty)
   { }
 
-  pybind11::object getValue(dffi::CompositeField const& Field);
+  pybind11::object getValue(dffi::CompositeField const& Field) override final;
+  pybind11::object getValueBits(dffi::CompositeField const& Field);
 };
 
 struct CUnionObj: public CCompositeObj

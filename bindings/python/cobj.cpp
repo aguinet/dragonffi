@@ -376,7 +376,7 @@ static py::object getValueBits(uint8_t* Ptr, CompositeField const& Field)
 
   // First bits
   Ret = Ptr[OffsetBits>>3];
-  const auto OffRemBits = OffsetBits & 7;
+  const auto OffRemBits = OffsetBits & 7U;
   if (OffRemBits != 0) {
     Ret >>= OffRemBits;
     SizeBits -= OffRemBits;
@@ -393,7 +393,7 @@ static py::object getValueBits(uint8_t* Ptr, CompositeField const& Field)
 
   // Last bits
   OffsetBits += SizeBits & (~7ULL);
-  SizeRemBits = SizeBits & 7;
+  const auto SizeRemBits = SizeBits & 7U;
   if (SizeRemBits != 0) {
     Ret |= Ptr[OffsetBits>>3] & ((1U<<SizeRemBits)-1);
   }
@@ -403,12 +403,12 @@ static py::object getValueBits(uint8_t* Ptr, CompositeField const& Field)
 
 py::object CStructObj::getValueBits(CompositeField const& Field)
 {
-  auto* Ty = cast<BasicType>(Field.getType());
+  auto* Ty = dffi::cast<BasicType>(Field.getType());
 #define HANDLE_BASICTY(DTy, CTy)\
   case BasicType::DTy:\
-    return getValueBits<CTy>(getData(), Field);
+    return ::getValueBits<CTy>((uint8_t*)getData(), Field);
 
-  switch (BTy->getBasicKind()) {
+  switch (Ty->getBasicKind()) {
     HANDLE_BASICTY(Bool, c_bool);
     HANDLE_BASICTY(Char, c_char);
     HANDLE_BASICTY(UChar, c_unsigned_char);
@@ -421,13 +421,12 @@ py::object CStructObj::getValueBits(CompositeField const& Field)
     HANDLE_BASICTY(Int, c_int);
     HANDLE_BASICTY(Long, c_long);
     HANDLE_BASICTY(LongLong, c_long_long);
-    HANDLE_BASICTY(Float, c_float);
-    HANDLE_BASICTY(Double, c_double);
 #undef HANDLE_BASICTY
     default:
       break;
   };
-  report_fatal_error("unknown basic type!");
+  assert(false && "unknown basic type for bitfield!");
+  return py::none();
 }
 
 std::unique_ptr<CObj> CPointerObj::getObj() {

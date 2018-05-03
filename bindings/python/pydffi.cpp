@@ -410,7 +410,8 @@ PYBIND11_MODULE(pydffi, m)
 
   py::class_<CompositeField>(m, "CompositeField")
     .def_property_readonly("name", &CompositeField::getName)
-    .def_property_readonly("offset", &CompositeField::getOffset)
+    .def_property_readonly("offsetBits", &CompositeField::getOffsetBits)
+    .def_property_readonly("sizeBits", &CompositeField::getSizeBits)
     .def_property_readonly("type", &CompositeField::getType, py::return_value_policy::reference_internal)
     ;
 

@@ -59,6 +59,7 @@ protected:
   details::DFFIImpl& Dffi_;
 
 public:
+  virtual ~Type() { }
   TypeKind getKind() const { return Kind_; }
   virtual unsigned getAlign() const { return 1; }
   virtual uint64_t getSize() const { return 1; }

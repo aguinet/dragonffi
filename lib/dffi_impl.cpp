@@ -842,7 +842,8 @@ void CUImpl::parseDIComposite(DICompositeType const* DCTy, llvm::Module& M)
 
   if (auto* CTy = dffi::dyn_cast<CompositeType>(CATy)) {
     // Parse the structure/union and create the associated StructType/UnionType
-    std::vector<CompositeField> Fields; 
+    std::vector<CompositeField> Fields;
+    Fields.reserve(DCTy->getElements().size());
     unsigned Align = 1;
     for (auto const* Op: DCTy->getElements()) {
       auto const* DOp = llvm::cast<DIDerivedType>(Op);
@@ -850,6 +851,7 @@ void CUImpl::parseDIComposite(DICompositeType const* DCTy, llvm::Module& M)
 
       StringRef FName = DOp->getName();
       unsigned FOffset = DOp->getOffsetInBits();
+      const bool IsBitField = DOp->isBitField();
 #ifndef NDEBUG
       if (DCTy->getTag() == dwarf::DW_TAG_union_type) {
         assert(FOffset == 0 && "union field member must have an offset of 0!");
@@ -860,7 +862,7 @@ void CUImpl::parseDIComposite(DICompositeType const* DCTy, llvm::Module& M)
       DIType const* FDITy = getCanonicalDIType(DOp->getBaseType().resolve());
       dffi::Type const* FTy = getTypeFromDIType(FDITy);
 
-      Fields.emplace_back(CompositeField{FName.str().c_str(), FTy, FOffset, FSize});
+      Fields.emplace_back(CompositeField{FName.str().c_str(), FTy, FOffset, FSize, IsBitField});
 
       Align = std::max(Align, FTy->getAlign());
     }
