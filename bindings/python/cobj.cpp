@@ -370,9 +370,12 @@ py::object CStructObj::getValue(CompositeField const& Field)
 template <class T>
 static py::object getValueBits(uint8_t* Ptr, CompositeField const& Field)
 {
-  T Ret;
+  T Ret = 0;
   auto OffsetBits = Field.getOffsetBits();
   auto SizeBits = Field.getSizeBits();
+  if (SizeBits == 0) {
+    return py::cast(Ret);
+  }
 
   // First bits
   Ret = Ptr[OffsetBits>>3];
@@ -384,10 +387,10 @@ static py::object getValueBits(uint8_t* Ptr, CompositeField const& Field)
   else {
     SizeBits -= 8;
   }
-  OffsetBits = (OffsetBits + 8) & 7;
+  OffsetBits = (OffsetBits + 8) & (~7U);
 
   // Plain bytes
-  T Tmp;
+  T Tmp = 0;
   memcpy(&Tmp, &Ptr[OffsetBits>>3], SizeBits>>3);
   Ret |= Tmp<<(8-OffRemBits);
 
@@ -395,7 +398,8 @@ static py::object getValueBits(uint8_t* Ptr, CompositeField const& Field)
   OffsetBits += SizeBits & (~7ULL);
   const auto SizeRemBits = SizeBits & 7U;
   if (SizeRemBits != 0) {
-    Ret |= Ptr[OffsetBits>>3] & ((1U<<SizeRemBits)-1);
+    Tmp = Ptr[OffsetBits>>3] & ((1U<<SizeRemBits)-1);
+    Ret |= Tmp << OffsetBits;
   }
 
   return py::cast(Ret);
