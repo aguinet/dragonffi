@@ -13,3 +13,7 @@ CI:
 
 ideas:
 * shellcode generation (JITPacker)
+
+python bindings:
+* numpy types support
+* "multi-dimensional" arrays support
