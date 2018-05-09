@@ -144,6 +144,7 @@ set(DFFI_SRC
   lib/dffi_impl_clang_res.cpp
   lib/dffi_impl_dwarf.cpp
   lib/dffi_types.cpp
+  lib/dffi_types_hash.cpp
   lib/dffictx.cpp
 )
 

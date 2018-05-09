@@ -29,6 +29,7 @@ if (BUILD_TESTS)
     decl
     enum
     func_ptr
+    hash
     includes
     inline
     multiple_defs

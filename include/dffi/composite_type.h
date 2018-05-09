@@ -47,6 +47,7 @@ public:
 
   Type const* getType() const { return Ty_; }
   const char* getName() const { return Name_.c_str(); }
+  std::string const& getNameStr() const { return Name_; }
   
   unsigned getOffset() const { return Offset_; }
 
@@ -61,6 +62,7 @@ protected:
 
 private:
   std::string Name_;
+  // TODO: QualType?
   Type const* Ty_;
   unsigned Offset_;
 };

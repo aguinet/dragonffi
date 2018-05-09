@@ -27,6 +27,7 @@
 #include <dffi/cc.h>
 #include <dffi/exports.h>
 #include <dffi/native_func.h>
+#include <dffi/tools.h>
 
 namespace dffi {
 
@@ -51,6 +52,8 @@ public:
     TY_Enum,
     TY_CanOpaqueTypeEnd,
   };
+
+  using HashType = uint32_t;
 
 protected:
   Type(details::DFFIImpl& Dffi, TypeKind K);
@@ -213,8 +216,10 @@ public:
   }
 
   uintptr_t getRawValue() const { return Ty_; }
+
 private:
-  static constexpr uintptr_t QMask = 1;
+  static constexpr size_t MaskBits = 1;
+  static constexpr uintptr_t QMask = (uintptr_t{1}<<MaskBits)-1;
 
   QualType(uintptr_t Ty):
     Ty_(Ty)
@@ -280,6 +285,8 @@ public:
   NativeFunc getFunction(void* Ptr) const;
   NativeFunc getFunction(Type const** VarArgsTys, size_t VarArgsCount, void* Ptr) const;
 
+  uint8_t getFlagsRaw() const { return Flags_.V; }
+
   using Type::isSame;
   bool isSame(FunctionType const&) const;
 
@@ -313,7 +320,7 @@ public:
 
   using Type::isSame;
   bool isSame(ArrayType const&) const;
-
+  
 protected:
   ArrayType(details::DFFIImpl& Dffi, QualType Ty, uint64_t NElements);
 
