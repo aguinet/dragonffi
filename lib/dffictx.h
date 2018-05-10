@@ -129,7 +129,7 @@ struct ArrayTypeKeyInfo
 
     KeyTy(QualType EltTy, uint64_t NumElts):
       EltTy_(EltTy),
-      NumElts_(NumElts_)
+      NumElts_(NumElts)
     { }
 
     KeyTy(ArrayType const* AT):
@@ -137,7 +137,7 @@ struct ArrayTypeKeyInfo
     { }
 
     bool operator==(KeyTy const& O) const {
-      return EltTy_ == O.EltTy_ && NumElts_ == O.NumElts_;
+      return (EltTy_ == O.EltTy_) && (NumElts_ == O.NumElts_);
     }
 
     bool operator!=(KeyTy const& O) const {
