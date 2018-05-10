@@ -8,6 +8,8 @@ Improvements:
 Bug fixes:
 
 * Support pointer to arrays as function arguments
+* Fix in DFFICtx for arrays: arrays of the same type with a different number of
+  elements could be considered equal!
 
 0.2.2
 -----
