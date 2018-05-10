@@ -27,6 +27,9 @@ details::DFFICtx::~DFFICtx()
   for (FunctionType* FTy: FunctionTys_) {
     delete FTy;
   }
+  for (ArrayType* ATy: ArrayTys_) {
+    delete ATy;
+  }
 }
 
 BasicType* details::DFFICtx::getBasicType(DFFIImpl& Dffi, BasicType::BasicKind Kind)
