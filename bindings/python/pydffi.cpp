@@ -467,7 +467,7 @@ PYBIND11_MODULE(pydffi, m)
   py::class_<FunctionType>(m, "FunctionType", type)
     .def_property_readonly("returnType", &FunctionType::getReturnType, py::return_value_policy::reference_internal)
     .def_property_readonly("params", &FunctionType::getParams, py::return_value_policy::reference_internal)
-    .def("getFunction", functiontype_getfunction, py::keep_alive<0,1>())
+    .def("getWrapperLLVMStr", &FunctionType::getWrapperLLVMStr)
     .def("__call__", functiontype_getfunction, py::keep_alive<0,1>())
     ;
 

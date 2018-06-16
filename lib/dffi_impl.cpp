@@ -553,14 +553,15 @@ CUImpl* DFFIImpl::compile(StringRef const Code, StringRef CUName, bool IncludeDe
 
 void DFFIImpl::compileWrappers(TypePrinter& Printer, std::string const& Wrappers)
 {
+  auto& CI = Clang_->getInvocation();
+  auto& CGO = CI.getCodeGenOpts();
   std::string WCode = Printer.getDecls() + "\n" + Wrappers;
   std::stringstream ss;
   ss << "/__dffi_private/wrappers_" << CUIdx_++ << ".c";
-  // TODO
-  //CGO.setDebugInfo(codegenoptions::NoDebugInfo);
+  CGO.setDebugInfo(codegenoptions::NoDebugInfo);
   std::string Err;
   auto M = compile_llvm(WCode, ss.str(), Err);
-  //CGO.setDebugInfo(codegenoptions::FullDebugInfo);
+  CGO.setDebugInfo(codegenoptions::FullDebugInfo);
   if (!M) {
     errs() << WCode;
     errs() << Err;
@@ -573,10 +574,39 @@ void DFFIImpl::compileWrappers(TypePrinter& Printer, std::string const& Wrappers
 
 void* DFFIImpl::getWrapperAddress(FunctionType const* FTy)
 {
-  std::string TName = getWrapperName(FuncTyWrappers_[FTy]);
+  // TODO: merge with getWrapperAddress for varargs
+  auto Id = getFuncTypeWrapperId(FTy);
+  size_t WIdx = Id.first;
+  if (!Id.second) {
+    std::string Buf;
+    llvm::raw_string_ostream ss(Buf);
+    TypePrinter P;
+    genFuncTypeWrapper(P, WIdx, ss, FTy, None);
+    compileWrappers(P, ss.str());
+  }
+  std::string TName = getWrapperName(WIdx);
   void* Ret = (void*)EE_->getFunctionAddress(TName.c_str());
   assert(Ret && "function wrapper does not exist!");
   return Ret;
+}
+
+Function* DFFIImpl::getWrapperLLVMFunc(FunctionType const* FTy, ArrayRef<Type const*> VarArgs)
+{
+  // TODO: suboptimal. Lookup of the wrapper ID is done twice, and the full
+  // compilation of the wrapper is done, whereas it might not be necessary!
+  getWrapperAddress(FTy);
+
+  std::pair<size_t, bool> Id;
+  if (FTy->hasVarArgs()) {
+    Id = getFuncTypeWrapperId(FTy, VarArgs);
+  }
+  else {
+    assert(VarArgs.size() == 0 && "VarArgs specified when function type doesn't support variadic arguments");
+    Id = getFuncTypeWrapperId(FTy);
+  }
+  assert(Id.second && "wrapper should already exist!");
+  std::string TName = getWrapperName(Id.first);
+  return EE_->FindFunctionNamed(TName);
 }
 
 void* DFFIImpl::getWrapperAddress(FunctionType const* FTy, ArrayRef<Type const*> VarArgs)

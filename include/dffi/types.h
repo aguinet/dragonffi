@@ -275,6 +275,9 @@ public:
   NativeFunc getFunction(void* Ptr) const;
   NativeFunc getFunction(Type const** VarArgsTys, size_t VarArgsCount, void* Ptr) const;
 
+  std::string getWrapperLLVM(const char* FuncName) const;
+  std::string getWrapperLLVMStr(const char* FuncName) const;
+
 protected:
   FunctionType(details::DFFIImpl& Dffi, QualType RetTy, ParamsVecTy ParamsTy, CallingConv CC, bool VarArgs);
 
