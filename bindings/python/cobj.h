@@ -581,6 +581,8 @@ struct CFunction: public CObj
 
   std::unique_ptr<CObj> cast_impl(dffi::Type const* To) const override { return {nullptr}; }
 
+  inline uint64_t getTrampPtr() const { return (uint64_t)NF_.getTrampPtr(); }
+
 private:
   dffi::NativeFunc NF_;
 };

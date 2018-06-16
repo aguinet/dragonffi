@@ -95,6 +95,8 @@ struct DFFIImpl
   NativeFunc getFunction(FunctionType const* FTy, void* FPtr);
   NativeFunc getFunction(FunctionType const* FTy, llvm::ArrayRef<Type const*> VarArgs, void* FPtr);
 
+  llvm::Function* getWrapperLLVMFunc(FunctionType const* FTy, llvm::ArrayRef<Type const*> VarArgs);
+
 protected:
   DFFICtx& getContext() { return DCtx_; }
   DFFICtx const& getContext() const { return DCtx_; }
