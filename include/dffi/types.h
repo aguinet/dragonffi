@@ -320,7 +320,7 @@ public:
 
   using Type::isSame;
   bool isSame(ArrayType const&) const;
-  
+
 protected:
   ArrayType(details::DFFIImpl& Dffi, QualType Ty, uint64_t NElements);
 
