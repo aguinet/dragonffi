@@ -36,8 +36,9 @@ struct TypePrinter
     None
   };
 
-  TypePrinter():
-    Decls_(DeclsStr_)
+  TypePrinter(bool ViewEnumAsBasicType = true):
+    Decls_(DeclsStr_),
+    ViewEnumAsBasicType_(ViewEnumAsBasicType)
   { }
 
   // Print the type definition.
@@ -50,6 +51,10 @@ struct TypePrinter
         OS << Name;
       }
       return OS;
+    }
+
+    if (ViewEnumAsBasicType_ && isa<EnumType>(Ty)) {
+      Ty = cast<EnumType>(Ty)->getBasicType();
     }
     switch (Ty->getKind()) {
     case dffi::Type::TY_Basic:
@@ -277,6 +282,7 @@ private:
   llvm::DenseSet<dffi::Type const*> ForwardDeclared_;
   std::string DeclsStr_;
   llvm::raw_string_ostream Decls_;
+  bool ViewEnumAsBasicType_;
 };
 
 } // dffi
