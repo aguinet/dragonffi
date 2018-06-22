@@ -328,3 +328,8 @@ void EnumType::setBody(Fields&& Fields) {
   setAsDefined();
   Fields_ = std::move(Fields);
 }
+
+bool EnumType::isSame(EnumType const& O) const
+{
+  return Fields_ == O.Fields_;
+}

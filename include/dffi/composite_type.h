@@ -198,6 +198,8 @@ public:
 
   void setBody(Fields&& Fields);
 
+  bool isSame(EnumType const&) const;
+
 protected:
   EnumType(EnumType const&) = delete;
   EnumType(EnumType&&) = default;

@@ -115,6 +115,7 @@ private:
   }
 
   ErrorOr<dffi::QualType> getTypeFromDIE(DWARFDie const& Die);
+  std::error_code parseCompositeTypeFromDIE(CanOpaqueType* Ret, DWARFDie const& Die);
 
   template <class Func, class DV>
   static auto getDwarfField(DWARFDie const& D, dwarf::Attribute Field, Func Transform, DV DefValue, DWARFError BadFormat)
@@ -174,6 +175,49 @@ private:
   TypesCacheTy Cache_;
   size_t AnonID_ = 0;
 };
+
+std::error_code DWARFCUParser::parseCompositeTypeFromDIE(CanOpaqueType* Ret, DWARFDie const& Die)
+{
+  const auto Tag = Die.getTag();
+  std::vector<CompositeField> Fields;
+  unsigned Align = 1;
+  // Parse the structure! Every children must be a TAG_member
+  for (auto Field: Die.children()) {
+    if (Field.getTag() != dwarf::DW_TAG_member) {
+      continue;
+    }
+    auto Name = getDwarfFieldAsCString(Field, dwarf::DW_AT_name, DWARFError::NameMissing);
+    if (!Name) {
+      return Name.getError();
+    }
+    auto Offset = getDwarfFieldAsUnsigned(Field, dwarf::DW_AT_data_member_location, DWARFError::OffsetMissing);
+    if (!Offset) {
+      // No offset in union is fine!
+      if (Tag == dwarf::DW_TAG_union_type && Offset.getError() == make_error_code(DWARFError::OffsetMissing)) {
+        Offset = 0;
+      }
+      else {
+        return Offset.getError();
+      }
+    }
+    auto FTy = getDwarfFieldAsType(Field, dwarf::DW_AT_type, DWARFError::TypeMissing);
+    if (!FTy) {
+      return FTy.getError();
+    }
+    Fields.emplace_back(CompositeField{Name.get(), FTy.get(), static_cast<unsigned>(Offset.get())});
+
+    Align = std::max(Align, FTy->getType()->getAlign());
+  }
+
+  auto Size = getDwarfFieldAsUnsigned(Die, dwarf::DW_AT_byte_size, DWARFError::ByteSizeMissing);
+  if (!Size) {
+    errs() << "byte size missing in\n";
+    Die.dump(errs(), 1);
+    return Size.getError();
+  }
+  cast<CompositeType>(Ret)->setBody(std::move(Fields), Size.get(), Align);
+  return {};
+}
 
 ErrorOr<dffi::QualType> DWARFCUParser::getTypeFromDIE(DWARFDie const& Die)
 {
@@ -322,44 +366,45 @@ ErrorOr<dffi::QualType> DWARFCUParser::getTypeFromDIE(DWARFDie const& Die)
         Name = Name_.get();
       }
 
+      CanOpaqueType* DuplicateCheck = nullptr;
+      if (CU_.CompositeTys_.count(Name)) {
+        // FIXME: double lookup
+        DuplicateCheck = CU_.CompositeTys_[Name].get();
+        std::string NewName; 
+        size_t Idx = 0;
+        do {
+          NewName = Name + std::to_string(++Idx);
+        }
+        while (CU_.CompositeTys_.count(NewName));
+        Name = std::move(NewName);
+      }
       CanOpaqueType* Ret;
-      auto ItFind = CU_.CompositeTys_.find(Name);
+      auto& DFFI = getDFFI();
+      std::unique_ptr<CanOpaqueType> NewTy;
+      switch (Tag) {
+        case dwarf::DW_TAG_union_type:
+          NewTy.reset(new UnionType{DFFI});
+          break;
+        case dwarf::DW_TAG_structure_type:
+          NewTy.reset(new StructType{DFFI});
+          break;
+        case dwarf::DW_TAG_enumeration_type:
+          NewTy.reset(new EnumType{DFFI});
+          break;
+      };
+      Ret = NewTy.get();
+      CU_.CompositeTys_[Name] = std::move(NewTy);
 
-      if (ItFind != CU_.CompositeTys_.end()) {
-        Ret = ItFind->second.get();
-        if (Ret->isOpaque() && !IsOpaque.get()) {
-          // Do the process
-        }
-        else {
-          // TODO: check they are the same!
-          return Ret;
-        }
-      }
-      else {
-        auto& DFFI = getDFFI();
-        std::unique_ptr<CanOpaqueType> NewTy;
-        switch (Tag) {
-          case dwarf::DW_TAG_union_type:
-            NewTy.reset(new UnionType{DFFI});
-            break;
-          case dwarf::DW_TAG_structure_type:
-            NewTy.reset(new StructType{DFFI});
-            break;
-          case dwarf::DW_TAG_enumeration_type:
-            NewTy.reset(new EnumType{DFFI});
-            break;
-        };
-        Ret = NewTy.get();
-        CU_.CompositeTys_[Name] = std::move(NewTy);
-      }
-
-      Cache_.insert(std::make_pair(Die.getOffset(), Ret));
+      auto ItCache = Cache_.insert(std::make_pair(Die.getOffset(), Ret));
 
       if (IsOpaque.get()) {
         return Ret;
       }
 
       if (Tag == dwarf::DW_TAG_enumeration_type) {
+        // Special merging strategy for enums.
+        // As no graph is involved here, if there is a name collision, we can
+        // compare the two enums and merge them directly here if they are equal.
         EnumType::Fields Fields;
         for (auto Field: Die.children()) {
           if (Field.getTag() != dwarf::DW_TAG_enumerator) {
@@ -376,48 +421,24 @@ ErrorOr<dffi::QualType> DWARFCUParser::getTypeFromDIE(DWARFDie const& Die)
           Fields[Name.get()] = Value.get();
         }
         cast<EnumType>(Ret)->setBody(std::move(Fields));
+        if (DuplicateCheck) {
+          if (!Ret->isSame(*DuplicateCheck)) {
+            return Ret;
+          }
+          // Remove new enum and update cache.
+          // This is valid as no graph is involved here!
+          CU_.CompositeTys_.erase(Name);
+          ItCache.first->second = DuplicateCheck;
+          return DuplicateCheck;
+        }
       }
       else {
-        std::vector<CompositeField> Fields;
-        unsigned Align = 1;
-        // Parse the structure! Every children must be a TAG_member
-        for (auto Field: Die.children()) {
-          if (Field.getTag() != dwarf::DW_TAG_member) {
-            continue;
-          }
-          auto Name = getDwarfFieldAsCString(Field, dwarf::DW_AT_name, DWARFError::NameMissing);
-          if (!Name) {
-            return Name.getError();
-          }
-          auto Offset = getDwarfFieldAsUnsigned(Field, dwarf::DW_AT_data_member_location, DWARFError::OffsetMissing);
-          if (!Offset) {
-            // No offset in union is fine!
-            if (Tag == dwarf::DW_TAG_union_type && Offset.getError() == make_error_code(DWARFError::OffsetMissing)) {
-              Offset = 0;
-            }
-            else {
-              return Offset.getError();
-            }
-          }
-          auto FTy = getDwarfFieldAsType(Field, dwarf::DW_AT_type, DWARFError::TypeMissing);
-          if (!FTy) {
-            return FTy.getError();
-          }
-          Fields.emplace_back(CompositeField{Name.get(), FTy.get(), static_cast<unsigned>(Offset.get())});
-
-          Align = std::max(Align, FTy->getType()->getAlign());
+        auto Err = parseCompositeTypeFromDIE(Ret, Die);
+        if (Err) {
+          return Err;
         }
-
-        auto Size = getDwarfFieldAsUnsigned(Die, dwarf::DW_AT_byte_size, DWARFError::ByteSizeMissing);
-        if (!Size) {
-          errs() << "byte size missing in\n";
-          Die.dump(errs(), 1);
-          return Size.getError();
-        }
-        cast<CompositeType>(Ret)->setBody(std::move(Fields), Size.get(), Align);
       }
 
-      // Return directly as we have already populated the cache!
       return Ret;
     }
     case dwarf::DW_TAG_dwarf_procedure:
@@ -469,6 +490,8 @@ CUImpl* DFFIImpl::from_dwarf(StringRef const Path, std::string& Err)
       continue;
     P.parseCU(Die);
   }
+
+  // TODO: merge types that are the same
 
   compileWrappers(P.getPrinter(), P.getWrappers());
 
