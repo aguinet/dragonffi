@@ -196,8 +196,14 @@ struct TypePrinter
     case dffi::Type::TY_Array:
     {
       auto* ArTy = cast<ArrayType>(Ty);
-      print_def(OS, ArTy->getElementType(), Full, Name);
-      OS << '[' << ArTy->getNumElements() << ']';
+      // TODO: use Twine?
+      std::string ArName;
+      if (Name)
+        ArName = Name;
+      ArName += '[';
+      ArName += std::to_string(ArTy->getNumElements());
+      ArName += ']';
+      print_def(OS, ArTy->getElementType(), Full, ArName.c_str());
       return OS;
     }
     };
