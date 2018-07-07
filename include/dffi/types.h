@@ -27,7 +27,6 @@
 #include <dffi/cc.h>
 #include <dffi/exports.h>
 #include <dffi/native_func.h>
-#include <dffi/tools.h>
 
 namespace dffi {
 

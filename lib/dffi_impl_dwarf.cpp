@@ -81,6 +81,8 @@ struct DWARFCUParser
   TypePrinter& getPrinter() { return Printer_; }
   std::string& getWrappers() { return Wrappers_.str(); }
 
+  void addPotentialTypeMapping(CompositeType const* Dst, CompositeType const* Src);
+
 private:
   std::error_code addTypeFromDIE(DWARFDie const& Die)
   {
@@ -167,12 +169,16 @@ private:
 
   DFFIImpl& getDFFI() { return CU_.DFFI_; }
 
+  bool areIsomorphicTypes(CompositeType const* Dst, CompositeType const* Src);
+
 private:
   CUImpl& CU_;
   std::string WrappersStr_;
   raw_string_ostream Wrappers_;
   TypePrinter Printer_;
   TypesCacheTy Cache_;
+  SmallVector<CompositeType const*, 16> SpeculatedTys_;
+  std::map<CompositeType const*, CompositeType const*> EqualTypes_;
   size_t AnonID_ = 0;
 };
 
@@ -437,6 +443,9 @@ ErrorOr<dffi::QualType> DWARFCUParser::getTypeFromDIE(DWARFDie const& Die)
         if (Err) {
           return Err;
         }
+        if (DuplicateCheck) {
+          addPotentialTypeMapping(cast<CompositeType>(DuplicateCheck), cast<CompositeType>(Ret));
+        }
       }
 
       return Ret;
@@ -454,7 +463,76 @@ ErrorOr<dffi::QualType> DWARFCUParser::getTypeFromDIE(DWARFDie const& Die)
   return QRetTy;
 }
 
+void DWARFCUParser::addPotentialTypeMapping(CompositeType const* Dst, CompositeType const* Src)
+{
+  if (!areIsomorphicTypes(Dst, Src)) {
+    // Remove speculated types
+    for (auto const* Ty: SpeculatedTys_) {
+      EqualTypes_.erase(Ty);
+    }
+  }
+  SpeculatedTys_.clear();
 }
+
+bool DWARFCUParser::areIsomorphicTypes(CompositeType const* Dst, CompositeType const* Src)
+{
+  if (Dst == Src) {
+    return true;
+  }
+
+  auto It = EqualTypes_.find(Src);
+  if (It != EqualTypes_.end()) {
+    return It->second == Dst;
+  }
+
+  if (Dst->getKind() != Src->getKind()) {
+    return false;
+  }
+
+  auto const& FieldsDst = Dst->getFields();
+  auto const& FieldsSrc = Src->getFields();
+  if (FieldsDst.size() != FieldsSrc.size()) {
+    return false;
+  }
+
+  // Check that basic properties of both fields are the same
+  for (size_t I = 0; I < FieldsDst.size(); ++I) {
+    auto const& FDst = FieldsDst[I];
+    auto const& FSrc = FieldsSrc[I];
+    if (FDst.getNameStr() != FSrc.getNameStr()) {
+      return false;
+    }
+    if (FDst.getOffset() != FSrc.getOffset()) {
+      return false;
+    }
+    auto const* FDstT = FDst.getType();
+    auto const* FSrcT = FSrc.getType();
+    if (FDstT->getKind() != FSrcT->getKind()) {
+      return false;
+    }
+    if (!isa<CompositeType>(FDstT) && (FDstT != FSrcT)) {
+      return false;
+    }
+  }
+
+  // We speculate both types are the same, and go on! Save this choice in case it was wrong.
+  // FIXME: double lookup with the first test!
+  EqualTypes_.insert(std::make_pair(Src,Dst));
+  SpeculatedTys_.push_back(Src);
+  for (size_t I = 0; I < FieldsDst.size(); ++I) {
+    auto const& FDst = FieldsDst[I];
+    auto const& FSrc = FieldsSrc[I];
+    auto const* FDstC = cast<CompositeType>(FDst.getType());
+    auto const* FSrcC = cast<CompositeType>(FSrc.getType());
+    if (!areIsomorphicTypes(FDstC, FSrcC)) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+} // anonymous
 
 CUImpl* DFFIImpl::from_dwarf(StringRef const Path, std::string& Err)
 {
