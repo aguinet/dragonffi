@@ -58,7 +58,7 @@ std::error_code make_error_code(DWARFError Err) {
 struct DWARFCUParser
 {
   DWARFCUParser(CUImpl& CU):
-    CU_(CU),
+    MergeCU_(CU),
     Wrappers_(WrappersStr_)
   { }
 
@@ -69,12 +69,35 @@ struct DWARFCUParser
     // Cache indexes are CU-related, so clear it for each CU!
     Cache_.clear();
 
+    CU_.reset(new CUImpl{*MergeCU_->DFFI_});
     for (auto Child: Die.children()) {
       auto Err = addTypeFromDIE(Child);
       if (Err) {
         return Err;
       }
     }
+
+    // Merge composite types
+    for (auto ItToMerge: CU_->CompositeTys_) {
+      CanOpaqueType const* CTy = ItToMerge->second;
+      if (EqualTypes_.count(CTy)) {
+        continue;
+      }
+      std::unique_ptr<CanOpaqueType> NewTy;
+      if (isa<UnionType>(CTy)) {
+        NewTy.reset(new UnionType{DFFI});
+      }
+      else
+      if (isa<StructType>(CTy)) {
+        NewTy.reset(new StructType{DFFI});
+      }
+      else
+      if (isa<EnumType>(CTy)) {
+        NewTy.reset(new EnumType{DFFI});
+      }
+      MergeCU_->CompositeTys_.insert(ItToMerge->first, NewTy);
+    }
+
     return {};
   }
 
@@ -82,6 +105,38 @@ struct DWARFCUParser
   std::string& getWrappers() { return Wrappers_.str(); }
 
   void addPotentialTypeMapping(CompositeType const* Dst, CompositeType const* Src);
+
+  Type const* mergedType(Type const* Ty) 
+  {
+    // Enum type have already been merged!
+    CompositeType const* CTy = dyn_cast_or_null<CompositeType>(CTy);
+    if (!CTy) {
+      return Ty;
+    }
+    auto ItFind = EqualTypes_.find(CTy);
+    if (ItFind != EqualTypes_.end()) {
+      return *ItFind;
+    }
+    std::unique_ptr<CompositeType> NewTy;
+    switch (Tag) {
+      case dwarf::DW_TAG_union_type:
+        NewTy.reset(new UnionType{DFFI});
+        break;
+      case dwarf::DW_TAG_structure_type:
+        NewTy.reset(new StructType{DFFI});
+        break;
+    };
+    Ret = NewTy.get();
+    EqualTypes_.insert(std::make_pair(Ty, Ret));
+    std::vector<CompositeField> Fields;
+    auto const& OrgFields = CTy->getFields();
+    Fields.reserve(OrgFields.size());
+    for (auto const& F: OrgFields) {
+      Type const* FTy = mergedType(F.getType());
+      Fields.push_back(CompositeField{F.getName(), FTy, F.getOffset()});
+    }
+    Ret->setBody(std::move(Fields), Ret->getSize(), Ret->getAlign());
+  }
 
 private:
   std::error_code addTypeFromDIE(DWARFDie const& Die)
@@ -107,7 +162,7 @@ private:
         return Name.getError();
       }
       auto& DFFI = getDFFI();
-      CU_.FuncTys_[Name.get()] = DFTy;
+      CU_->FuncTys_[Name.get()] = DFTy;
       auto Id = DFFI.getFuncTypeWrapperId(DFTy);
       if (!Id.second) {
         DFFI.genFuncTypeWrapper(Printer_, Id.first, Wrappers_, DFTy, {});
@@ -167,12 +222,13 @@ private:
     return getTypeFromDIE(NewDie);
   }
 
-  DFFIImpl& getDFFI() { return CU_.DFFI_; }
+  DFFIImpl& getDFFI() { return CU_->DFFI_; }
 
   bool areIsomorphicTypes(CompositeType const* Dst, CompositeType const* Src);
 
 private:
-  CUImpl& CU_;
+  CUImpl& MergeCU_;
+  std::unique_ptr<CUImpl> CU_;
   std::string WrappersStr_;
   raw_string_ostream Wrappers_;
   TypePrinter Printer_;
@@ -279,7 +335,7 @@ ErrorOr<dffi::QualType> DWARFCUParser::getTypeFromDIE(DWARFDie const& Die)
       else {
         Count = NElts.get() + LowerBound.get();
       }
-      QRetTy = CU_.getArrayType(EltTy.get(), Count);
+      QRetTy = CU_->getArrayType(EltTy.get(), Count);
       break;
     }
     case dwarf::DW_TAG_pointer_type:
@@ -288,7 +344,7 @@ ErrorOr<dffi::QualType> DWARFCUParser::getTypeFromDIE(DWARFDie const& Die)
       if (!EltTy) {
         return EltTy.getError();
       }
-      QRetTy = CU_.getPointerType(EltTy.get());
+      QRetTy = CU_->getPointerType(EltTy.get());
       break;
     }
     case dwarf::DW_TAG_base_type:
@@ -306,7 +362,7 @@ ErrorOr<dffi::QualType> DWARFCUParser::getTypeFromDIE(DWARFDie const& Die)
       if (!Name) {
         return Name.getError();
       }
-      QRetTy = CU_.getBasicTypeFromDWARF(Enc.get(), ByteSize.get() * CHAR_BIT, Name.get());
+      QRetTy = CU_->getBasicTypeFromDWARF(Enc.get(), ByteSize.get() * CHAR_BIT, Name.get());
       break;
     }
     case dwarf::DW_TAG_subroutine_type:
@@ -343,7 +399,7 @@ ErrorOr<dffi::QualType> DWARFCUParser::getTypeFromDIE(DWARFDie const& Die)
       }
       const auto CC = dwarfCCToDFFI(CCOrErr.get());
       // TODO: varargs
-      QRetTy = CU_.getFunctionType(RetTy.get(), ParamsTy, CC, false);
+      QRetTy = CU_->getFunctionType(RetTy.get(), ParamsTy, CC, false);
       break;
     }
     case dwarf::DW_TAG_enumeration_type:
@@ -373,15 +429,15 @@ ErrorOr<dffi::QualType> DWARFCUParser::getTypeFromDIE(DWARFDie const& Die)
       }
 
       CanOpaqueType* DuplicateCheck = nullptr;
-      if (CU_.CompositeTys_.count(Name)) {
+      if (MergeCU_->CompositeTys_.count(Name)) {
         // FIXME: double lookup
-        DuplicateCheck = CU_.CompositeTys_[Name].get();
+        DuplicateCheck = MergeCU_->CompositeTys_[Name].get();
         std::string NewName; 
         size_t Idx = 0;
         do {
           NewName = Name + std::to_string(++Idx);
         }
-        while (CU_.CompositeTys_.count(NewName));
+        while (MergeCU_->CompositeTys_.count(NewName));
         Name = std::move(NewName);
       }
       CanOpaqueType* Ret;
@@ -399,7 +455,7 @@ ErrorOr<dffi::QualType> DWARFCUParser::getTypeFromDIE(DWARFDie const& Die)
           break;
       };
       Ret = NewTy.get();
-      CU_.CompositeTys_[Name] = std::move(NewTy);
+      CU_->CompositeTys_[Name] = std::move(NewTy);
 
       auto ItCache = Cache_.insert(std::make_pair(Die.getOffset(), Ret));
 
@@ -433,7 +489,7 @@ ErrorOr<dffi::QualType> DWARFCUParser::getTypeFromDIE(DWARFDie const& Die)
           }
           // Remove new enum and update cache.
           // This is valid as no graph is involved here!
-          CU_.CompositeTys_.erase(Name);
+          CU_->CompositeTys_.erase(Name);
           ItCache.first->second = DuplicateCheck;
           return DuplicateCheck;
         }
@@ -568,8 +624,6 @@ CUImpl* DFFIImpl::from_dwarf(StringRef const Path, std::string& Err)
       continue;
     P.parseCU(Die);
   }
-
-  // TODO: merge types that are the same
 
   compileWrappers(P.getPrinter(), P.getWrappers());
 

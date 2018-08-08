@@ -189,6 +189,10 @@ struct CUImpl
   std::vector<std::string> getTypes() const;
   std::vector<std::string> getFunctions() const;
 
+  bool hasCompositeType(CanOpaqueType const* Ty) const {
+    return std::find(std::begin(CompositeTys_), std::end(CompositeTys_),
+      [](CompositeTysMap::const_iterator It) { return It->second.get() == Ty; });
+  }
   DFFIImpl& DFFI_;
 
   CompositeTysMap CompositeTys_;
