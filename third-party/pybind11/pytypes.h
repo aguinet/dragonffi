@@ -169,8 +169,6 @@ public:
         will be throw upon failure.
     \endrst */
     template <typename T> T cast() const;
-
-    template <typename T> T* dyn_cast() const;
     /// Return ``true`` when the `handle` wraps a valid Python object
     explicit operator bool() const { return m_ptr != nullptr; }
     /** \rst
@@ -183,6 +181,9 @@ public:
     bool operator!=(const handle &h) const { return m_ptr != h.m_ptr; }
     PYBIND11_DEPRECATED("Use handle::operator bool() instead")
     bool check() const { return m_ptr != nullptr; }
+
+    template <typename T> T* dyn_cast() const;
+
 protected:
     PyObject *m_ptr = nullptr;
 };
@@ -242,7 +243,7 @@ public:
     // Calling on an object rvalue does a move, if needed and/or possible
     template <typename T> T cast() &&;
 
-    template <typename T> T* dyn_cast(); 
+    template <typename T> T* dyn_cast();
 
 protected:
     // Tags for choosing constructors from raw PyObject *
@@ -1250,7 +1251,8 @@ public:
         static std::vector<Py_ssize_t> py_shape { };
         buf.buf = info.ptr;
         buf.itemsize = info.itemsize;
-        buf.format = const_cast<char *>(info.format.c_str());
+        // TODO: this leaks, need to figure out how to fix this properly!
+        buf.format = strdup(info.format.c_str());
         buf.ndim = (int) info.ndim;
         buf.len = info.size;
         py_strides.clear();
@@ -1262,7 +1264,7 @@ public:
         buf.strides = py_strides.data();
         buf.shape = py_shape.data();
         buf.suboffsets = nullptr;
-        buf.readonly = false;
+        buf.readonly = info.readonly;
         buf.internal = nullptr;
 
         m_ptr = PyMemoryView_FromBuffer(&buf);
@@ -1299,6 +1301,13 @@ inline iterator iter(handle obj) {
     if (!result) { throw error_already_set(); }
     return reinterpret_steal<iterator>(result);
 }
+
+inline list dir(handle obj) {
+  PyObject* result = PyObject_Dir(obj.ptr());
+  if (!result) throw error_already_set();
+  return reinterpret_steal<list>(result);
+}
+
 /// @} python_builtins
 
 NAMESPACE_BEGIN(detail)

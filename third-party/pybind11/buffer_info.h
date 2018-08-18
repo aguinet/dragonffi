@@ -22,6 +22,7 @@ struct buffer_info {
     ssize_t ndim = 0;             // Number of dimensions
     std::vector<ssize_t> shape;   // Shape of the tensor (1 entry per dimension)
     std::vector<ssize_t> strides; // Number of entries between adjacent entries (for each per dimension)
+    bool readonly = false;
 
     buffer_info() { }
 
