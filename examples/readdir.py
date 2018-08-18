@@ -13,5 +13,7 @@ while True:
     dirent = readdir(dir_)
     if not dirent:
         break
-    print(dirent.obj.d_name.cast(D.CharPtrTy).cstr.tobytes())
+    name = dirent.obj.d_name
+    name = pydffi.cast(pydffi.ptr(name), D.CharPtrTy)
+    print(name.cstr.tobytes())
 CU.funcs.closedir(dir_)

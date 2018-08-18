@@ -75,6 +75,16 @@ struct UnknownField: public DFFIErrorStr
   using DFFIErrorStr::DFFIErrorStr;
 };
 
+struct ConstError: public DFFIErrorStr
+{
+  ConstError();
+};
+
+struct ConstCastError: public DFFIErrorStr
+{
+  ConstCastError();
+};
+
 template <class T>
 struct ThrowError
 {

@@ -18,18 +18,18 @@
 import pydffi
 import random
 
-J=pydffi.FFI()
+FFI=pydffi.FFI()
 
 # Integer casts
-for Ty in (J.UInt8, J.UInt16, J.UInt32, J.UInt64):
-    v = random.getrandbits(Ty(0).size()*8)
+for Ty in (FFI.UInt8, FFI.UInt16, FFI.UInt32, FFI.UInt64):
+    v = random.getrandbits(pydffi.sizeof(Ty(0))*8)
     V = Ty(v)
-    for CTy in (J.UInt8Ty, J.UInt16Ty, J.UInt32Ty, J.UInt64Ty):
-        VC = V.cast(CTy)
+    for CTy in (FFI.UInt8Ty, FFI.UInt16Ty, FFI.UInt32Ty, FFI.UInt64Ty):
+        VC = pydffi.cast(V,CTy)
         assert(VC.value == (v & (2**(CTy.size*8)-1)))
 
 # Array/pointer casts
-CU = J.compile('''
+CU = FFI.compile('''
 #include <stdio.h>
 typedef struct {
     char buf[256];
@@ -43,24 +43,24 @@ void print_struct(A const* a) {
     print(a->buf);
 }
 ''')
-print_struct = CU.getFunction("print_struct")
+print_struct = CU.funcs.print_struct
 
-SA = CU.getType("A")
+SA = CU.types.A
 A = pydffi.CStructObj(SA)
-mem = memoryview(A)
+mem = pydffi.view_as_bytes(A)
 b = b"hello!\x00"
 mem[:len(b)] = b
 
 # CHECK: hello!
-print_struct.call(J.ptr(A))
+print_struct(pydffi.ptr(A))
 
-print_ = CU.getFunction("print")
+print_ = getattr(CU.funcs, "print")
 buf = A.buf
-buf = buf.cast(J.Int8PtrTy)
+buf = pydffi.cast(pydffi.ptr(buf),FFI.Int8PtrTy)
 # CHECK: hello!
-print_.call(buf)
+print_(buf)
 
 # Cast back
-buf = buf.cast(J.pointerType(SA))
+buf = pydffi.cast(buf, FFI.pointerType(SA))
 # CHECK: hello!
-print_struct.call(buf)
+print_struct(buf)

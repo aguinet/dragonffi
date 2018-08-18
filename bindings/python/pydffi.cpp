@@ -20,6 +20,7 @@
 #include <dffi/types.h>
 #include <dffi/composite_type.h>
 #include <dffi/casting.h>
+#include <dffi/mdarray.h>
 
 #include <sstream>
 
@@ -53,6 +54,14 @@ TypeError::TypeError(dffi::Type const* Got, dffi::Type const* Expected):
 {
   // TODO: use type prettyprinter to create the message!
 }
+
+ConstError::ConstError():
+  DFFIErrorStr("can't modify a const object!")
+{ }
+
+ConstCastError::ConstCastError():
+  DFFIErrorStr("const type can't be converted to a non-const type.")
+{ }
 
 namespace {
 
@@ -108,47 +117,46 @@ std::unique_ptr<CObj> cu_getfunction(CompilationUnit& CU, const char* Name)
   return std::unique_ptr<CObj>{Ret};
 }
 
-
-std::unique_ptr<CArrayObj> dffi_view(DFFI& D, py::buffer& B)
-{
-  auto Info = B.request();
-  if (Info.ndim != 1) {
-    ThrowError<TypeError>() << "buffer should have only one dimension, got " << Info.ndim << "!";
-  }
-  // Get type from format
-  auto const& Format = Info.format;
-  if (Format.size() != 1) {
-    ThrowError<TypeError>() << "unsupported format " << Format;
-  }
-  BasicType const* PteTy = nullptr; 
-  switch (Format[0]) {
-    #define HANDLE_BTY(Format, CTy)\
-      case Format:\
-        PteTy = D.getBasicType(BasicType::getKind<CTy>());\
-        break;
-    HANDLE_BTY('c', c_char)
-    HANDLE_BTY('b', c_signed_char)
-    HANDLE_BTY('B', c_unsigned_char)
-    HANDLE_BTY('?', c_bool)
-    HANDLE_BTY('h', c_short)
-    HANDLE_BTY('H', c_unsigned_short)
-    HANDLE_BTY('i', c_int)
-    HANDLE_BTY('I', c_unsigned_int)
-    HANDLE_BTY('l', c_long)
-    HANDLE_BTY('L', c_unsigned_long)
-    HANDLE_BTY('q', c_long_long)
-    HANDLE_BTY('Q', c_unsigned_long_long)
-    HANDLE_BTY('f', c_float)
-    HANDLE_BTY('d', c_double)
-    HANDLE_BTY('P', uintptr_t)
-    default:
-      ThrowError<TypeError>() << "unsupported format character " << Format[0];
-  };
-
-  return std::unique_ptr<CArrayObj>{new CArrayObj{
-    *D.getArrayType(PteTy, Info.size),
-    Data<void>::view(Info.ptr)}};
-}
+//std::unique_ptr<CArrayObj> dffi_view(DFFI& D, py::buffer& B)
+//{
+//  auto Info = B.request();
+//  if (Info.ndim != 1) {
+//    ThrowError<TypeError>() << "buffer should have only one dimension, got " << Info.ndim << "!";
+//  }
+//  // Get type from format
+//  auto const& Format = Info.format;
+//  if (Format.size() != 1) {
+//    ThrowError<TypeError>() << "unsupported format " << Format;
+//  }
+//  BasicType const* PteTy = nullptr; 
+//  switch (Format[0]) {
+//    #define HANDLE_BTY(Format, CTy)\
+//      case Format:\
+//        PteTy = D.getBasicType(BasicType::getKind<CTy>());\
+//        break;
+//    HANDLE_BTY('c', c_char)
+//    HANDLE_BTY('b', c_signed_char)
+//    HANDLE_BTY('B', c_unsigned_char)
+//    HANDLE_BTY('?', c_bool)
+//    HANDLE_BTY('h', c_short)
+//    HANDLE_BTY('H', c_unsigned_short)
+//    HANDLE_BTY('i', c_int)
+//    HANDLE_BTY('I', c_unsigned_int)
+//    HANDLE_BTY('l', c_long)
+//    HANDLE_BTY('L', c_unsigned_long)
+//    HANDLE_BTY('q', c_long_long)
+//    HANDLE_BTY('Q', c_unsigned_long_long)
+//    HANDLE_BTY('f', c_float)
+//    HANDLE_BTY('d', c_double)
+//    HANDLE_BTY('P', uintptr_t)
+//    default:
+//      ThrowError<TypeError>() << "unsupported format character " << Format[0];
+//  };
+//
+//  return std::unique_ptr<CArrayObj>{new CArrayObj{
+//    *D.getArrayType(PteTy, Info.size),
+//    Data<void>::view(Info.ptr)}};
+//}
 
 void dffi_dlopen(const char* Path)
 {
@@ -156,6 +164,22 @@ void dffi_dlopen(const char* Path)
   if (!DFFI::dlopen(Path, &Err)) {
     throw DLOpenError{Err};
   }
+}
+
+QualType dffi_const(Type const& Ty)
+{
+  return QualType{&Ty}.withConst();
+}
+
+std::unique_ptr<CObj> dffi_view_from_buffer(QualType Ty, py::buffer& B)
+{
+  auto BI = B.request(!Ty.hasConst());
+  const size_t nbytes = BI.size * BI.itemsize;
+  if (Ty->getSize() != nbytes) {
+    ThrowError<TypeError>() << "expect a buffer of " << Ty->getSize() << " bytes, got " << nbytes;
+  }
+  auto Ret = createObj(Ty, Data<void>::view(BI.ptr));
+  return Ret;
 }
 
 std::unique_ptr<DFFI> default_ctor(unsigned optLevel, py::list includeDirs)
@@ -355,6 +379,24 @@ py::list list_fields(T const& Fields)
   return Ret;
 }
 
+struct CArrayObjPyIterator {
+  CArrayObjPyIterator(CArrayObj& Obj, py::object Ref):
+    Obj_(Obj),
+    Ref_(Ref)
+  { }
+
+  py::object next() {
+    if (Index_ == Obj_.getNumElements())
+      throw py::stop_iteration();
+    return Obj_.get(Index_++);
+  }
+
+private:
+  CArrayObj& Obj_;
+  py::object Ref_; // keep a reference
+  size_t Index_ = 0;
+};
+
 } // anonymous
 
 PYBIND11_MODULE(pydffi, m)
@@ -368,7 +410,21 @@ PYBIND11_MODULE(pydffi, m)
       .def_property_readonly("ptr", [](Type const* Ty) {
         return PointerType::get(Ty);
       }, py::return_value_policy::reference_internal)
+      .def_property_readonly("format", &getFormatDescriptor)
     ;
+
+  py::class_<QualType>(m, "QualType")
+    .def(py::init<Type const*>(), py::keep_alive<1, 2>())
+    .def(py::init<Type const&>(), py::keep_alive<1, 2>())
+    .def_property_readonly("hasConst", &QualType::hasConst)
+    .def_property_readonly("withConst", &QualType::withConst, py::keep_alive<1,2>())
+    .def_property_readonly("type", &QualType::getType, py::keep_alive<1,2>())
+    .def("__iter__", [](py::object& o) { return py::iter(py::getattr(o, "type")); })
+    .def("__getattr__", [](py::object& o, py::object& attr) { return py::getattr(py::getattr(o, "type"), attr); })
+    .def("__dir__", [](py::object& o) { return py::dir(py::getattr(o, "type")); })
+    ;
+ 
+  py::implicitly_convertible<Type,QualType>();
 
   py::enum_<BasicType::BasicKind>(m, "BasicKind")
     .value("Bool", BasicType::Bool)
@@ -450,13 +506,8 @@ PYBIND11_MODULE(pydffi, m)
         return list_fields(Fields);
         }, py::return_value_policy::copy)
     ;
-    ;
 
-  py::class_<CObj> cobj(m, "CObj");
-  cobj.def("cast", &CObj::cast, py::keep_alive<0,1>())
-      .def("type", &CObj::getType, py::return_value_policy::reference_internal)
-      .def("size", &CObj::getSize)
-      .def("align", &CObj::getAlign)
+  py::class_<CObj> cobj(m, "CObj")
     ;
 
 #define DECL_CBASICOBJ_BASE(CTy, Name)\
@@ -567,65 +618,48 @@ PYBIND11_MODULE(pydffi, m)
     .def("__int__", cpointerobj_getptr)
     .def("__long__", cpointerobj_getptr)
     .def(PYBIND11_BOOL_ATTR, [](CPointerObj const& O) -> bool { return O.getPtr() != nullptr; })
-    .def("view", &CPointerObj::getMemoryView)
+    .def("viewObjects", &CPointerObj::getMemoryViewObjects)
     .def_property_readonly("cstr", &CPointerObj::getMemoryViewCStr)
     ;
 
   // Composite object
-  py::class_<CCompositeObj> PyCompObj(m, "CCompositeObj", py::buffer_protocol(), cobj);
+  py::class_<CCompositeObj> PyCompObj(m, "CCompositeObj", cobj);
   PyCompObj.def(py::init<CompositeType const&>(), py::keep_alive<1, 2>())
            .def("__setattr__", 
              (void(CCompositeObj::*)(const char*, py::handle)) &CCompositeObj::setValue)
            .def("__getattr__",
              (py::object(CCompositeObj::*)(const char*)) &CCompositeObj::getValue)
            .def("__dir__", [](CCompositeObj const& O) {
-             auto const& Fields = O.getType()->getFields();
+             auto const& Fields = O.getCompositeType()->getFields();
              return list_fields(Fields);
            }, py::return_value_policy::copy)
-//           .def("__iter__", [](CCompositeObj const& O) {
-//             return py::make_iterator<py::return_value_policy::reference_internal>(O.getType()->getFields());
-//           })
-           .def_buffer([](CCompositeObj& O) {
-               return py::buffer_info{
-                 O.getData(),
-                 1,
-                 py::format_descriptor<uint8_t>::format(),
-                 1,
-                 { O.getSize() },
-                 { 1 }
-               };
-             })
-           ;
+     ;
 
-  py::class_<CStructObj>(m, "CStructObj", py::buffer_protocol(), PyCompObj)
+  py::class_<CStructObj>(m, "CStructObj", PyCompObj)
     .def(py::init<StructType const&>(), py::keep_alive<1, 2>())
     ;
-  py::class_<CUnionObj>(m, "CUnionObj", py::buffer_protocol(), PyCompObj)
+  py::class_<CUnionObj>(m, "CUnionObj", PyCompObj)
     .def(py::init<UnionType const&>(), py::keep_alive<1, 2>())
     ;
 
-  // Array object
+  py::class_<CArrayObjPyIterator>(m, "CArrayObjPyIterator")
+    .def("__iter__", [](CArrayObjPyIterator& It) { return It; })
+    .def("__next__", &CArrayObjPyIterator::next)
+    ;
+
   py::class_<CArrayObj>(m, "CArrayObj", py::buffer_protocol(), cobj)
     .def(py::init<ArrayType const&>(), py::keep_alive<1, 2>())
     .def("__setitem__", &CArrayObj::set)
     .def("__getitem__", &CArrayObj::get)
+    .def("__len__", &CArrayObj::getNumElements)
+    .def("__iter__", [](py::object O) { return CArrayObjPyIterator{O.cast<CArrayObj&>(), O}; })
     .def("set", &CArrayObj::set)
     .def("get", &CArrayObj::get)
     .def("elementType", &CArrayObj::getElementType, py::return_value_policy::reference_internal)
-    .def_buffer([](CArrayObj& O) {
-        auto* EltTy = O.getElementType();
-        return py::buffer_info{
-          O.getData(),
-          // TODO: using ssize_t is a concern here!
-          static_cast<ssize_t>(EltTy->getSize()),
-          getFormatDescriptor(EltTy),
-          static_cast<ssize_t>(O.getType()->getNumElements())
-        };
-      })
-    ;
+    .def_buffer(&CArrayObj::getBufferInfo)
+  ;
 
   py::class_<CFunction>(m, "CFunction", cobj)
-    .def("call", &CFunction::call)
     .def("__call__", &CFunction::call)
     ;
 
@@ -645,11 +679,6 @@ PYBIND11_MODULE(pydffi, m)
   py::class_<CompilationUnit>(m, "CompilationUnit")
     .def_property_readonly("funcs", py::cpp_function(cu_funcs, py::keep_alive<0,1>()))
     .def_property_readonly("types", py::cpp_function(cu_types, py::keep_alive<0,1>()))
-    .def("getFunction", cu_getfunction, py::keep_alive<0,1>())
-    .def("getStructType", &CompilationUnit::getStructType, py::return_value_policy::reference_internal)
-    .def("getUnionType", &CompilationUnit::getUnionType, py::return_value_policy::reference_internal)
-    .def("getEnumType", &CompilationUnit::getEnumType, py::return_value_policy::reference_internal)
-    .def("getType", &CompilationUnit::getType, py::return_value_policy::reference_internal)
     ;
 
   py::class_<DFFI>(m, "FFI")
@@ -657,16 +686,7 @@ PYBIND11_MODULE(pydffi, m)
     .def("cdef", dffi_cdef, py::keep_alive<0,1>())
     .def("cdef", dffi_cdef_no_name, py::keep_alive<0,1>())
     .def("compile", dffi_compile, py::keep_alive<0,1>())
-    .def("ptr", [](DFFI& D, CObj* O) {
-      return std::unique_ptr<CPointerObj>{new CPointerObj{O}};
-    }, py::keep_alive<0,1>(), py::keep_alive<0,2>())
-    .def("ptr", [](DFFI&, Type const* Ty) {
-      return PointerType::get(Ty);
-    }, py::return_value_policy::reference_internal)
-    .def("typeof", [](DFFI&, CObj const& O) { return O.getType(); }, py::return_value_policy::reference_internal)
-    .def("sizeof", [](DFFI&, CObj const& O) { return O.getSize(); })
-    .def("alignof", [](DFFI&, CObj const& O) { return O.getAlign(); })
-    .def("view", dffi_view, py::keep_alive<0,1>(), py::keep_alive<0,2>())
+    //.def("view", dffi_view, py::keep_alive<0,1>(), py::keep_alive<0,2>())
     .def("basicType", 
       (BasicType const*(DFFI::*)(BasicType::BasicKind)) &DFFI::getBasicType,
       py::return_value_policy::reference_internal)
@@ -770,8 +790,25 @@ PYBIND11_MODULE(pydffi, m)
     .def_property_readonly("UInt64PtrTy", &DFFI::getUInt64PtrTy, py::return_value_policy::reference_internal)
     ;
 
-
   m.def("dlopen", dffi_dlopen);
+
+  // CObj-related functions
+  m.def("cast", &CObj::cast, py::keep_alive<0,1>());
+  m.def("view_as", dffi_view_from_buffer, py::keep_alive<0,1>(), py::keep_alive<0,2>(),
+    "View a buffer object as a specified C type. The number of bytes within the buffer must be equal to the size of the specified C type");
+  m.def("view_as_bytes", [](CObj& O) { return py::memoryview{O.getBufferInfo()}; }, "Generate a view of a C object as a contiguous buffer of bytes");
+  m.def("typeof", [](CObj const& O) { return O.getType(); }, py::return_value_policy::reference, py::keep_alive<0,1>());
+  m.def("sizeof", [](CObj const& O) { return O.getSize(); });
+  m.def("alignof", [](CObj const& O) { return O.getAlign(); });
+  m.def("const", dffi_const, py::keep_alive<0,1>());
+
+  // GEP functions
+  m.def("ptr", [](CObj* O) {
+    return std::unique_ptr<CPointerObj>{new CPointerObj{O}};
+  }, py::return_value_policy::reference, py::keep_alive<0,1>());
+  m.def("ptr", [](Type const* Ty) {
+    return PointerType::get(Ty);
+  }, py::return_value_policy::reference, py::keep_alive<0,1>());
 
   // Exceptions
   py::register_exception<CompileError>(m, "CompileError");
@@ -781,4 +818,6 @@ PYBIND11_MODULE(pydffi, m)
   py::register_exception<UnknownField>(m, "UnknownField");
   py::register_exception<AllocError>(m, "AllocError");
   py::register_exception<BadFunctionCall>(m, "BadFunctionCall");
+  py::register_exception<ConstError>(m, "ConstError");
+  py::register_exception<ConstCastError>(m, "ConstCastError");
 };

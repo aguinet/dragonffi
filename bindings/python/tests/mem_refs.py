@@ -19,8 +19,8 @@
 import pydffi
 
 def get_CU():
-    J = pydffi.FFI()
-    return J.compile('''
+    FFI = pydffi.FFI()
+    return FFI.compile('''
     struct A {
       short a;
       int b;
@@ -32,10 +32,10 @@ def get_CU():
 
 def run_CU():
     CU = get_CU()
-    SA = CU.getStructType("A")
+    SA = CU.types.A
     A = pydffi.CStructObj(SA)
     A.b = 2
-    assert(CU.getFunction("get_b").call(A).value == 2)
+    assert(CU.funcs.get_b(A).value == 2)
 
 def get_fun():
     return pydffi().FFI().compile('''
@@ -57,8 +57,8 @@ def run_fun():
     assert(fact.call(6).value == pyfact(6))
 
 def get_A():
-    J = pydffi.FFI()
-    CU = J.cdef('''
+    FFI = pydffi.FFI()
+    CU = FFI.cdef('''
     struct A {
       short a;
       int b;
@@ -67,7 +67,7 @@ def get_A():
     short __foo(struct A a) { return a.a; }
     ''')
 
-    SA = CU.getStructType("A")
+    SA = CU.types.A
     return pydffi.CStructObj(SA)
 
 def run_A():
@@ -78,21 +78,21 @@ def run_A():
     assert(A.b == 5)
 
 def get_buf_view():
-    J = pydffi.FFI()
-    buf = bytearray(b"hello")
-    return J,J.view(buf)
+    FFI = pydffi.FFI()
+    buf = bytearray(b"hello\x00")
+    return FFI,pydffi.view_as(FFI.arrayType(FFI.UInt8Ty, len(buf)), buf)
 
 def run_buf_view():
-    J,buf = get_buf_view()
-    CU = J.compile('''
+    FFI,buf = get_buf_view()
+    CU = FFI.compile('''
     #include <stdint.h>
     #include <stdio.h>
-    void print(uint8_t* msg) {
+    void print_(uint8_t* msg) {
         puts(msg);
     }
     ''')
     # CHECK: hello
-    CU.getFunction("print").call(buf)
+    CU.funcs.print_(buf)
 
 run_CU()
 run_A()

@@ -19,9 +19,9 @@
 import pydffi
 import random
 
-J=pydffi.FFI()
+FFI=pydffi.FFI()
 
-CU = J.compile('''
+CU = FFI.compile('''
 #include <stdio.h>
 #include <stdint.h>
 
@@ -47,27 +47,27 @@ void strupper(char* S) {
     bytesupper(S);
 }
 ''')
-print_ = CU.getFunction("print")
-print_u8 = CU.getFunction("print_u8")
-bytesupper = CU.getFunction("bytesupper")
-strupper = CU.getFunction("strupper")
+print_ = getattr(CU.funcs, "print")
+print_u8 = CU.funcs.print_u8
+bytesupper = CU.funcs.bytesupper
+strupper = CU.funcs.strupper
 
 # CHECK: coucou
-print_.call("coucou")
+print_("coucou")
 # CHECK: héllo 
-print_.call("héllo")
+print_("héllo")
 
 buf = u"héllo".encode("utf8")
 # CHECK: 68 C3 A9 6C 6C 6F
-print_u8.call(buf, len(buf))
+print_u8(buf, len(buf))
 
 buf = bytearray(b"hello")
 # CHECK: 5
-bytesupper.call(buf)
+bytesupper(buf)
 assert(buf == b"HELLO")
 
 buf = bytearray(b"hello")
-buf_char = J.view(buf)
+buf_char = pydffi.view_as(FFI.arrayType(FFI.UInt8Ty, len(buf)), buf)
 # CHECK: 5
-strupper.call(buf_char.cast(J.CharPtrTy))
+strupper(pydffi.cast(pydffi.ptr(buf_char),FFI.CharPtrTy))
 assert(buf == b"HELLO")

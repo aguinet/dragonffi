@@ -19,8 +19,8 @@ import pydffi
 import struct
 import sys
 
-J=pydffi.FFI()
-CU = J.compile('''
+FFI=pydffi.FFI()
+CU = FFI.compile('''
 int printf(const char* f, ...);
 
 struct A
@@ -46,15 +46,15 @@ struct A init() {
   return ret;
 }
 ''')
-A = CU.getStructType("A")
+A = CU.types.A
 fields_name = sorted((f.name for f in A))
 assert(fields_name[0] == 'a')
 assert(fields_name[1] == 'b')
 
 Av = CU.types.A(a=1,b=2)
 
-# Direct data access throught memoryview
-mv = memoryview(Av)
+# Direct data access throught a memoryview
+mv = pydffi.view_as_bytes(Av)
 
 # Set a throught mv
 
@@ -63,17 +63,17 @@ mv[0] = v
 assert(Av.a == 5)
 assert(Av.b == 2)
 # CHECK: a=5, b=2
-CU.getFunction("print").call(Av)
+getattr(CU.funcs, "print")(Av)
 
-pAv = J.ptr(Av)
+pAv = pydffi.ptr(Av)
 # CHECK: a=5, b=2
-CU.getFunction("printptr").call(pAv)
-CU.getFunction("set").call(pAv)
+CU.funcs.printptr(pAv)
+CU.funcs.set(pAv)
 # CHECK: a=59, b=1111
-CU.getFunction("print").call(Av)
+getattr(CU.funcs, "print")(Av)
 assert(Av.a == 59)
 assert(Av.b == 1111)
 
-Av = CU.getFunction("init").call()
+Av = CU.funcs.init()
 assert(Av.a == 44)
 assert(Av.b == 5555)

@@ -16,6 +16,7 @@
 
 import pydffi
 import sys
+import struct
 
 N = 10
 FFI = pydffi.FFI()
@@ -26,7 +27,12 @@ for i in range(len(Ar)):
 Ref = [float(i) for i in range(len(Ar))]
 assert(list(Ar) == Ref)
 ArV = memoryview(Ar)
-assert(list(ArV) == Ref)
+assert(ArV.format == "d")
+def upck_double(v):
+    if isinstance(v,float):
+        return v
+    return struct.unpack("d",v)[0]
+assert(all(upck_double(a) == b for a,b in zip(ArV,Ref)))
 
 Ar2Ty = FFI.arrayType(FFI.arrayType(FFI.DoubleTy, 10), 2)
 Ar = Ar2Ty()

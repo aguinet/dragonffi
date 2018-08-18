@@ -18,7 +18,7 @@ import sys
 
 def check(CU, name):
     try:
-        CU.getFunction(name)
+        getattr(CU.funcs,name)
         sys.exit(1)
     except pydffi.UnknownFunctionError: pass
 

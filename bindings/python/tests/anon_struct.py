@@ -32,7 +32,7 @@ void dump(struct A a) {
 
 A = CU.types.A()
 Obj = A.s
-Ty = Obj.type()
+Ty = pydffi.typeof(Obj)
 fields = [f.name for f in iter(Ty)]
 assert(fields[0] == "a")
 assert(fields[1] == "b")

@@ -29,9 +29,9 @@ v = CU.types.int2()
 v.set(0, 1)
 v.set(1, 2)
 # CHECK: 1 2
-CU.funcs.foo(FFI.ptr(v))
+CU.funcs.foo(pydffi.ptr(v))
 
 v[0] = 10
 v[1] = 20
 # CHECK: 10 20
-CU.funcs.foo(FFI.ptr(v))
+CU.funcs.foo(pydffi.ptr(v))
