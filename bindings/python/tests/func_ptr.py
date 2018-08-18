@@ -17,8 +17,8 @@
 
 import pydffi
 
-J=pydffi.FFI()
-CU = J.compile('''
+FFI=pydffi.FFI()
+CU = FFI.compile('''
 typedef struct
 {
   int a;
@@ -52,10 +52,10 @@ Res call(op f, int a, int b) {
 }
 ''')
 
-Add=CU.getFunction("get_op").call(0)
+Add=CU.funcs.get_op(0)
 Add=Add.obj
-Res=Add.call(1,4)
+Res=Add(1,4)
 assert(Res.res == 5)
 
-Res=CU.getFunction("call").call(J.ptr(CU.getFunction("sub")), 1, 5)
+Res=CU.funcs.call(pydffi.ptr(CU.funcs.sub), 1, 5)
 assert(Res.res == -4)

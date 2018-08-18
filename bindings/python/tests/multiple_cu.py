@@ -41,10 +41,10 @@ int get_b(struct A a) { return a.b; }
 # Explicitly delete J. Everything should still works!
 del J
 
-SA = CU.getStructType("A")
+SA = CU.types.A
 A = CU.types.A(a=1,b=2)
-assert(CU.getFunction("get_a").call(A).value == 1)
-assert(CU.getFunction("get_b").call(A).value == 2)
+assert(int(CU.funcs.get_a(A)) == 1)
+assert(int(CU.funcs.get_b(A)) == 2)
 
 # TODO: assert struct A types are all equal between various CU. This is not the
 # case for now, and so these tests fail!

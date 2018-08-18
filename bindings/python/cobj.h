@@ -223,6 +223,12 @@ struct Data<void>
   void* dataPtr() { return Ptr_; }
   void const* dataPtr() const { return Ptr_; }
 
+  template <class T>
+  operator Data<T>() {
+    Data<T> Ret(std::move(*this));
+    return Ret;
+  }
+
 private:
   Data(void* Ptr, Type Ty):
     Ptr_(Ptr),
@@ -235,22 +241,29 @@ private:
 
 struct CObj
 {
-  CObj(dffi::Type const& Ty):
-    Ty_(&Ty)
+  CObj(dffi::QualType Ty):
+    Ty_(Ty)
   { }
 
   virtual ~CObj() { }
   virtual void* dataPtr() = 0;
 
-  inline dffi::Type const* getType() const { return Ty_; }
+  inline dffi::QualType getType() const { return Ty_; }
 
-  virtual std::unique_ptr<CObj> cast(dffi::Type const* To) const = 0;
+  std::unique_ptr<CObj> cast(dffi::QualType To) const;
 
   inline size_t getSize() const { return getType()->getSize(); }
   inline size_t getAlign() const { return getType()->getAlign(); }
 
+  inline bool isConst() const { return Ty_.hasConst(); }
+  inline void setConst() { Ty_ = Ty_.withConst(); }
+
+  pybind11::buffer_info getBufferInfo();
+
 private:
-  dffi::Type const* Ty_;
+  virtual std::unique_ptr<CObj> cast_impl(dffi::Type const* To) const = 0;
+
+  dffi::QualType Ty_;
 };
 
 namespace {
@@ -336,12 +349,12 @@ struct CBOOps<CBO, bool>
 template <class T>
 struct CBasicObj: public CObj, public CBOOps<CBasicObj<T>, T>
 {
-  CBasicObj(dffi::BasicType const& Ty, Data<T>&& D):
+  CBasicObj(dffi::QualType Ty, Data<T>&& D):
     CObj(Ty),
     Data_(std::move(D))
   { }
 
-  CBasicObj(dffi::BasicType const& Ty, T const V = T{}):
+  CBasicObj(dffi::QualType Ty, T const V = T{}):
     CObj(Ty),
     Data_(Data<T>::emplace_owned(V))
   { }
@@ -359,7 +372,7 @@ struct CBasicObj: public CObj, public CBOOps<CBasicObj<T>, T>
   inline T value() const { return vref(); }
   explicit operator T() const { return value(); }
 
-  std::unique_ptr<CObj> cast(dffi::Type const* To) const override;
+  std::unique_ptr<CObj> cast_impl(dffi::Type const* To) const override;
 
   inline dffi::BasicType const* getType() const { return dffi::cast<dffi::BasicType>(CObj::getType()); }
 
@@ -374,7 +387,7 @@ protected:
 
 struct CPointerObj: public CObj
 {
-  CPointerObj(dffi::PointerType const& Ty, Data<void*>&& D):
+  CPointerObj(dffi::QualType Ty, Data<void*>&& D):
     CObj(Ty),
     Data_(std::move(D))
   { }
@@ -384,13 +397,10 @@ struct CPointerObj: public CObj
     Data_(Data<void*>::emplace_owned(Pointee->dataPtr()))
   { }
 
-  CPointerObj(dffi::PointerType const& Ty):
+  CPointerObj(dffi::QualType Ty):
     CObj(Ty),
     Data_(Data<void*>::emplace_owned(nullptr))
-  {
-    // AG: TODO, maybe let the data uninitialized for performance reasons
-    // (array of pointers, etc...)
-  }
+  { }
 
   void* dataPtr() override
   {
@@ -401,13 +411,13 @@ struct CPointerObj: public CObj
     return *Data_.dataPtr();
   }
 
-  inline dffi::QualType getPointeeType() const { return dffi::cast<dffi::PointerType>(getType())->getPointee(); }
+  inline dffi::QualType getPointeeType() const { return dffi::cast<dffi::PointerType>(getType().getType())->getPointee(); }
 
   std::unique_ptr<CObj> getObj();
 
-  std::unique_ptr<CObj> cast(dffi::Type const* To) const override;
+  std::unique_ptr<CObj> cast_impl(dffi::Type const* To) const override;
 
-  pybind11::memoryview getMemoryView(size_t Len);
+  pybind11::memoryview getMemoryViewObjects(size_t Len);
   pybind11::memoryview getMemoryViewCStr();
 
 private:
@@ -417,16 +427,16 @@ private:
 
 struct CArrayObj: public CObj
 {
-  CArrayObj(dffi::ArrayType const& Ty, Data<void>&& D):
+  CArrayObj(dffi::QualType Ty, Data<void>&& D):
     CObj(Ty),
     Data_(std::move(D))
   { }
 
-  CArrayObj(dffi::ArrayType const& Ty):
+  CArrayObj(dffi::QualType Ty):
     CObj(Ty)
   {
-    size_t Align = std::max(sizeof(void*), (size_t)Ty.getAlign());
-    auto Size = Ty.getSize();
+    size_t Align = std::max(sizeof(void*), (size_t)Ty->getAlign());
+    auto Size = Ty->getSize();
     void* Ptr = alloc_align(Size, Align);
     if (!Ptr) {
       throw AllocError{"allocation failure!"};
@@ -438,9 +448,10 @@ struct CArrayObj: public CObj
   void* getData() { return Data_.dataPtr(); }
   void const* getData() const { return Data_.dataPtr(); }
 
-  inline dffi::ArrayType const* getType() const { return dffi::cast<dffi::ArrayType>(CObj::getType()); }
+  inline dffi::ArrayType const* getArrayType() const { return dffi::cast<dffi::ArrayType>(CObj::getType().getType()); }
 
-  dffi::Type const* getElementType() const { return getType()->getElementType(); }
+  dffi::QualType getElementType() const { return getArrayType()->getElementType(); }
+  size_t getNumElements() const { return getArrayType()->getNumElements(); }
 
   void* GEP(size_t Idx) {
     // TODO: assert alignment
@@ -448,13 +459,16 @@ struct CArrayObj: public CObj
   }
 
   void const* GEP(size_t Idx) const {
+    // TODO: assert alignment
     return const_cast<const void*>(const_cast<CArrayObj*>(this)->GEP(Idx));
   }
 
   pybind11::object get(size_t Idx);
   void set(size_t Idx, pybind11::handle Obj);
 
-  std::unique_ptr<CObj> cast(dffi::Type const* To) const override;
+  std::unique_ptr<CObj> cast_impl(dffi::Type const* To) const override;
+
+  pybind11::buffer_info getBufferInfo();
 
 private:
   Data<void> Data_;
@@ -462,16 +476,16 @@ private:
 
 struct CCompositeObj: public CObj
 {
-  CCompositeObj(dffi::CompositeType const& Ty, Data<void>&& D):
+  CCompositeObj(dffi::QualType Ty, Data<void>&& D):
     CObj(Ty),
     Data_(std::move(D))
   { }
 
-  CCompositeObj(dffi::CompositeType const& Ty):
+  CCompositeObj(dffi::QualType Ty):
     CObj(Ty)
   {
-    assert(!Ty.isOpaque() && "can't instantiate an opaque structure/union!");
-    size_t Align = std::max(sizeof(void*), (size_t)Ty.getAlign());
+    assert(!getCompositeType()->isOpaque() && "can't instantiate an opaque structure/union!");
+    size_t Align = std::max(sizeof(void*), (size_t)Ty->getAlign());
     void* Ptr = alloc_align(getSize(), Align);
     if (!Ptr) {
       throw AllocError{"allocation failure!"};
@@ -486,7 +500,7 @@ struct CCompositeObj: public CObj
 
   dffi::CompositeField const& getField(const char* Name)
   {
-    auto* Ret = getType()->getField(Name);
+    auto* Ret = getCompositeType()->getField(Name);
     if (!Ret) {
       ThrowError<UnknownField>() << "unknown field " << Name;
     }
@@ -505,14 +519,14 @@ struct CCompositeObj: public CObj
     return getValue(getField(Field));
   }
 
-  inline dffi::CompositeType const* getType() const { return dffi::cast<dffi::CompositeType>(CObj::getType()); }
+  inline dffi::CompositeType const* getCompositeType() const { return dffi::cast<dffi::CompositeType>(getType().getType()); }
 
   void* getData() { return Data_.dataPtr(); }
   void const* getData() const { return Data_.dataPtr(); }
 
   void* dataPtr() override { return getData(); }
 
-  std::unique_ptr<CObj> cast(dffi::Type const* To) const override;
+  std::unique_ptr<CObj> cast_impl(dffi::Type const* To) const override;
 
 private:
   void* getFieldData(dffi::CompositeField const& F)
@@ -530,22 +544,22 @@ private:
 
 struct CStructObj: public CCompositeObj
 {
-  CStructObj(dffi::StructType const& Ty, Data<void>&& D):
+  CStructObj(dffi::QualType Ty, Data<void>&& D):
     CCompositeObj(Ty, std::move(D))
   { }
 
-  CStructObj(dffi::StructType const& Ty):
+  CStructObj(dffi::QualType Ty):
     CCompositeObj(Ty)
   { }
 };
 
 struct CUnionObj: public CCompositeObj
 {
-  CUnionObj(dffi::UnionType const& Ty, Data<void>&& D):
+  CUnionObj(dffi::QualType Ty, Data<void>&& D):
     CCompositeObj(Ty, std::move(D))
   { }
 
-  CUnionObj(dffi::UnionType const& Ty):
+  CUnionObj(dffi::QualType Ty):
     CCompositeObj(Ty)
   { }
 };
@@ -561,11 +575,11 @@ struct CFunction: public CObj
 
   pybind11::object call(pybind11::args const& Args) const;
 
-  inline dffi::FunctionType const* getType() const { return dffi::cast<dffi::FunctionType>(CObj::getType()); }
+  inline dffi::FunctionType const* getFuncType() const { return dffi::cast<dffi::FunctionType>(getType().getType()); }
   
   void* dataPtr() override { return NF_.getFuncCodePtr(); }
 
-  std::unique_ptr<CObj> cast(dffi::Type const* To) const override { return {nullptr}; }
+  std::unique_ptr<CObj> cast_impl(dffi::Type const* To) const override { return {nullptr}; }
 
 private:
   dffi::NativeFunc NF_;
@@ -582,11 +596,11 @@ struct CVarArgsFunction: public CObj
 
   pybind11::object call(pybind11::args const& Args) const;
 
-  inline dffi::FunctionType const* getType() const { return dffi::cast<dffi::FunctionType>(CObj::getType()); }
+  inline dffi::FunctionType const* getFuncType() const { return dffi::cast<dffi::FunctionType>(getType().getType()); }
   
   void* dataPtr() override { return FuncPtr_; }
 
-  std::unique_ptr<CObj> cast(dffi::Type const* To) const override { return {nullptr}; }
+  std::unique_ptr<CObj> cast_impl(dffi::Type const* To) const override { return {nullptr}; }
 
 private:
   void* FuncPtr_;
@@ -684,9 +698,11 @@ struct BasicObjConvertor<T, true>
 } // namespace
 
 template <class T>
-std::unique_ptr<CObj> CBasicObj<T>::cast(dffi::Type const* To) const
+std::unique_ptr<CObj> CBasicObj<T>::cast_impl(dffi::Type const* To) const
 {
   return BasicObjConvertor<T, std::is_convertible<T, void*>::value>::cast(*this, To);
 }
+
+std::unique_ptr<CObj> createObj(dffi::Type const* Ty, Data<void>&& D);
 
 #endif

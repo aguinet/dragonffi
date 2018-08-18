@@ -19,6 +19,7 @@
 
 #include <dffi/casting.h>
 #include <dffi/types.h>
+#include <dffi/mdarray.h>
 
 namespace py = pybind11;
 using namespace dffi;
@@ -195,9 +196,23 @@ struct ConvertArgsSwitch
   {
     if (auto* PtrObj = O.dyn_cast<CPointerObj>()) {
       if (!Ty->getPointee().hasConst() && PtrObj->getPointeeType().hasConst()) {
-        throw TypeError{"pointer to const type can't be converted to a pointer to a non-const value."};
+        throw ConstCastError{};
       }
       return PtrObj;
+    }
+
+    // Automatic promote arrays to pointers if the underlying type is the same!
+    if (auto* ArrObj = O.dyn_cast<CArrayObj>()) {
+      QualType PteeTy = Ty->getPointee();
+      QualType EltTy = ArrObj->getElementType();
+      if (!PteeTy.hasConst() && EltTy.hasConst()) {
+        throw ConstCastError{};
+      }
+      if (PteeTy.getType() == EltTy.getType()) {
+        auto* Ret = new CPointerObj{ArrObj};
+        H.emplace_back(std::unique_ptr<CObj>{Ret});
+        return Ret;
+      }
     }
 
     auto PteTy = Ty->getPointee();
@@ -226,7 +241,7 @@ struct ConvertArgsSwitch
         }
       }
     }
-    // Cast this as a buffer
+    // Last resort: cast this as a buffer
     py::buffer B = O.cast<py::buffer>();
     py::buffer_info Info = B.request(isWritable);
     if (Info.ndim != 1) {
@@ -268,38 +283,44 @@ struct CreateObjSwitch
 {
   typedef std::vector<std::unique_ptr<CObj>> ObjsHolder;
 
-  template <class T>
-  static std::unique_ptr<CObj> case_basic(BasicType const* Ty)
+  template <class T, class... Args>
+  static std::unique_ptr<CObj> case_basic(BasicType const* Ty, Args&& ... args)
   {
-    return std::unique_ptr<CObj>{new CBasicObj<T>{*Ty}};
+    return std::unique_ptr<CObj>{new CBasicObj<T>{*Ty, std::forward<Args>(args)...}};
   }
 
-  static std::unique_ptr<CObj> case_enum(EnumType const* Ty)
+  template <class... Args>
+  static std::unique_ptr<CObj> case_enum(EnumType const* Ty, Args&& ... args)
   {
-    return std::unique_ptr<CObj>{new CBasicObj<EnumType::IntType>{*Ty->getBasicType()}};
+    return std::unique_ptr<CObj>{new CBasicObj<EnumType::IntType>{*Ty->getBasicType(), std::forward<Args>(args)...}};
   }
 
-  static std::unique_ptr<CObj> case_pointer(PointerType const* Ty)
+  template <class... Args>
+  static std::unique_ptr<CObj> case_pointer(PointerType const* Ty, Args&& ... args)
   {
-    return std::unique_ptr<CObj>{new CPointerObj{*Ty}};
+    return std::unique_ptr<CObj>{new CPointerObj{*Ty, std::forward<Args>(args)...}};
   }
 
-  static std::unique_ptr<CObj> case_composite(StructType const* Ty)
+  template <class... Args>
+  static std::unique_ptr<CObj> case_composite(StructType const* Ty, Args&& ... args)
   {
-    return std::unique_ptr<CObj>{new CStructObj{*Ty}};
+    return std::unique_ptr<CObj>{new CStructObj{*Ty, std::forward<Args>(args)...}};
   }
 
-  static std::unique_ptr<CObj> case_composite(UnionType const* Ty)
+  template <class... Args>
+  static std::unique_ptr<CObj> case_composite(UnionType const* Ty, Args&& ... args)
   {
-    return std::unique_ptr<CObj>{new CUnionObj{*Ty}};
+    return std::unique_ptr<CObj>{new CUnionObj{*Ty, std::forward<Args>(args)...}};
   }
 
-  static std::unique_ptr<CObj> case_array(ArrayType const* Ty)
+  template <class... Args>
+  static std::unique_ptr<CObj> case_array(ArrayType const* Ty, Args&& ... args)
   {
-    return std::unique_ptr<CObj>{new CArrayObj{*Ty}};
+    return std::unique_ptr<CObj>{new CArrayObj{*Ty, std::forward<Args>(args)...}};
   }
 
-  static std::unique_ptr<CObj> case_func(FunctionType const* Ty)
+  template <class... Args>
+  static std::unique_ptr<CObj> case_func(FunctionType const* Ty, Args&& ... args)
   {
     return std::unique_ptr<CObj>{new CFunction{Ty->getFunction(nullptr)}};
   }
@@ -308,34 +329,115 @@ using CreateObj = TypeDispatcher<CreateObjSwitch>;
 
 } // anonymous
 
+std::unique_ptr<CObj> createObj(Type const* Ty, Data<void>&& D)
+{
+  return CreateObj::switch_(Ty, std::move(D));
+}
+
 std::string getFormatDescriptor(Type const* Ty)
 {
-  if (auto* BTy = dffi::dyn_cast<BasicType>(Ty)) {
+  switch (Ty->getKind()) {
+    case Type::TY_Enum:
+      Ty = cast<EnumType>(Ty)->getBasicType();
+    case Type::TY_Basic: {
+      auto* BTy = cast<BasicType>(Ty);
 #define HANDLE_BASICTY(DTy, CTy)\
-    case BasicType::DTy:\
-      return py::format_descriptor<CTy>::format();
+      case BasicType::DTy:\
+        return py::format_descriptor<CTy>::format();
 
-    switch (BTy->getBasicKind()) {
-      HANDLE_BASICTY(Bool, c_bool);
-      HANDLE_BASICTY(Char, c_char);
-      HANDLE_BASICTY(UChar, c_unsigned_char);
-      HANDLE_BASICTY(UShort, c_unsigned_short);
-      HANDLE_BASICTY(UInt, c_unsigned_int);
-      HANDLE_BASICTY(ULong, c_unsigned_long);
-      HANDLE_BASICTY(ULongLong, c_unsigned_long_long);
-      HANDLE_BASICTY(SChar, c_signed_char);
-      HANDLE_BASICTY(Short, c_short);
-      HANDLE_BASICTY(Int, c_int);
-      HANDLE_BASICTY(Long, c_long);
-      HANDLE_BASICTY(LongLong, c_long_long);
-      HANDLE_BASICTY(Float, c_float);
-      HANDLE_BASICTY(Double, c_double);
+      switch (BTy->getBasicKind()) {
+        HANDLE_BASICTY(Bool, c_bool);
+        HANDLE_BASICTY(Char, c_char);
+        HANDLE_BASICTY(UChar, c_unsigned_char);
+        HANDLE_BASICTY(UShort, c_unsigned_short);
+        HANDLE_BASICTY(UInt, c_unsigned_int);
+        HANDLE_BASICTY(ULong, c_unsigned_long);
+        HANDLE_BASICTY(ULongLong, c_unsigned_long_long);
+        HANDLE_BASICTY(SChar, c_signed_char);
+        HANDLE_BASICTY(Short, c_short);
+        HANDLE_BASICTY(Int, c_int);
+        HANDLE_BASICTY(Long, c_long);
+        HANDLE_BASICTY(LongLong, c_long_long);
+        HANDLE_BASICTY(Float, c_float);
+        HANDLE_BASICTY(Double, c_double);
 #undef HANDLE_BASICTY
-      default:
-        break;
-    };
-  }
+        default:
+          break;
+      };
+      break;
+    }
+    case Type::TY_Pointer:
+      return "P";
+    case Type::TY_Struct:
+    {
+      std::string Ret;
+      auto* STy = cast<StructType>(Ty);
+      size_t CurIdx = 0;
+      for (auto const& F: STy->getFields()) {
+        const size_t Off = F.getOffset();
+        const auto* FTy = F.getType();
+        if (CurIdx < Off) {
+          // Padding
+          for (size_t i = 0; i < (Off-CurIdx); ++i) Ret += "x";
+        }
+        Ret += getFormatDescriptor(FTy);
+        CurIdx = F.getOffset() + FTy->getSize();
+      }
+      // Final padding
+      for (size_t i = 0; i < (STy->getSize()-CurIdx); ++i) Ret += "x";
+      return Ret;
+    }
+    default:
+      break;
+  };
+
+  // We treat every other cases as buffer of bytes.
   return std::to_string(Ty->getSize()) + "B";
+}
+
+std::unique_ptr<CObj> CObj::cast(QualType To) const
+{
+  if (isConst() && !To.hasConst()) {
+    return {};
+  }
+  auto Ret = cast_impl(To.getType());
+  if (To.hasConst()) {
+    Ret->setConst();
+  }
+  return Ret;
+}
+
+py::buffer_info CObj::getBufferInfo()
+{
+  const ssize_t Size = getSize();
+  py::buffer_info Ret(
+    dataPtr(), 1, "B", Size);
+  Ret.readonly = isConst();
+  return Ret;
+}
+
+py::buffer_info CArrayObj::getBufferInfo()
+{
+  // Check if we have a multi-dimensional array
+  auto MDA = MDArray::fromArrayTy(*getArrayType());
+  if (MDA.isValid()) {
+    auto const& Shape = MDA.getShape();
+    const auto Format = getFormatDescriptor(MDA.getElementType());
+    const auto EltSize = MDA.getElementType()->getSize();
+    const auto NDim = Shape.size();
+    std::vector<ssize_t> Strides(NDim);
+    ssize_t CurStride = EltSize;
+    for (ssize_t i = NDim-1; i >= 0; --i) {
+      Strides[i] = CurStride;
+      CurStride *= Shape[i];
+    }
+    py::buffer_info Ret(dataPtr(), static_cast<ssize_t>(EltSize),
+      Format, static_cast<ssize_t>(NDim), Shape, Strides);
+    Ret.readonly = MDA.getElementType().hasConst();
+    return Ret;
+  }
+  // If not, return the same buffer as view_as_bytes
+  return CObj::getBufferInfo();
 }
 
 py::object CArrayObj::get(size_t Idx) {
@@ -343,11 +445,17 @@ py::object CArrayObj::get(size_t Idx) {
 }
 
 void CArrayObj::set(size_t Idx, py::handle Obj) {
+  if (isConst()) {
+    throw ConstError{};
+  }
   TypeDispatcher<ValueSetter>::switch_(getElementType(), GEP(Idx), Obj);
 }
 
 void CCompositeObj::setValue(CompositeField const& Field, py::handle Obj)
 {
+  if (isConst()) {
+    throw ConstError{};
+  }
   void* Ptr = getFieldData(Field);
   TypeDispatcher<ValueSetter>::switch_(Field.getType(), Ptr, Obj);
 }
@@ -359,32 +467,39 @@ py::object CCompositeObj::getValue(CompositeField const& Field)
 }
 
 std::unique_ptr<CObj> CPointerObj::getObj() {
-  return TypeDispatcher<PtrToObjView>::switch_(getPointeeType(), getPtr());
+  auto PteeTy = getPointeeType();
+  auto Ret = TypeDispatcher<PtrToObjView>::switch_(PteeTy, getPtr());
+  if (PteeTy.hasConst()) {
+    Ret->setConst();
+  }
+  return Ret;
 }
 
-py::memoryview CPointerObj::getMemoryView(size_t Len)
+py::memoryview CPointerObj::getMemoryViewObjects(size_t Len)
 {
   auto PointeeTy = getPointeeType();
   const size_t PointeeSize = PointeeTy->getSize();
   // TODO: check integer overflow
   // TODO: ssize_t is an issue
-  return py::memoryview{py::buffer_info{getPtr(), static_cast<ssize_t>(PointeeSize), getFormatDescriptor(PointeeTy), static_cast<ssize_t>(PointeeSize*Len)}};
+  py::buffer_info BI(py::buffer_info{getPtr(), static_cast<ssize_t>(PointeeSize), getFormatDescriptor(PointeeTy), static_cast<ssize_t>(Len)});
+  BI.readonly = PointeeTy.hasConst();
+  return py::memoryview{BI};
 }
 
 py::memoryview CPointerObj::getMemoryViewCStr()
 {
   static constexpr auto CharKind = BasicType::getKind<char>();
-  auto PteeType = getPointeeType();
-  if (!isa<BasicType>(PteeType.getType()) || static_cast<BasicType const*>(PteeType.getType())->getBasicKind() != CharKind) {
+  auto* PteeType = getPointeeType().getType();
+  if (!isa<BasicType>(PteeType) || static_cast<BasicType const*>(PteeType)->getBasicKind() != CharKind) {
     throw TypeError{"pointer must be a pointer to char*!"};
   }
   const size_t Len = strlen((const char*)getPtr());
-  return getMemoryView(Len);
+  return getMemoryViewObjects(Len);
 }
 
 py::object CVarArgsFunction::call(py::args const& Args) const
 {
-  FunctionType const* FTy = getType();
+  FunctionType const* FTy = getFuncType();
   auto const& Params = FTy->getParams();
   const size_t NParams = Params.size();
   const size_t VarArgsCount = Args.size() - Params.size();
@@ -403,7 +518,7 @@ py::object CFunction::call(py::args const& Args) const
   ConvertArgsSwitch::PyObjsHolder PyHolders;
 
   const auto Len = py::len(Args);
-  FunctionType const* FTy = getType();
+  FunctionType const* FTy = getFuncType();
 
   const auto NArgs = FTy->getParams().size();
   if (Len != NArgs) {
@@ -434,7 +549,7 @@ py::object CFunction::call(py::args const& Args) const
 }
 
 // Cast
-std::unique_ptr<CObj> CPointerObj::cast(Type const* To) const
+std::unique_ptr<CObj> CPointerObj::cast_impl(Type const* To) const
 {
   CObj* Ret = nullptr;
   if (auto const* BTy = dyn_cast<BasicType>(To)) {
@@ -449,7 +564,7 @@ std::unique_ptr<CObj> CPointerObj::cast(Type const* To) const
   return std::unique_ptr<CObj>{Ret};
 }
 
-std::unique_ptr<CObj> CArrayObj::cast(Type const* To) const
+std::unique_ptr<CObj> CArrayObj::cast_impl(Type const* To) const
 {
   CObj* Ret = nullptr;
   if (auto* ATy = dyn_cast<ArrayType>(To)) {
@@ -458,14 +573,10 @@ std::unique_ptr<CObj> CArrayObj::cast(Type const* To) const
       Ret = new CArrayObj{*ATy, Data<void>::view((void*)getData())};
     }
   }
-  else
-  if (auto* PTy = dyn_cast<PointerType>(To)) {
-    Ret = new CPointerObj{*PTy, Data<void*>::emplace_owned((void*)getData())};
-  }
   return std::unique_ptr<CObj>{Ret};
 }
 
-std::unique_ptr<CObj> CCompositeObj::cast(Type const* To) const
+std::unique_ptr<CObj> CCompositeObj::cast_impl(Type const* To) const
 {
   CObj* Ret = nullptr;
   if (auto* PTy = dyn_cast<PointerType>(To)) {

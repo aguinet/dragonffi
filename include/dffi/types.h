@@ -165,9 +165,19 @@ public:
     Const = 1
   };
 
-  QualType(Type const* Ty)
+  QualType(Type const& Ty)
+  {
+    Ty_ = pointerWithQualifiers(&Ty, None);
+  }
+
+  QualType(Type const* Ty) 
   {
     Ty_ = pointerWithQualifiers(Ty, None);
+  }
+
+  QualType()
+  {
+    Ty_ = 0;
   }
 
 
@@ -194,9 +204,9 @@ public:
 
   Type const* getType() const { return (Type const*) (Ty_ & (~QMask)); }
 
-  bool operator<(QualType const& O) const { return Ty_ < O.Ty_; }
-  bool operator>(QualType const& O) const { return Ty_ > O.Ty_; }
-  bool operator==(QualType const& O) const { return Ty_ == O.Ty_; }
+  inline bool operator<(QualType const& O) const { return Ty_ < O.Ty_; }
+  inline bool operator>(QualType const& O) const { return Ty_ > O.Ty_; }
+  inline bool operator==(QualType const& O) const { return Ty_ == O.Ty_; }
 
   uintptr_t getRawValue() const { return Ty_; }
 private:
