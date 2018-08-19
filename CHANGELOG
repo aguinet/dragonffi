@@ -1,3 +1,28 @@
+0.3.0
+-----
+
+Python API changes:
+
+* remove CFunction::call
+* remove old and redundant getFunction/get*Type APIs
+* Move typeof/sizeof/alignof/ptr APIs to pydffi, as they do not need the
+  FFI object to be called, and are generic C "builtins".
+
+Improvements:
+
+* Better python API for arrays
+* CArrayObj iterator API
+* All CObj objects now have a QualType, to honor various constness
+* Generate a memoryview of a CObj as a sequence of bytes
+* Generate a multi-dimensional memoryview of CArrayObj (if relevant)
+* Rebase pybind11 on 2.2.3
+
+Bug fixes:
+
+* fix type promotion for arrays when calling C functions (invalid cast
+  array->pointer)
+* bug in pybind11 (?): format buffer of a memoryview can become invalid
+
 0.2.3
 -----
 
