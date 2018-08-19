@@ -17,6 +17,7 @@
 #include <dffi/composite_type.h>
 #include <dffi/casting.h>
 #include <dffi/ctypes.h>
+#include <dffi/mdarray.h>
 #include "dffi_impl.h"
 
 using namespace dffi;
@@ -240,4 +241,25 @@ void UnionType::setBody(std::vector<CompositeField>&& Fields, uint64_t Size, uns
 void EnumType::setBody(Fields&& Fields) {
   setAsDefined();
   Fields_ = std::move(Fields);
+}
+
+MDArray::MDArray() = default;
+MDArray::MDArray(MDArray&&) = default;
+MDArray::MDArray(MDArray const&) = default;
+
+MDArray::MDArray(ShapeTy Shape, QualType BTy):
+  Shape_(Shape),
+  BTy_(BTy)
+{ }
+
+MDArray MDArray::fromArrayTy(ArrayType const& ATy)
+{
+  QualType EltTy = ATy.getElementType();
+  ShapeTy Shape;
+  Shape.push_back(ATy.getNumElements());
+  while (auto* ArEltTy = dyn_cast<ArrayType>(EltTy.getType())) {
+    Shape.push_back(ArEltTy->getNumElements());
+    EltTy = ArEltTy->getElementType();
+  }
+  return MDArray{std::move(Shape), EltTy};
 }
