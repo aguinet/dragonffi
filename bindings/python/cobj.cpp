@@ -334,40 +334,113 @@ std::unique_ptr<CObj> createObj(Type const* Ty, Data<void>&& D)
   return CreateObj::switch_(Ty, std::move(D));
 }
 
-std::string getFormatDescriptor(Type const* Ty)
+namespace {
+
+std::string getBTyNativeFormatDescriptor(BasicType const* BTy)
+{
+#define HANDLE_BASICTY(DTy, CTy)\
+  case BasicType::DTy:\
+    return py::format_descriptor<CTy>::format();
+
+  switch (BTy->getBasicKind()) {
+    HANDLE_BASICTY(Bool, c_bool);
+    HANDLE_BASICTY(Char, c_char);
+    HANDLE_BASICTY(UChar, c_unsigned_char);
+    HANDLE_BASICTY(UShort, c_unsigned_short);
+    HANDLE_BASICTY(UInt, c_unsigned_int);
+    HANDLE_BASICTY(ULong, c_unsigned_long);
+    HANDLE_BASICTY(ULongLong, c_unsigned_long_long);
+    HANDLE_BASICTY(SChar, c_signed_char);
+    HANDLE_BASICTY(Short, c_short);
+    HANDLE_BASICTY(Int, c_int);
+    HANDLE_BASICTY(Long, c_long);
+    HANDLE_BASICTY(LongLong, c_long_long);
+    HANDLE_BASICTY(Float, c_float);
+    HANDLE_BASICTY(Double, c_double);
+#undef HANDLE_BASICTY
+    default:
+      break;
+  }
+  return std::to_string(BTy->getSize()) + "B";
+}
+
+std::string getPtrNativeFormatDescriptor(PointerType const*)
+{
+  return "P";
+}
+std::string getBTyPortableFormatDescriptor(BasicType const* BTy)
+{
+  // We only used defined formats that have a standard size (see
+  // https://docs.python.org/2/library/struct.html)
+  const auto BKind = BTy->getBasicKind();
+  const auto Size = BTy->getSize();
+  switch (BKind) {
+    case BasicType::Float:
+    case BasicType::Double: {
+      if (Size == 4) return "f";
+      if (Size == 8) return "d";
+      break;
+    }
+#define HANDLE_BTY(CTy, F)\
+    case BasicType::getKind<CTy>():\
+      return F;
+    HANDLE_BTY(uint8_t, "B")
+    HANDLE_BTY(int8_t, "b")
+    HANDLE_BTY(uint16_t, "H")
+    HANDLE_BTY(int16_t, "h")
+    HANDLE_BTY(uint32_t, "I")
+    HANDLE_BTY(int32_t, "i")
+    HANDLE_BTY(uint64_t, "Q")
+    HANDLE_BTY(int64_t, "q")
+    default:
+      break;
+  }
+
+  const bool IsSigned = BTy->isSignedInteger();
+  switch (Size) {
+    case 1:
+      return IsSigned ? "b":"B";
+    case 2:
+      return IsSigned ? "h":"H";
+    case 4:
+      return IsSigned ? "i":"I";
+    case 8:
+      return IsSigned ? "q":"Q";
+    default:
+      break;
+  }
+
+  return std::to_string(Size) + "B";
+}
+
+std::string getPtrPortableFormatDescriptor(PointerType const* PTy)
+{
+  const auto Size = PTy->getSize();
+  switch (Size) {
+    case 1:
+      return "B";
+    case 2:
+      return "H";
+    case 4:
+      return "I";
+    case 8:
+      return "Q";
+    default:
+      break;
+  }
+  return std::to_string(Size) + "B";
+}
+
+template <class BTyFunc, class PtrTyFunc>
+std::string getFormatDescriptorImpl(Type const* Ty, BTyFunc BTyFormat, PtrTyFunc PtrTyFormat)
 {
   switch (Ty->getKind()) {
     case Type::TY_Enum:
       Ty = cast<EnumType>(Ty)->getBasicType();
-    case Type::TY_Basic: {
-      auto* BTy = cast<BasicType>(Ty);
-#define HANDLE_BASICTY(DTy, CTy)\
-      case BasicType::DTy:\
-        return py::format_descriptor<CTy>::format();
-
-      switch (BTy->getBasicKind()) {
-        HANDLE_BASICTY(Bool, c_bool);
-        HANDLE_BASICTY(Char, c_char);
-        HANDLE_BASICTY(UChar, c_unsigned_char);
-        HANDLE_BASICTY(UShort, c_unsigned_short);
-        HANDLE_BASICTY(UInt, c_unsigned_int);
-        HANDLE_BASICTY(ULong, c_unsigned_long);
-        HANDLE_BASICTY(ULongLong, c_unsigned_long_long);
-        HANDLE_BASICTY(SChar, c_signed_char);
-        HANDLE_BASICTY(Short, c_short);
-        HANDLE_BASICTY(Int, c_int);
-        HANDLE_BASICTY(Long, c_long);
-        HANDLE_BASICTY(LongLong, c_long_long);
-        HANDLE_BASICTY(Float, c_float);
-        HANDLE_BASICTY(Double, c_double);
-#undef HANDLE_BASICTY
-        default:
-          break;
-      };
-      break;
-    }
+    case Type::TY_Basic:
+      return BTyFormat(cast<BasicType>(Ty));
     case Type::TY_Pointer:
-      return "P";
+      return PtrTyFormat(cast<PointerType>(Ty));
     case Type::TY_Struct:
     {
       std::string Ret;
@@ -380,7 +453,7 @@ std::string getFormatDescriptor(Type const* Ty)
           // Padding
           for (size_t i = 0; i < (Off-CurIdx); ++i) Ret += "x";
         }
-        Ret += getFormatDescriptor(FTy);
+        Ret += getFormatDescriptorImpl(FTy, BTyFormat, PtrTyFormat);
         CurIdx = F.getOffset() + FTy->getSize();
       }
       // Final padding
@@ -393,6 +466,28 @@ std::string getFormatDescriptor(Type const* Ty)
 
   // We treat every other cases as buffer of bytes.
   return std::to_string(Ty->getSize()) + "B";
+}
+
+} // anonymous
+
+std::string getFormatDescriptor(Type const* Ty)
+{
+  return getFormatDescriptorImpl(Ty, getBTyNativeFormatDescriptor, getPtrNativeFormatDescriptor);
+}
+
+
+std::string getPortableFormatDescriptor(Type const* Ty)
+{
+  std::string Ret;
+#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+  Ret = "<";
+#elif __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+  Ret = ">";
+#else
+#error Unsupported endianess!
+#endif
+  Ret += getFormatDescriptorImpl(Ty, getBTyPortableFormatDescriptor, getPtrPortableFormatDescriptor);
+  return Ret;
 }
 
 std::unique_ptr<CObj> CObj::cast(QualType To) const
