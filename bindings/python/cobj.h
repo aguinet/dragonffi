@@ -607,6 +607,7 @@ private:
 };
 
 std::string getFormatDescriptor(dffi::Type const* Ty);
+std::string getPortableFormatDescriptor(dffi::Type const* Ty);
 
 namespace {
 template <class T, bool isConvertibleToPtr>

@@ -100,6 +100,8 @@ public:
 
   BasicKind getBasicKind() const { return BKind_; }
 
+  bool isSignedInteger() const;
+
   static bool classof(dffi::Type const* T) {
     return T->getKind() == TY_Basic;
   }

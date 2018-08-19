@@ -32,6 +32,26 @@ BasicType::BasicType(details::DFFIImpl& Dffi, BasicKind BKind):
   BKind_(BKind)
 { }
 
+bool BasicType::isSignedInteger() const
+{
+  switch (getBasicKind()) {
+    case Char:
+      return std::is_signed<char>::value;
+    case SChar:
+    case Short:
+    case Int:
+    case Long:
+    case LongLong:
+#ifdef DFFI_SUPPORT_I128
+    case Int128:
+#endif
+      return true;
+    default:
+      break;
+  }
+  return false;
+}
+
 unsigned BasicType::getAlign() const
 {
   switch (BKind_) {

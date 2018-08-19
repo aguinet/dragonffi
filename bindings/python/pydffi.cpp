@@ -411,6 +411,7 @@ PYBIND11_MODULE(pydffi, m)
         return PointerType::get(Ty);
       }, py::return_value_policy::reference_internal)
       .def_property_readonly("format", &getFormatDescriptor)
+      .def_property_readonly("portable_format", &getPortableFormatDescriptor)
     ;
 
   py::class_<QualType>(m, "QualType")
