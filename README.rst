@@ -75,11 +75,11 @@ LLVM5 compilation
   $ wget http://releases.llvm.org/5.0.1/llvm-5.0.1.src.tar.xz
   $ wget http://releases.llvm.org/5.0.1/cfe-5.0.1.src.tar.xz
   $ tar xf llvm-5.0.1.src.tar.xz && tar xf cfe-5.0.1.src.tar.xz
-  $ ln -s cfe-5.0.1.src llvm-5.0.1.src/tools/clang
-  $ cd llvm-5.0.1.src && patch -p1 </path/to/dragonffi/third-party/cc-llvm.patch
-  $ cd llvm-5.0.1.src/tools/clang && patch -p1 </path/to/dragonffi/third-party/cc-clang.patch
+  $ ln -s $PWD/cfe-5.0.1.src llvm-5.0.1.src/tools/clang
+  $ cd llvm-5.0.1.src && patch -p1 </path/to/dragonffi/third-party/cc-llvm.patch && cd -
+  $ cd llvm-5.0.1.src/tools/clang && patch -p1 </path/to/dragonffi/third-party/cc-clang.patch && cd -
   $ mkdir build && cd build && cmake -DCMAKE_BUILD_TYPE=release -DBUILD_SHARED_LIBS="OFF" -DLLVM_ENABLE_RTTI=ON -DLLVM_BUILD_TOOLS=ON -DLLVM_ENABLE_TERMINFO=OFF -DLLVM_ENABLE_LIBEDIT=OFF -DLLVM_ENABLE_ZLIB=OFF ..
-  $ cd build && make
+  $ make
 
 DragonFFI compilation
 ---------------------
