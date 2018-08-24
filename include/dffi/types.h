@@ -31,12 +31,15 @@
 namespace dffi {
 
 namespace details {
+struct CUImpl;
 struct DFFICtx;
 struct DFFIImpl;
 }
 
 class DFFI_API Type
 {
+  friend struct details::CUImpl;
+
 public:
   enum TypeKind : uint8_t {
     TY_Basic,
@@ -55,6 +58,10 @@ public:
 protected:
   Type(details::DFFIImpl& Dffi, TypeKind K);
 
+  void addName(const char* Name) const {
+    Names_.push_back(Name);
+  }
+
   const TypeKind Kind_;
   details::DFFIImpl& Dffi_;
 
@@ -64,6 +71,11 @@ public:
   virtual uint64_t getSize() const { return 1; }
 
   details::DFFIImpl& getDFFI() const { return Dffi_; }
+
+  std::vector<const char*> const& getNames() const { return Names_; }
+
+private:
+  mutable std::vector<const char*> Names_;
 };
 
 class DFFI_API BasicType: public Type

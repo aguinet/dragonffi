@@ -21,7 +21,7 @@ jobs:
         choco install miniconda3 ninja
         C:\tools\Miniconda3\Scripts\conda.exe install -c conda-forge llvm-utils==8.0.1 clangdev==8.0.1
         python -m pip install --upgrade pip
-        python -m pip install lit 
+        python -m pip install lit purectypes==0.2 six
         mkdir build
     - name: CMake + build
       working-directory: build
@@ -44,5 +44,5 @@ jobs:
         set CC=cl.exe
         set CXX=cl.exe
         python .\setup.py install
-        python -m unittest discover tests
+        cd tests && python -m unittest discover .
       shell: cmd

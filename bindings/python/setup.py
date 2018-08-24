@@ -97,10 +97,10 @@ class build_ext_dffi(build_ext):
         os.chdir(cwd)
         build_ext.run(self)
 
-module = Extension('pydffi',
+module = Extension('pydffi.backend',
                     include_dirs = [os.path.join(this_dir, '../../include'),
                         os.path.join(this_dir, '../../third-party')],
-                    define_macros = [('dffi_STATIC', None)],
+                    define_macros = [('dffi_STATIC', None),('PYDFFI_EXT_NAME','backend')],
                     extra_compile_args = compile_args,
                     extra_link_args = link_args,
                     library_dirs = [],
@@ -124,8 +124,6 @@ Static python bindings for dragonffi. API isn't yet stable and is subject to cha
 	'Programming Language :: Python :: 2',
 	'Programming Language :: Python :: 2.7',
 	'Programming Language :: Python :: 3',
-	'Programming Language :: Python :: 3.2',
-	'Programming Language :: Python :: 3.3',
 	'Programming Language :: Python :: 3.4',
 	'Programming Language :: Python :: 3.5',
 	'Programming Language :: Python :: 3.6',
@@ -135,9 +133,12 @@ Static python bindings for dragonffi. API isn't yet stable and is subject to cha
     license='Apache 2.0',
     url = "https://github.com/aguinet/dragonffi",
     download_url = "https://github.com/aguinet/dragonffi/tarball/dffi-0.5.1",
+    entry_points = {"purectypes.generators": ".pydffi = pydffi.purectypes_generator:GenPureCType"},
     ext_modules = [module],
     cmdclass={
         'build_ext': build_ext_dffi,
     },
+    packages = ["pydffi", "pydffi.purectypes_generator"],
+    tests_require = ["six"],
     python_requires='>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, <4'
 )

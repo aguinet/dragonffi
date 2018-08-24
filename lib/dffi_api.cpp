@@ -86,6 +86,11 @@ bool DFFI::dlopen(const char* Path, std::string* Err)
   return !llvm::sys::DynamicLibrary::LoadLibraryPermanently(Path, Err);
 }
 
+std::string DFFI::getNativeTriple()
+{
+  return llvm::sys::getProcessTriple();
+}
+
 BasicType const* DFFI::getVoidTy()
 {
   return nullptr;
