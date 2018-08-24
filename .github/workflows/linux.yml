@@ -18,7 +18,7 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Install system dependencies
       run: |
-        # Github's ubuntu 18 docker image is provides broken clang/llvm 8
+        # Github's ubuntu 18 docker image provides broken clang/llvm 8
         # packages from whatever sources...
         # Remove the mess it has, purge every thing we don't need from
         # sources.list and reinstall the proper and clean clang/llvm packages
@@ -30,6 +30,7 @@ jobs:
         sudo echo "deb http://archive.ubuntu.com/ubuntu bionic-updates main multiverse restricted universe " | sudo tee -a /etc/apt/sources.list
         sudo apt update && sudo apt install -y clang-8 llvm-8-tools llvm-8-dev libclang-8-dev ninja-build cmake
         python -m pip install lit 
+        python -m pip install purectypes==0.2 six
         mkdir build
     - name: CMake
       working-directory: build

@@ -21,7 +21,7 @@ jobs:
         brew install cmake ninja
         sudo $CONDA/bin/conda install -c conda-forge llvm-utils==8.0.1 clangdev==8.0.1
         python -m pip install --upgrade pip
-        python -m pip install lit 
+        python -m pip install lit purectypes==0.2 six
         mkdir build
     - name: CMake
       working-directory: build

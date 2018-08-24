@@ -410,7 +410,11 @@ private:
 
 } // anonymous
 
-PYBIND11_MODULE(pydffi, m)
+#ifndef PYDFFI_EXT_NAME
+#define PYDFFI_EXT_NAME pydffi
+#endif
+
+PYBIND11_MODULE(PYDFFI_EXT_NAME, m)
 {
   DFFI::initialize();
 
@@ -423,6 +427,9 @@ PYBIND11_MODULE(pydffi, m)
       }, py::return_value_policy::reference_internal)
       .def_property_readonly("format", &getFormatDescriptor)
       .def_property_readonly("portable_format", &getPortableFormatDescriptor)
+      .def_property_readonly("names", [](Type const* Ty) {
+          return py::make_iterator<py::return_value_policy::reference_internal>(Ty->getNames());
+        });
     ;
 
   py::class_<QualType>(m, "QualType")
@@ -440,6 +447,7 @@ PYBIND11_MODULE(pydffi, m)
 
   py::enum_<BasicType::BasicKind>(m, "BasicKind")
     .value("Bool", BasicType::Bool)
+    .value("Char", BasicType::Char)
     .value("SChar", BasicType::SChar)
     .value("Short", BasicType::Short)
     .value("Int", BasicType::Int)
@@ -473,11 +481,13 @@ PYBIND11_MODULE(pydffi, m)
   py::class_<ArrayType>(m, "ArrayType", type)
     .def("elementType", &ArrayType::getElementType, py::return_value_policy::reference_internal)
     .def("__call__", carraytype_new, py::keep_alive<0,1>())
+    .def("count", &ArrayType::getNumElements)
     ;
 
   py::class_<FunctionType>(m, "FunctionType", type)
     .def_property_readonly("returnType", &FunctionType::getReturnType, py::return_value_policy::reference_internal)
     .def_property_readonly("params", &FunctionType::getParams, py::return_value_policy::reference_internal)
+    .def_property_readonly("varArgs", &FunctionType::hasVarArgs)
     .def("getWrapperLLVMStr", &FunctionType::getWrapperLLVMStr)
     .def("__call__", functiontype_getfunction, py::keep_alive<0,1>())
     ;
@@ -818,6 +828,12 @@ PYBIND11_MODULE(pydffi, m)
   m.def("ptr", [](Type const* Ty) {
     return PointerType::get(Ty);
   }, py::return_value_policy::reference, py::keep_alive<0,1>());
+
+  m.def("native_triple", []() { return DFFI::getNativeTriple(); });
+
+  // Types
+  m.def("format", &getFormatDescriptor);
+  m.def("portable_format", &getPortableFormatDescriptor);
 
   // Exceptions
   py::register_exception<CompileError>(m, "CompileError");

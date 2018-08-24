@@ -830,7 +830,8 @@ void CUImpl::declareDIComposite(DICompositeType const* DCTy)
     if (Name.startswith("__dffi")) {
       llvm::report_fatal_error("__dffi is a compiler reserved prefix and can't be used in a structure name!");
     }
-    AddTy(Name);
+    auto It = AddTy(Name);
+    It.first->getValue()->addName(It.first->getKeyData());
   }
   else {
     // Add to the map of anonymous types, and generate a name

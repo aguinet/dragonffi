@@ -175,7 +175,12 @@ struct CUImpl
 
   void declareDIComposite(llvm::DICompositeType const* Ty);
   void parseDIComposite(llvm::DICompositeType const* Ty, llvm::Module& M);
-  void setAlias(llvm::StringRef Name, dffi::Type const* Ty) { AliasTys_[Name] = Ty; }
+  void setAlias(llvm::StringRef Name, dffi::Type const* Ty) {
+    auto ItIns = AliasTys_.try_emplace(Name, Ty);
+    if (Ty) {
+      Ty->addName(ItIns.first->getKeyData());
+    }
+  }
   void parseFunctionAlias(llvm::Function& F);
 
   DFFICtx& getContext() { return DFFI_.getContext(); }

@@ -115,6 +115,7 @@ public:
   NativeFunc getFunction(FunctionType const* FTy, Type const** VarArgsTys, size_t VarArgsCount, void* FPtr);
 
   static bool dlopen(const char* Path, std::string* Err = nullptr);
+  static std::string getNativeTriple();
 
   // Easy type access
   BasicType const* getVoidTy();
