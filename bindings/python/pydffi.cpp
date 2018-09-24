@@ -797,7 +797,7 @@ PYBIND11_MODULE(pydffi, m)
   m.def("cast", &CObj::cast, py::keep_alive<0,1>());
   m.def("view_as", dffi_view_from_buffer, py::keep_alive<0,1>(), py::keep_alive<0,2>(),
     "View a Python buffer object as a specified C type. The number of bytes within the buffer must be equal to the size of the specified C type");
-  m.def("view_as_bytes", [](CObj& O) { return py::memoryview{O.getBufferInfo()}; }, py::keep_alive<0,1>(), "Generate a view of a C object as a contiguous buffer of bytes");
+  m.def("view_as_bytes", [](CObj& O) -> py::memoryview { return py::memoryview{O.getBufferInfo()}; }, py::keep_alive<1,0>(), "Generate a view of a C object as a contiguous buffer of bytes");
   m.def("typeof", [](CObj const& O) { return O.getType(); }, py::return_value_policy::reference, py::keep_alive<0,1>());
   m.def("sizeof", [](CObj const& O) { return O.getSize(); });
   m.def("alignof", [](CObj const& O) { return O.getAlign(); });
