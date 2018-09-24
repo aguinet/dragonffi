@@ -5,7 +5,6 @@ features:
 
 fixes:
 * TODOs!
-* get non qualified type (whole tree)
 * tests structures with custom alignments/pack
 
 CI:
@@ -13,7 +12,3 @@ CI:
 
 ideas:
 * shellcode generation (JITPacker)
-
-python bindings:
-* numpy types support
-* "multi-dimensional" arrays support
