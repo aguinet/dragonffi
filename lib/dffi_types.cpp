@@ -209,7 +209,7 @@ std::string FunctionType::getWrapperLLVM(const char* FuncName) const
   auto M = isolateFunc(F, FuncName);
   std::string Ret;
   llvm::raw_string_ostream ss(Ret);
-  llvm::WriteBitcodeToFile(M.get(), ss);
+  llvm::WriteBitcodeToFile(*M, ss);
   return Ret;
 }
 

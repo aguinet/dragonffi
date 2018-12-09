@@ -213,7 +213,7 @@ DFFIImpl::DFFIImpl(CCOpts const& Opts):
   CGO.OptimizeSize = false;
   CGO.OptimizationLevel = Opts.OptLevel;
   CGO.CodeModel = "default";
-  CGO.RelocationModel = "pic";
+  CGO.RelocationModel = llvm::Reloc::PIC_;
   CGO.ThreadModel = "posix";
   // We use debug info for type recognition!
   CGO.setDebugInfo(codegenoptions::FullDebugInfo);
@@ -987,7 +987,7 @@ dffi::Type const* CUImpl::getTypeFromDIType(llvm::DIType const* Ty)
       default:
         break;
     };
-#ifdef LLVM_DEBUG
+#ifdef LLVM_BUILD_DEBUG
     Ty->dump();
 #endif
     llvm::report_fatal_error("unsupported type");
@@ -998,7 +998,7 @@ dffi::Type const* CUImpl::getTypeFromDIType(llvm::DIType const* Ty)
       auto Pointee = getQualTypeFromDIType(PtrTy->getBaseType().resolve());
       return getPointerType(Pointee);
     }
-#ifdef LLVM_DEBUG
+#ifdef LLVM_BUILD_DEBUG
     Ty->dump();
 #endif
     llvm::report_fatal_error("unsupported type");
@@ -1029,8 +1029,12 @@ dffi::Type const* CUImpl::getTypeFromDIType(llvm::DIType const* Ty)
       {
         auto EltTy = getQualTypeFromDIType(DTy->getBaseType().resolve());
         auto Count = llvm::cast<DISubrange>(*DTy->getElements().begin())->getCount();
-        //assert(DTy->getSizeInBits() == EltTy*Count*8 && "inconsistent size for array!");
-        return DFFI_.getArrayType(EltTy, Count);
+        if (auto* CCount = Count.dyn_cast<ConstantInt*>()) {
+          return DFFI_.getArrayType(EltTy, CCount->getZExtValue());
+        }
+        else {
+          return getPointerType(EltTy);
+        }
       }
     };
   }
@@ -1039,7 +1043,7 @@ dffi::Type const* CUImpl::getTypeFromDIType(llvm::DIType const* Ty)
     return getFunctionType(FTy);
   }
 
-#ifdef LLVM_DEBUG
+#ifdef LLVM_BUILD_DEBUG
   Ty->dump();
 #endif
   llvm::report_fatal_error("unsupported type");

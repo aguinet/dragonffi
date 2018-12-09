@@ -4,6 +4,8 @@
 #cmakedefine HAVE_INT128_T
 #cmakedefine HAVE_COMPLEX_T
 
+#cmakedefine LLVM_BUILD_DEBUG
+
 #ifdef HAVE_INT128_T
 #define DFFI_SUPPORT_I128
 #endif

@@ -23,13 +23,13 @@ using namespace llvm;
 static void initVFS(vfs::InMemoryFileSystem&);
 
 // Used by initVFS!
-static void addPath(vfs::InMemoryFileSystem& VFS, const char* Path, const char* Data, size_t Len)
+static void addPath(vfs::InMemoryFileSystem& VFS, const char* Path, const uint8_t* Data, size_t Len)
 {
   assert(sys::path::is_relative(Path) && "path must be relative!");
   SmallString<1024> FullPath;
   (StringRef{dffi::details::getClangResRootDirectory()} + "/" + Path).toStringRef(FullPath);
   VFS.addFile(FullPath, time(NULL), 
-    MemoryBuffer::getMemBuffer(StringRef{Data, Len}, "", false));
+    MemoryBuffer::getMemBuffer(StringRef{(const char*)Data, Len}, "", false));
 }
 
 static IntrusiveRefCntPtr<vfs::FileSystem> createClangResFileSystem()

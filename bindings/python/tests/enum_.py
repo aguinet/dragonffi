@@ -45,7 +45,7 @@ for k,v in iter(A):
 
 # CHECK-DAG: V0 = 0
 # CHECK-DAG: V10 = 10
-for k,v in dict(A).items():
+for k,v in dict(iter(A)).items():
     print("%s = %d" % (k,v))
 
 S = CU.types.S()
