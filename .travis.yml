@@ -3,54 +3,35 @@ git:
 
 matrix:
   include:
-    - os: osx
-      osx_image: xcode9.4
-      language: cpp
-      cache:
-        - ccache
-      env: BUILD_TESTS=ON PYTHON_BINDINGS=NO
-      before_install: tests/travis/osx_setup.sh
-      script: tests/travis/osx.sh
-    - os: osx
-      osx_image: xcode9.4
-      language: cpp
-      cache:
-        - ccache
-      env: BUILD_TESTS=OFF PYTHON_BINDINGS=YES PYTHON_VERSION=2.7 PYTHON_EXECUTABLE=/usr/bin/python2.7
-      before_install: tests/travis/osx_setup.sh
-      script: tests/travis/osx.sh
-    - os: osx
-      osx_image: xcode9.4
-      language: cpp
-      cache:
-        - ccache
-      env: BUILD_TESTS=OFF PYTHON_BINDINGS=YES PYTHON_VERSION=3.6 PYTHON_EXECUTABLE=/usr/local/bin/python3
-      before_install: tests/travis/osx_setup.sh
-      script: tests/travis/osx.sh
+#    - os: osx
+#      osx_image: xcode10.1
+#      language: cpp
+#      cache:
+#        - ccache
+#      env: PYTHON_BINDINGS=YES PYTHON_VERSION=2.7 PYTHON_EXECUTABLE=/usr/bin/python2.7
+#      before_install: tests/travis/osx_setup.sh
+#      script: tests/travis/osx.sh
+#    - os: osx
+#      osx_image: xcode10.1
+#      language: cpp
+#      cache:
+#        - ccache
+#      env: PYTHON_BINDINGS=YES PYTHON_VERSION=3.6 PYTHON_EXECUTABLE=/usr/local/bin/python3
+#      before_install: tests/travis/osx_setup.sh
+#      script: tests/travis/osx.sh
     - os: linux
+      dist: xenial
       addons:
         apt:
           sources:
             - ubuntu-toolchain-r-test
-            - llvm-toolchain-trusty-6.0
+            - llvm-toolchain-xenial-7
           packages:
             - ninja-build
-            - clang-6.0
-      language: cpp
-      cache:
-        - ccache
-      env: PYTHON_BINDINGS=NO
-      before_install: tests/travis/lnx_setup.sh
-      script: tests/travis/lnx.sh
-    - os: linux
-      addons:
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-            - llvm-toolchain-trusty-6.0
-          packages:
-            - ninja-build
-            - clang-6.0
+            - llvm-7-dev
+            - llvm-7-tools
+            - clang-7
+            - libclang-7-dev
       language: cpp
       cache:
         - ccache
@@ -62,28 +43,32 @@ matrix:
         apt:
           sources:
             - ubuntu-toolchain-r-test
-            - llvm-toolchain-trusty-6.0
+            - llvm-toolchain-trusty-7
           packages:
             - ninja-build
-            - clang-6.0
+            - llvm-7-dev
+            - llvm-7-tools
+            - clang-7
+            - libclang-7-dev
             - python3-dev
             - libpython3-dev
+            - python3-pip
       language: cpp
       cache:
         - ccache
       env: PYTHON_VERSION=3.4 PYTHON_EXECUTABLE=python3
       before_install: tests/travis/lnx_setup.sh
       script: tests/travis/lnx_py.sh
-    - os: linux
-      sudo: required
-      services:
-        - docker
-      addons:
-        apt:
-          packages:
-            - realpath
-            - binfmt-support
-      language: cpp
-      env: BUILD_TESTS=ON PYTHON_BINDINGS=NO ARCH=aarch64
-      before_install: tests/travis/lnx_docker_setup.sh
-      script: tests/travis/lnx_docker.sh
+#    - os: linux
+#      sudo: required
+#      services:
+#        - docker
+#      addons:
+#        apt:
+#          packages:
+#            - realpath
+#            - binfmt-support
+#      language: cpp
+#      env: BUILD_TESTS=ON PYTHON_BINDINGS=NO ARCH=aarch64
+#      before_install: tests/travis/lnx_docker_setup.sh
+#      script: tests/travis/lnx_docker.sh

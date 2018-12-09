@@ -46,10 +46,10 @@ if (BUILD_TESTS)
     target_link_libraries(${TEST} dffi)
   endforeach()
 
-  add_lit_target(check_lib
-    "Running dragonffi library tests"
-    "${CMAKE_CURRENT_BINARY_DIR}"
-    ARGS -v)
+  find_package(PythonInterp REQUIRED)
+  add_custom_target(check_lib
+      COMMAND "${PYTHON_EXECUTABLE}" -m lit.main "${CMAKE_CURRENT_BINARY_DIR}" -v)
   add_dependencies(check_lib ${TESTS})
   add_dependencies(check check_lib) 
+  set(PYTHON_EXECUTABLE ${PYTHON_EXECUTABLE_SAVE})
 endif()

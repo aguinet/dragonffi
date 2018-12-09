@@ -20,21 +20,28 @@ if (${LLVM_CONFIG} STREQUAL "LLVM_CONFIG-NOTFOUND")
   message(FATAL_ERROR "llvm-config not found, please manually set path with -DLLVM_CONFIG")
 endif()
 message(STATUS "Using llvm-config: ${LLVM_CONFIG}")
-exec_program(${LLVM_CONFIG} ARGS --prefix OUTPUT_VARIABLE LLVM_PREFIX)
+exec_program(${LLVM_CONFIG} ARGS --prefix OUTPUT_VARIABLE LLVM_PREFIX RETURN_VALUE LLVM_CONFIG_RET)
+if (NOT ${LLVM_CONFIG_RET} EQUAL 0)
+  message(FATAL_ERROR "Error while running llvm-config: ${LLVM_PREFIX}")
+endif()
 exec_program(${LLVM_CONFIG} ARGS --bindir OUTPUT_VARIABLE LLVM_BINDIR)
 exec_program(${LLVM_CONFIG} ARGS --cmakedir OUTPUT_VARIABLE LLVM_CMAKE)
 exec_program(${LLVM_CONFIG} ARGS --build-mode OUTPUT_VARIABLE LLVM_BUILD_MODE)
+exec_program(${LLVM_CONFIG} ARGS --libs OUTPUT_VARIABLE LLVM_CONFIG_LIBFILES)
 if (${LLVM_BUILD_MODE} STREQUAL "debug")
-  set(LLVM_DEBUG TRUE)
+  set(LLVM_BUILD_DEBUG TRUE)
 endif()
 string(REPLACE "\\" "/" LLVM_CMAKE "${LLVM_CMAKE}")
 string(REPLACE "\\" "/" LLVM_BINDIR "${LLVM_BINDIR}")
+
+message(STATUS "LLVM prefix: ${LLVM_PREFIX}")
 
 set(CMAKE_C_VISIBILITY_PRESET hidden)
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake" "${LLVM_CMAKE}")
 set(Clang_DIR "${LLVM_PREFIX}/lib/cmake/clang")
+message(STATUS "Clang cmake directory: ${Clang_DIR}")
 
 include(PrecompiledHeader)
 
@@ -59,51 +66,56 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/include)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/third-party)
 
-set(LLVM_LINK_COMPONENTS
-  ${LLVM_TARGETS_TO_BUILD}
-  Analysis
-  AsmParser
-  AsmPrinter
-  BinaryFormat
-  BitReader
-  BitWriter
-  CodeGen
-  Core
-  Coroutines
-  Coverage
-  DebugInfoCodeView
-  DebugInfoMSF
-  ExecutionEngine
-  GlobalISel
-  IRReader
-  InstCombine
-  Instrumentation
-  LTO
-  Linker
-  MC
-  MCDisassembler
-  MCJIT
-  MCParser
-  ObjCARCOpts
-  ObjCARCOpts
-  Object
-  Option
-  Passes
-  ProfileData
-  RuntimeDyld
-  ScalarOpts
-  SelectionDAG
-  Support
-  Target
-  TransformUtils
-  Vectorize
-  ipo
-)
-if (APPLE)
-  set(LLVM_LINK_COMPONENTS ${LLVM_LINK_COMPONENTS} Demangle)
-endif() 
+if (BUILD_SHARED_LIBS)
+  set(llvm_libs ${LLVM_CONFIG_LIBFILES})
+else()
+  set(LLVM_LINK_COMPONENTS
+    ${LLVM_TARGETS_TO_BUILD}
+    Analysis
+    AsmParser
+    AsmPrinter
+    BinaryFormat
+    BitReader
+    BitWriter
+    CodeGen
+    Core
+    Coroutines
+    Coverage
+    DebugInfoCodeView
+    DebugInfoMSF
+    ExecutionEngine
+    GlobalISel
+    IRReader
+    InstCombine
+    Instrumentation
+    LTO
+    Linker
+    MC
+    MCDisassembler
+    MCJIT
+    MCParser
+    ObjCARCOpts
+    ObjCARCOpts
+    Object
+    Option
+    Passes
+    ProfileData
+    RuntimeDyld
+    ScalarOpts
+    SelectionDAG
+    Support
+    Target
+    TransformUtils
+    Vectorize
+    ipo
+  )
+  if (APPLE)
+    set(LLVM_LINK_COMPONENTS ${LLVM_LINK_COMPONENTS} Demangle)
+  endif() 
+  llvm_map_components_to_libnames(llvm_libs ${LLVM_LINK_COMPONENTS})
+endif()
 
-set(CLANG_RES_DIR "${LLVM_BINDIR}/../lib${LLVM_LIBDIR_SUFFIX}/clang/${LLVM_VERSION}/")
+set(CLANG_RES_DIR "${LLVM_BINDIR}/../lib${LLVM_LIBDIR_SUFFIX}/clang/${LLVM_VERSION}/include")
 get_filename_component(CLANG_RES_DIR "${CLANG_RES_DIR}" ABSOLUTE)
 message(STATUS "Clang resources directory: ${CLANG_RES_DIR}")
 
@@ -118,7 +130,6 @@ add_custom_command(
   DEPENDS ${CLANG_RES_GLOB} "${CMAKE_CURRENT_SOURCE_DIR}/CMakeClangRes.txt"
   COMMENT "Packing clang ressources into a header file...")
 
-llvm_map_components_to_libnames(llvm_libs ${LLVM_LINK_COMPONENTS})
 
 include(CheckTypeSize)
 
@@ -169,6 +180,7 @@ set(DFFI_LINK_LIBRARIES
   clangRewriteFrontend
   clangSema
   clangSerialization
+  clangCodeGen
   ${llvm_libs}
 )
 
@@ -215,7 +227,6 @@ if (DFFI_STATIC_LLVM)
   endif()
 else()
   add_library(dffi
-    SHARED
     ${DFFI_SRC}
   )
   target_link_libraries(dffi

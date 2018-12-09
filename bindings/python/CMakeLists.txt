@@ -29,7 +29,7 @@ elseif(WIN32)
   set_target_properties(pydffi PROPERTIES SUFFIX ".pyd")
 endif()
 target_link_libraries(pydffi
-  PUBLIC
+  PRIVATE
   dffi
   ${PYTHON_LIBRARIES}
   ${DFFI_LINK_LIBRARIES})
