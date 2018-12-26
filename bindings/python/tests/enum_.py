@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# TODO: figure out why this fails on travis/osx
-# REQUIRES: !darwin
 # RUN: "%python" "%s" | "%FileCheck" "%s"
 #
 
