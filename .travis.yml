@@ -3,22 +3,22 @@ git:
 
 matrix:
   include:
-#    - os: osx
-#      osx_image: xcode10.1
-#      language: cpp
-#      cache:
-#        - ccache
-#      env: PYTHON_BINDINGS=YES PYTHON_VERSION=2.7 PYTHON_EXECUTABLE=/usr/bin/python2.7
-#      before_install: tests/travis/osx_setup.sh
-#      script: tests/travis/osx.sh
-#    - os: osx
-#      osx_image: xcode10.1
-#      language: cpp
-#      cache:
-#        - ccache
-#      env: PYTHON_BINDINGS=YES PYTHON_VERSION=3.6 PYTHON_EXECUTABLE=/usr/local/bin/python3
-#      before_install: tests/travis/osx_setup.sh
-#      script: tests/travis/osx.sh
+    - os: osx
+      osx_image: xcode10.1
+      language: cpp
+      cache:
+        - ccache
+      env: PYTHON_BINDINGS=YES PYTHON_VERSION=2.7 PYTHON_EXECUTABLE=/usr/bin/python2.7 BUILD_TESTS=ON
+      before_install: tests/travis/osx_setup.sh
+      script: tests/travis/osx.sh
+    - os: osx
+      osx_image: xcode10.1
+      language: cpp
+      cache:
+        - ccache
+      env: PYTHON_BINDINGS=YES PYTHON_VERSION=3.6 PYTHON_EXECUTABLE=/usr/local/bin/python3 BUILD_TESTS=ON
+      before_install: tests/travis/osx_setup.sh
+      script: tests/travis/osx.sh
     - os: linux
       dist: xenial
       addons:
