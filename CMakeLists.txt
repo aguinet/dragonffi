@@ -55,10 +55,6 @@ include(HandleLLVMOptions)
 include(AddLLVM)
 include(LLVMConfig)
 
-if (NOT ${LLVM_ENABLE_RTTI})
-  message(FATAL_ERROR "LLVM must be compiled with -DLLVM_ENABLE_RTTI=ON!")
-endif()
-
 include_directories(${LLVM_INCLUDE_DIRS})
 link_directories(${LLVM_LIBRARY_DIRS})
 
@@ -148,6 +144,7 @@ configure_file("${CMAKE_CURRENT_SOURCE_DIR}/include/dffi/config.h.in" "${CMAKE_C
 
 set(DFFI_SRC
   lib/dffi_api.cpp
+  lib/dffi_llvm_wrapper.cpp
   lib/dffi_impl.cpp
   lib/dffi_impl_clang.cpp
   lib/dffi_impl_clang_res.cpp
@@ -185,6 +182,36 @@ set(DFFI_LINK_LIBRARIES
 )
 
 option(DFFI_STATIC_LLVM "Create a static library with dffi and llvm/clang" OFF)
+
+# From LLVM's DetermineGCCCompatible.cmake
+if(NOT DEFINED DFFI_COMPILER_IS_GCC_COMPATIBLE)
+  if(CMAKE_COMPILER_IS_GNUCXX)
+    set(DFFI_COMPILER_IS_GCC_COMPATIBLE ON)
+  elseif( MSVC )
+    set(DFFI_COMPILER_IS_GCC_COMPATIBLE OFF)
+  elseif( "${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang" )
+    set(DFFI_COMPILER_IS_GCC_COMPATIBLE ON)
+  elseif( "${CMAKE_CXX_COMPILER_ID}" MATCHES "Intel" )
+    set(DFFI_COMPILER_IS_GCC_COMPATIBLE ON)
+  endif()
+endif()
+
+if (NOT LLVM_ENABLE_RTTI)
+  if (DFFI_COMPILER_IS_GCC_COMPATIBLE)
+    set(DFFI_RTTI_FLAG -fno-rtti)
+  elseif (MSVC)
+    set(DFFI_RTTI_FLAG "/GR-")
+  endif()
+  # These files use Clang and/or LLVM structures where there typeinfo could
+  # be used in DFFI's objects.
+  # As we still need libdffi to be compiled with RTTI (because pybind11
+  # requires it), we only explicitly disable RTTI for these C++ files.
+  set_source_files_properties(
+    lib/dffi_impl_clang.cpp
+    lib/dffi_llvm_wrapper.cpp
+    PROPERTIES
+    COMPILE_FLAGS ${DFFI_RTTI_FLAG})
+endif()
 
 if (DFFI_STATIC_LLVM)
   add_definitions(-Ddffi_STATIC)
