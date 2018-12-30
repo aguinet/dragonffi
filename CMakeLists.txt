@@ -252,6 +252,7 @@ if (DFFI_STATIC_LLVM)
       DEPENDS "${MERGE_LIBS}"
     )
   endif()
+  set(DFFI_LIBRARY dffi_static)
 else()
   add_library(dffi
     ${DFFI_SRC}
@@ -260,6 +261,7 @@ else()
     PUBLIC
     ${DFFI_LINK_LIBRARIES}
   )
+  set(DFFI_LIBRARY dffi)
 endif()
 
 add_custom_target(check)

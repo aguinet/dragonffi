@@ -30,7 +30,7 @@ elseif(WIN32)
 endif()
 target_link_libraries(pydffi
   PRIVATE
-  dffi
+  ${DFFI_LIBRARY}
   ${PYTHON_LIBRARIES}
   ${DFFI_LINK_LIBRARIES})
 
