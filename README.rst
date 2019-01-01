@@ -64,9 +64,7 @@ Python wheels are provided for Linux. Simply use pip to install the
 Compilation from source
 =======================
 
-This is based on a patched version of LLVM5, which needs to be compiled with RTTI enabled.
-
-LLVM5 compilation
+LLVM7 compilation
 -----------------
 
 .. code:: bash
