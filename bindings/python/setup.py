@@ -69,9 +69,14 @@ class build_ext_dffi(build_ext):
         cmake_args = ['-DLLVM_CONFIG=%s' % LLVM_CONFIG, "-DCMAKE_BUILD_TYPE=release", "-DDFFI_STATIC_LLVM=ON", "-DPYTHON_BINDINGS=OFF", "-DBUILD_TESTS=OFF", source_dir]
         if use_ninja:
             cmake_args.extend(("-G","Ninja"))
-        if platform.system() == "Darwin":
+        system = platform.system()
+        if system == "Darwin":
             # Compile for both 32 and 64 bits
             cmake_args.append("-DCMAKE_OSX_ARCHITECTURES='x86_64;i386'")
+        elif system == "Windows":
+            # We need to force the usage the dynamic version of the C runtime,
+            # as we are not compiling a shared library.
+            cmake_args.append("-DCMAKE_CXX_FLAGS='/MD'")
         subprocess.check_call(['cmake'] + cmake_args)
         subprocess.check_call(['cmake','--build','.'])
         # Get static library path from cmake
