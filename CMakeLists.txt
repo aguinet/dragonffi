@@ -62,55 +62,51 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/include)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/third-party)
 
-if (BUILD_SHARED_LIBS)
-  set(llvm_libs ${LLVM_CONFIG_LIBFILES})
-else()
-  set(LLVM_LINK_COMPONENTS
-    ${LLVM_TARGETS_TO_BUILD}
-    Analysis
-    AsmParser
-    AsmPrinter
-    BinaryFormat
-    BitReader
-    BitWriter
-    CodeGen
-    Core
-    Coroutines
-    Coverage
-    DebugInfoCodeView
-    DebugInfoMSF
-    ExecutionEngine
-    GlobalISel
-    IRReader
-    AggressiveInstCombine
-    InstCombine
-    Instrumentation
-    LTO
-    Linker
-    MC
-    MCDisassembler
-    MCJIT
-    MCParser
-    ObjCARCOpts
-    ObjCARCOpts
-    Object
-    Option
-    Passes
-    ProfileData
-    RuntimeDyld
-    ScalarOpts
-    SelectionDAG
-    Support
-    Target
-    TransformUtils
-    Vectorize
-    ipo
-  )
-  if (APPLE)
-    set(LLVM_LINK_COMPONENTS ${LLVM_LINK_COMPONENTS} Demangle)
-  endif() 
-  llvm_map_components_to_libnames(llvm_libs ${LLVM_LINK_COMPONENTS})
-endif()
+set(LLVM_LINK_COMPONENTS
+  ${LLVM_TARGETS_TO_BUILD}
+  Analysis
+  AsmParser
+  AsmPrinter
+  BinaryFormat
+  BitReader
+  BitWriter
+  CodeGen
+  Core
+  Coroutines
+  Coverage
+  DebugInfoCodeView
+  DebugInfoMSF
+  ExecutionEngine
+  GlobalISel
+  IRReader
+  AggressiveInstCombine
+  InstCombine
+  Instrumentation
+  LTO
+  Linker
+  MC
+  MCDisassembler
+  MCJIT
+  MCParser
+  ObjCARCOpts
+  ObjCARCOpts
+  Object
+  Option
+  Passes
+  ProfileData
+  RuntimeDyld
+  ScalarOpts
+  SelectionDAG
+  Support
+  Target
+  TransformUtils
+  Vectorize
+  ipo
+)
+if (APPLE)
+  set(LLVM_LINK_COMPONENTS ${LLVM_LINK_COMPONENTS} Demangle)
+endif() 
+llvm_map_components_to_libnames(llvm_libs ${LLVM_LINK_COMPONENTS})
 
 set(CLANG_RES_DIR "${LLVM_BINDIR}/../lib${LLVM_LIBDIR_SUFFIX}/clang/${LLVM_VERSION}/include")
 get_filename_component(CLANG_RES_DIR "${CLANG_RES_DIR}" ABSOLUTE)
@@ -161,7 +157,7 @@ list(APPEND _obj_depends "${CLANG_RES_HEADER}")
 set_source_files_properties(lib/dffi_impl_clang_res.cpp PROPERTIES
   OBJECT_DEPENDS ${_obj_depends})
 
-set(DFFI_LINK_LIBRARIES
+set(CLANG_LINK_LIBRARIES
   clangARCMigrate
   clangAST
   clangASTMatchers
@@ -179,6 +175,9 @@ set(DFFI_LINK_LIBRARIES
   clangSema
   clangSerialization
   clangCodeGen
+)
+set(DFFI_LINK_LIBRARIES
+  ${CLANG_LINK_LIBRARIES}
   ${llvm_libs}
 )
 
@@ -256,20 +255,25 @@ if (DFFI_STATIC_LLVM)
   set(DFFI_LIBRARY dffi_static)
 else()
   add_library(dffi
+    SHARED
     ${DFFI_SRC}
   )
-  target_link_libraries(dffi
-    PUBLIC
-    ${DFFI_LINK_LIBRARIES}
-  )
+  if (LLVM_LINK_LLVM_DYLIB)
+    llvm_config(dffi
+      USE_SHARED
+      ${LLVM_LINK_COMPONENTS}
+    )
+  else()
+    llvm_config(dffi
+      ${LLVM_LINK_COMPONENTS}
+    )
+  endif()
+  target_link_libraries(dffi PRIVATE ${CLANG_LINK_LIBRARIES})
   set(DFFI_LIBRARY dffi)
 endif()
 
 add_custom_target(check)
+add_subdirectory(bindings)
 
-option(PYTHON_BINDINGS "Compile python bindings with cmake" ON)
-if (PYTHON_BINDINGS)
-  add_subdirectory(bindings)
-endif()
 option(BUILD_TESTS "Build tests" ON)
 add_subdirectory(tests)
