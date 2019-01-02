@@ -82,6 +82,7 @@ else()
     ExecutionEngine
     GlobalISel
     IRReader
+    AggressiveInstCombine
     InstCombine
     Instrumentation
     LTO
