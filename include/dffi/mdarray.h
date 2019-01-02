@@ -4,6 +4,7 @@
 #include <vector>
 #include <dffi/exports.h>
 #include <dffi/types.h>
+#include <dffi/compat.h>
 
 namespace dffi {
 
