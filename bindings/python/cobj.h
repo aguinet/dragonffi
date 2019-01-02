@@ -49,6 +49,99 @@ static void* alloc_align(size_t Size, size_t Align)
 }
 
 template <class T>
+struct Data;
+
+template <>
+struct Data<void>
+{
+  enum Type: uint8_t {
+    OwnedFree = 1,
+    View = 2,
+  };
+
+  template <class U>
+  friend struct Data;
+
+  Data():
+    Ptr_(nullptr),
+    Ty_(View)
+  { }
+
+  Data(Data&& O):
+    Ty_(O.Ty_)
+  {
+    Ptr_ = O.release();
+  }
+
+  Data(Data const&) = delete;
+
+  Data& operator=(Data&& O)
+  {
+    if (&O != this) {
+      clear();
+      Ty_ = O.Ty_;
+      Ptr_ = O.release();
+    }
+    return *this;
+  }
+
+  void* release() {
+    void* Ret = Ptr_;
+    Ty_ = View;
+    Ptr_ = nullptr;
+    return Ret;
+  }
+
+  static Data view(void* Ptr)
+  {
+    return {Ptr, View};
+  }
+
+  static Data owned_free(void* Ptr)
+  {
+    return {Ptr, OwnedFree};
+  }
+
+  ~Data()
+  {
+    clear();
+  }
+
+  void clear()
+  {
+    switch (Ty_) {
+      case OwnedFree:
+#ifdef _MSC_VER
+        _aligned_free(Ptr_);
+#else
+        free(Ptr_);
+#endif
+        break;
+      case View:
+        break;
+    }
+  }
+
+  void* dataPtr() { return Ptr_; }
+  void const* dataPtr() const { return Ptr_; }
+
+  template <class T>
+  operator Data<T>() {
+    Data<T> Ret(std::move(*this));
+    return Ret;
+  }
+
+private:
+  Data(void* Ptr, Type Ty):
+    Ptr_(Ptr),
+    Ty_(Ty)
+  { }
+
+  void* Ptr_;
+  Type Ty_;
+};
+
+template <class T>
 struct Data
 {
   enum Type: uint8_t {
@@ -155,96 +248,6 @@ private:
 
   T* Ptr_;
   ALIGN(alignof(T)) char BufValue[sizeof(T)];
-  Type Ty_;
-};
-
-template <>
-struct Data<void>
-{
-  enum Type: uint8_t {
-    OwnedFree = 1,
-    View = 2,
-  };
-
-  template <class U>
-  friend struct Data;
-
-  Data():
-    Ptr_(nullptr),
-    Ty_(View)
-  { }
-
-  Data(Data&& O):
-    Ty_(O.Ty_)
-  {
-    Ptr_ = O.release();
-  }
-
-  Data(Data const&) = delete;
-
-  Data& operator=(Data&& O)
-  {
-    if (&O != this) {
-      clear();
-      Ty_ = O.Ty_;
-      Ptr_ = O.release();
-    }
-    return *this;
-  }
-
-  void* release() {
-    void* Ret = Ptr_;
-    Ty_ = View;
-    Ptr_ = nullptr;
-    return Ret;
-  }
-
-  static Data view(void* Ptr)
-  {
-    return {Ptr, View};
-  }
-
-  static Data owned_free(void* Ptr)
-  {
-    return {Ptr, OwnedFree};
-  }
-
-  ~Data()
-  {
-    clear();
-  }
-
-  void clear()
-  {
-    switch (Ty_) {
-      case OwnedFree:
-#ifdef _MSC_VER
-        _aligned_free(Ptr_);
-#else
-        free(Ptr_);
-#endif
-        break;
-      case View:
-        break;
-    }
-  }
-
-  void* dataPtr() { return Ptr_; }
-  void const* dataPtr() const { return Ptr_; }
-
-  template <class T>
-  operator Data<T>() {
-    Data<T> Ret(std::move(*this));
-    return Ret;
-  }
-
-private:
-  Data(void* Ptr, Type Ty):
-    Ptr_(Ptr),
-    Ty_(Ty)
-  { }
-
-  void* Ptr_;
   Type Ty_;
 };
 
