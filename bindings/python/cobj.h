@@ -74,6 +74,13 @@ struct Data
       Ptr_ = O.release();
     }
   }
+
+  Data(Data<void>&& O):
+    Ty_((Type)(O.Ty_))
+  {
+    Ptr_ = (T*) O.release();
+  }
+
   Data(Data const&) = delete;
 
   Data& operator=(Data&& O)
@@ -159,6 +166,8 @@ struct Data<void>
     View = 2,
   };
 
+  template <class U>
+  friend struct Data;
 
   Data():
     Ptr_(nullptr),
