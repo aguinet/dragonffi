@@ -31,7 +31,6 @@ endif()
 target_link_libraries(pydffi
   PRIVATE
   ${DFFI_LIBRARY}
-  ${PYTHON_LIBRARIES}
-  ${DFFI_LINK_LIBRARIES})
+  ${PYTHON_LIBRARIES})
 
 add_subdirectory(tests)

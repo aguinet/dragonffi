@@ -32,33 +32,37 @@ matrix:
             - llvm-7-tools
             - clang-7
             - libclang-7-dev
-      language: cpp
-      cache:
-        - ccache
-      env: PYTHON_VERSION=2.7
-      before_install: tests/travis/lnx_setup.sh
-      script: tests/travis/lnx_py.sh
-    - os: linux
-      addons:
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-            - llvm-toolchain-trusty-7
-          packages:
-            - ninja-build
-            - llvm-7-dev
-            - llvm-7-tools
-            - clang-7
-            - libclang-7-dev
             - python3-dev
             - libpython3-dev
             - python3-pip
       language: cpp
       cache:
         - ccache
-      env: PYTHON_VERSION=3.4 PYTHON_EXECUTABLE=python3
+      env: PYTHON_VERSION=2.7
       before_install: tests/travis/lnx_setup.sh
       script: tests/travis/lnx_py.sh
+#    - os: linux
+#      dist: xenial
+#      addons:
+#        apt:
+#          sources:
+#            - ubuntu-toolchain-r-test
+#            - llvm-toolchain-trusty-7
+#          packages:
+#            - ninja-build
+#            - llvm-7-dev
+#            - llvm-7-tools
+#            - clang-7
+#            - libclang-7-dev
+#            - python3-dev
+#            - libpython3-dev
+#            - python3-pip
+#      language: cpp
+#      cache:
+#        - ccache
+#      env: PYTHON_VERSION=3.5 PYTHON_EXECUTABLE=python3
+#      before_install: tests/travis/lnx_setup.sh
+#      script: tests/travis/lnx_py.sh
 #    - os: linux
 #      sudo: required
 #      services:
