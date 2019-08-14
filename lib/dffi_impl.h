@@ -40,6 +40,9 @@ class ExecutionEngine;
 class DIType;
 class DICompositeType;
 class DISubroutineType;
+namespace vfs {
+class FileSystem;
+}
 } // llvm
 
 namespace clang {
@@ -47,10 +50,7 @@ class CompilerInstance;
 class DiagnosticIDs;
 class DiagnosticOptions;
 class TextDiagnosticPrinter;
-namespace vfs {
-class FileSystem;
-}
-} // llvm
+} // clang
 
 namespace dffi {
 
@@ -75,7 +75,7 @@ typedef llvm::StringMap<dffi::Type const*> AliasTysMap;
 typedef llvm::DenseMap<llvm::DICompositeType const*, dffi::Type*> AnonTysMap;
 typedef llvm::StringMap<std::string> FuncAliasesMap;
 
-llvm::IntrusiveRefCntPtr<clang::vfs::FileSystem> getClangResFileSystem();
+llvm::IntrusiveRefCntPtr<llvm::vfs::FileSystem> getClangResFileSystem();
 const char* getClangResRootDirectory();
 
 struct CUImpl;
@@ -126,7 +126,7 @@ private:
   std::unique_ptr<llvm::TargetMachine> TM_;
   std::unique_ptr<llvm::ExecutionEngine> EE_;
   llvm::IntrusiveRefCntPtr<clang::SourceManager> SrcMgr_;
-  llvm::IntrusiveRefCntPtr<clang::vfs::InMemoryFileSystem> VFS_;
+  llvm::IntrusiveRefCntPtr<llvm::vfs::InMemoryFileSystem> VFS_;
   llvm::IntrusiveRefCntPtr<clang::FileManager> FileMgr_;
   llvm::SmallVector<std::unique_ptr<CUImpl>, 8> CUs_;
   llvm::DenseMap<dffi::FunctionType const*, size_t> FuncTyWrappers_;

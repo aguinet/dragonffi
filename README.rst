@@ -69,16 +69,16 @@ Python wheels are provided for Linux. Simply use pip to install the
 Compilation from source
 =======================
 
-LLVM7 compilation
+LLVM8 compilation
 -----------------
 
 .. code:: bash
 
   $ cd /path/to/llvm
-  $ wget http://releases.llvm.org/7.0.1/llvm-7.0.1.src.tar.xz
-  $ wget http://releases.llvm.org/7.0.1/cfe-7.0.1.src.tar.xz
-  $ tar xf llvm-7.0.1.src.tar.xz && tar xf cfe-7.0.1.src.tar.xz
-  $ ln -s $PWD/cfe-7.0.1.src llvm-7.0.1.src/tools/clang
+  $ wget http://releases.llvm.org/8.0.1/llvm-8.0.1.src.tar.xz
+  $ wget http://releases.llvm.org/8.0.1/cfe-8.0.1.src.tar.xz
+  $ tar xf llvm-8.0.1.src.tar.xz && tar xf cfe-8.0.1.src.tar.xz
+  $ ln -s $PWD/cfe-8.0.1.src llvm-8.0.1.src/tools/clang
   $ mkdir build && cd build && cmake -DCMAKE_BUILD_TYPE=release -DBUILD_SHARED_LIBS=OFF -DLLVM_BUILD_TOOLS=ON -DLLVM_ENABLE_TERMINFO=OFF -DLLVM_ENABLE_LIBEDIT=OFF -DLLVM_ENABLE_ZLIB=OFF ..
   $ make
 
