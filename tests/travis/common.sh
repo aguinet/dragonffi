@@ -1,5 +1,5 @@
-CLANG_DEB=clang-7
-LNX_LLVM_CONFIG=/usr/bin/llvm-config-7
+CLANG_DEB=clang-8
+LNX_LLVM_CONFIG=/usr/bin/llvm-config-8
 
 set -ex
 

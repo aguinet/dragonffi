@@ -192,7 +192,7 @@ private:
     for (ParmVarDecl* P: Params) {
       if (P->getName().empty()) {
         std::string Name = "__Arg_" + std::to_string(ArgId++);
-        P = ParmVarDecl::Create(ASTCtx, NewFDCtx, P->getLocStart(), P->getLocation(),
+        P = ParmVarDecl::Create(ASTCtx, NewFDCtx, P->getBeginLoc(), P->getLocation(),
           &ASTCtx.Idents.get(Name), P->getType(), P->getTypeSourceInfo(), P->getStorageClass(), nullptr);
       }
       NewParams.push_back(P);

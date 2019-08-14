@@ -32,5 +32,5 @@ foreach(RES ${CLANG_RES_GLOB})
   set(VFS_INIT "${VFS_INIT}addPath(VFS, \"include/${RES_NAME}\", ${VAR_NAME}, sizeof(${VAR_NAME})-1);\n")
   MATH(EXPR FILE_IDX "${FILE_IDX}+1")
 endforeach()
-file(APPEND "${CLANG_RES_HEADER}" "void initVFS(clang::vfs::InMemoryFileSystem& VFS) {\n ${VFS_INIT} \n}")
+file(APPEND "${CLANG_RES_HEADER}" "void initVFS(llvm::vfs::InMemoryFileSystem& VFS) {\n ${VFS_INIT} \n}")
 

@@ -41,6 +41,7 @@
 #include <llvm/Support/TargetRegistry.h>
 #include <llvm/Support/TargetSelect.h>
 #include <llvm/Support/raw_ostream.h>
+#include <llvm/Support/VirtualFileSystem.h>
 #include <llvm/Target/TargetMachine.h>
 #include <llvm/IR/LegacyPassManager.h>
 #include <llvm/Object/ObjectFile.h>
@@ -190,11 +191,11 @@ DFFIImpl::DFFIImpl(CCOpts const& Opts):
     DiagID_(new DiagnosticIDs()),
     DiagOpts_(new DiagnosticOptions()),
     ErrorMsgStream_(ErrorMsg_),
-    VFS_(new vfs::InMemoryFileSystem{}),
+    VFS_(new llvm::vfs::InMemoryFileSystem{}),
     Opts_(Opts)
 {
   // Add an overleay with our virtual file system on top of the system!
-  vfs::OverlayFileSystem* Overlay = new vfs::OverlayFileSystem{vfs::getRealFileSystem()};
+  vfs::OverlayFileSystem* Overlay = new llvm::vfs::OverlayFileSystem{vfs::getRealFileSystem()};
   Overlay->pushOverlay(VFS_);
   // Finally add clang's ressources
   Overlay->pushOverlay(getClangResFileSystem());

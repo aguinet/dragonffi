@@ -14,7 +14,7 @@
 
 #include "dffi_impl.h"
 #include <llvm/Support/Path.h>
-#include <clang/Basic/VirtualFileSystem.h>
+#include <llvm/Support/VirtualFileSystem.h>
 
 using namespace clang;
 using namespace llvm;
