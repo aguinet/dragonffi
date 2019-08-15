@@ -107,7 +107,7 @@ module = Extension('pydffi',
                     libraries = libraries,
                     sources = glob.glob(os.path.join(this_dir, '*.cpp'))) 
 setup(name = 'pydffi',
-    version = '0.4.0',
+    version = '0.5.0',
     description = 'dragonffi static python bindings',
     author = 'Adrien Guinet',
     author_email = 'adrien@guinet.me',
@@ -134,7 +134,7 @@ Static python bindings for dragonffi. API isn't yet stable and is subject to cha
     keywords='ffi clang llvm',
     license='Apache 2.0',
     url = "https://github.com/aguinet/dragonffi",
-    download_url = "https://github.com/aguinet/dragonffi/tarball/dffi-0.4.0",
+    download_url = "https://github.com/aguinet/dragonffi/tarball/dffi-0.5.0",
     ext_modules = [module],
     cmdclass={
         'build_ext': build_ext_dffi,
