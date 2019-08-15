@@ -64,6 +64,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/third-party)
 
 set(LLVM_LINK_COMPONENTS
   ${LLVM_TARGETS_TO_BUILD}
+  AggressiveInstCombine
   Analysis
   AsmParser
   AsmPrinter
@@ -76,10 +77,10 @@ set(LLVM_LINK_COMPONENTS
   Coverage
   DebugInfoCodeView
   DebugInfoMSF
+  Demangle
   ExecutionEngine
   GlobalISel
   IRReader
-  AggressiveInstCombine
   InstCombine
   Instrumentation
   LTO
