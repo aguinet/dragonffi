@@ -29,6 +29,8 @@ if platform.system() in ("Linux","Darwin"):
     if platform.system() == "Linux":
         # Stripping the library makes us win 20mb..!
         link_args = ["-static-libstdc++","-Wl,--strip-all","-Wl,-gc-sections"]
+    elif platform.system() == "Darwin":
+        link_args = ["-Wl,-dead_strip"]
 elif platform.system() == "Windows":
     compile_args = ['/TP', '/EHsc']
     libraries = ['Mincore']
