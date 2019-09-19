@@ -80,7 +80,7 @@ void set(union A* a) {
   }
 
   auto* UTy = CU.getUnionType("A");
-  auto const& Fields = UTy->getFields();
+  auto const& Fields = UTy->getOrgFields();
   // CHECK: a
   // CHECK: b
   // CHECK: c

@@ -76,7 +76,7 @@ void dump(SA a)
   // CHECK: b
   // CHECK: c
   // CHECK: d
-  for (auto const& F: static_cast<StructType const*>(STy)->getFields()) {
+  for (auto const& F: static_cast<StructType const*>(STy)->getOrgFields()) {
     std::cout << F.getName() << std::endl;
   }
 

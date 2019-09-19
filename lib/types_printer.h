@@ -258,7 +258,7 @@ private:
   {
     print_def(ss, Ty, None) << " {\n";
     size_t Idx = 0;
-    for (auto const& F: Ty->getFields()) {
+    for (auto const& F: Ty->getOrgFields()) {
       std::string Name = "__Field_" + std::to_string(Idx);
       ss << "  ";
       print_def(ss, F.getType(), Full, Name.c_str()) << ";\n";

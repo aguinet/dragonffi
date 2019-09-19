@@ -446,7 +446,7 @@ std::string getFormatDescriptorImpl(Type const* Ty, BTyFunc BTyFormat, PtrTyFunc
       std::string Ret;
       auto* STy = cast<StructType>(Ty);
       size_t CurIdx = 0;
-      for (auto const& F: STy->getFields()) {
+      for (auto const& F: STy->getOrgFields()) {
         const size_t Off = F.getOffset();
         const auto* FTy = F.getType();
         if (CurIdx < Off) {

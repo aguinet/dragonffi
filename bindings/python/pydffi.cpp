@@ -368,6 +368,17 @@ template <class It>
 std::string const& field_get_name(It const& I) {
   return I.first;
 }
+
+py::list list_fields(CompositeType const& CF)
+{
+  py::list Ret(CF.getFieldsCount());
+  size_t I = 0;
+  for (const char* Name: CF.getFieldsName()) {
+    Ret[I++] = py::str(Name);
+  }
+  return Ret;
+}
+
 template <class T>
 py::list list_fields(T const& Fields)
 {
@@ -481,12 +492,10 @@ PYBIND11_MODULE(pydffi, m)
   CompType.def_property_readonly("fields", &CompositeType::getFields, py::return_value_policy::reference_internal)
     .def("__getattr__", &CompositeType::getField, py::return_value_policy::reference_internal)
     .def("__iter__", [](CompositeType const& CTy) {
-      return py::make_iterator<py::return_value_policy::reference_internal>(CTy.getFields());
+      auto Range = CTy.getFields();
+      return py::make_iterator<py::return_value_policy::reference_internal>(Range.begin(), Range.end());
      })
-    .def("__dir__", [](CompositeType const& Ty) {
-        auto const& Fields = Ty.getFields();
-        return list_fields(Fields);
-        }, py::return_value_policy::copy)
+    .def("__dir__", (py::list(*)(CompositeType const&)) &list_fields, py::return_value_policy::copy)
     ;
 
   py::class_<StructType>(m, "StructType", CompType)
@@ -631,8 +640,7 @@ PYBIND11_MODULE(pydffi, m)
            .def("__getattr__",
              (py::object(CCompositeObj::*)(const char*)) &CCompositeObj::getValue)
            .def("__dir__", [](CCompositeObj const& O) {
-             auto const& Fields = O.getCompositeType()->getFields();
-             return list_fields(Fields);
+             return list_fields(*O.getCompositeType());
            }, py::return_value_policy::copy)
      ;
 
