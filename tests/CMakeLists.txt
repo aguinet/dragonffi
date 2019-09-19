@@ -17,6 +17,7 @@ configure_file("lit.site.cfg.in" "${CMAKE_CURRENT_BINARY_DIR}/lit.site.cfg" ESCA
 
 if (BUILD_TESTS)
   set(TESTS
+    anon_members
     anon_struct
     anon_union
     array

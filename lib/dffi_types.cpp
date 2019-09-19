@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <llvm/ADT/StringRef.h>
 #include <dffi/config.h>
 #include <dffi/dffi.h>
 #include <dffi/composite_type.h>
@@ -236,6 +237,11 @@ CompositeField const* CompositeType::getField(const char* Name) const
     return nullptr;
   }
   return It->second;
+}
+
+bool CompositeField::anonymous() const {
+  // HACK
+  return llvm::StringRef{Name_}.startswith("__dffi_anon_");
 }
 
 void CompositeType::setBody(std::vector<CompositeField>&& Fields, uint64_t Size, unsigned Align) {

@@ -22,9 +22,12 @@
 
 #include <dffi/exports.h>
 #include <dffi/types.h>
+#include <dffi/iterator_extras.h>
+#include <dffi/iterator_range.h>
 
 namespace dffi {
 class CompositeField;
+class CompositeType;
 }
 template struct DFFI_API std::hash<std::string>;
 template class DFFI_API std::unordered_map<std::string, dffi::CompositeField const*>;
@@ -39,6 +42,7 @@ struct CUImpl;
 class DFFI_API CompositeField
 {
   friend struct details::CUImpl;
+  friend class CompositeType;
 
 public:
   CompositeField(CompositeField&&) = default;
@@ -47,10 +51,11 @@ public:
   const char* getName() const { return Name_.c_str(); }
   
   unsigned getOffset() const { return Offset_; }
+  bool anonymous() const; 
 
 protected:
   CompositeField(const char* Name, Type const* Ty, unsigned Offset);
-  CompositeField(CompositeField const&) = delete;
+  CompositeField(CompositeField const&) = default;
 
 private:
   std::string Name_;
@@ -85,7 +90,21 @@ public:
   uint64_t getSize() const override { return Size_; }
   unsigned getAlign() const override { return Align_; }
 
-  std::vector<CompositeField> const& getFields() const { return Fields_; }
+  // Original fields as they have been parsed.
+  std::vector<CompositeField> const& getOrgFields() const { return Fields_; }
+
+  // Get information about the fields, after inlining.
+  auto getFieldsName() const {
+    const auto GetName = [](auto const& It) { return It.first.c_str(); };
+    return make_range(map_iterator(FieldsMap_.begin(), GetName), map_iterator(FieldsMap_.end(), GetName));
+  }
+  auto getFields() const {
+    const auto GetField = [](auto const& It) -> CompositeField const& { return *It.second; };
+    return make_range(map_iterator(FieldsMap_.begin(), GetField), map_iterator(FieldsMap_.end(), GetField));
+  }
+  size_t getFieldsCount() const { return FieldsMap_.size(); }
+
+  // Get a field from its name. Take into account the inlined names.
   CompositeField const* getField(const char* Name) const;
 
   static bool classof(Type const* T) {
@@ -101,10 +120,14 @@ protected:
   CompositeType(CompositeType const&) = delete;
 
   void setBody(std::vector<CompositeField>&& Fields, uint64_t Size, unsigned Align);
+  void inlineAnonymousMembers();
 
 protected:
+  using FieldsMapTy = std::unordered_map<std::string, CompositeField const*>;
   std::vector<CompositeField> Fields_;
-  std::unordered_map<std::string, CompositeField const*> FieldsMap_;
+  std::vector<CompositeField> InlinedFields_;
+  // This contains the "view" with inline fields.
+  FieldsMapTy FieldsMap_;
   uint64_t Size_;
   unsigned Align_;
 };

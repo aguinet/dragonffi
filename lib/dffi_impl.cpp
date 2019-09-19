@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <string>
+
 #include <clang/CodeGen/CodeGenAction.h>
 #include <clang/Driver/Compilation.h>
 #include <clang/Driver/Driver.h>
@@ -484,6 +486,8 @@ CUImpl* DFFIImpl::compile(StringRef const Code, StringRef CUName, bool IncludeDe
     CU->parseDIComposite(Ty, *M);
   }
 
+  CU->inlineCompositesAnonymousMembers();
+
   for (auto const* DTy: Typedefs) {
     // TODO: optimize this! We could add the visited typedefs in the alias list
     // as long as we traverse it, and remove them from the list of typedefs to
@@ -875,11 +879,21 @@ void CUImpl::parseDIComposite(DICompositeType const* DCTy, llvm::Module& M)
     // Parse the structure/union and create the associated StructType/UnionType
     std::vector<CompositeField> Fields; 
     unsigned Align = 1;
+    size_t AnonIdx = 0;
     for (auto const* Op: DCTy->getElements()) {
       auto const* DOp = llvm::cast<DIDerivedType>(Op);
       assert(DOp->getTag() == llvm::dwarf::DW_TAG_member && "element of a struct/union must be a DW_TAG_member!");
 
-      StringRef FName = DOp->getName();
+      std::string FName;
+      {
+        StringRef S = DOp->getName();
+        if (!S.empty()) {
+          FName = S.str();
+        }
+        else {
+          FName = std::string{"__dffi_anon_"} + std::to_string(AnonIdx++);
+        }
+      }
       unsigned FOffset = DOp->getOffsetInBits()/8;
 #ifndef NDEBUG
       if (DCTy->getTag() == dwarf::DW_TAG_union_type) {
@@ -890,7 +904,7 @@ void CUImpl::parseDIComposite(DICompositeType const* DCTy, llvm::Module& M)
       DIType const* FDITy = getCanonicalDIType(DOp->getBaseType().resolve());
       dffi::Type const* FTy = getTypeFromDIType(FDITy);
 
-      Fields.emplace_back(CompositeField{FName.str().c_str(), FTy, FOffset});
+      Fields.emplace_back(CompositeField{FName.c_str(), FTy, FOffset});
 
       Align = std::max(Align, FTy->getAlign());
     }

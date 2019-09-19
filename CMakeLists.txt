@@ -38,6 +38,9 @@ message(STATUS "LLVM prefix: ${LLVM_PREFIX}")
 
 set(CMAKE_C_VISIBILITY_PRESET hidden)
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake" "${LLVM_CMAKE}")
 set(Clang_DIR "${LLVM_PREFIX}/lib/cmake/clang")
@@ -148,6 +151,7 @@ set(DFFI_SRC
   lib/dffi_impl_clang_res.cpp
   lib/dffi_types.cpp
   lib/dffictx.cpp
+  lib/anon_member_inliner.cpp
 )
 
 get_source_file_property(_obj_depends lib/dffi_impl_clang_res.cpp OBJECT_DEPENDS)

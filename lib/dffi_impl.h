@@ -17,6 +17,7 @@
 
 #include <memory>
 #include <sstream>
+#include <unordered_set>
 
 #include <llvm/ADT/IntrusiveRefCntPtr.h>
 #include <llvm/ADT/StringRef.h>
@@ -142,6 +143,7 @@ private:
 
 struct CUImpl
 {
+  
   CUImpl(DFFIImpl& DFFI);
 
   dffi::Type const* getType(llvm::StringRef Name) const;
@@ -179,6 +181,8 @@ struct CUImpl
   DFFICtx& getContext() { return DFFI_.getContext(); }
   DFFICtx const& getContext() const { return DFFI_.getContext(); }
 
+  void inlineCompositesAnonymousMembers();
+
   std::vector<std::string> getTypes() const;
   std::vector<std::string> getFunctions() const;
 
@@ -191,6 +195,9 @@ struct CUImpl
 
   // Temporary map used during debug metadata parsing
   AnonTysMap AnonTys_;
+
+private:
+  static void inlineCompositesAnonymousMembersImpl(std::unordered_set<CompositeType*>& Visited, CompositeType* CTy);
 };
 
 struct ASTGenWrappersAction: public clang::ASTFrontendAction

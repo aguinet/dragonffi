@@ -34,5 +34,4 @@ A = CU.types.A()
 Obj = A.s
 Ty = pydffi.typeof(Obj)
 fields = [f.name for f in iter(Ty)]
-assert(fields[0] == "a")
-assert(fields[1] == "b")
+assert(set(fields) == set(("a","b")))
