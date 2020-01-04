@@ -66,7 +66,7 @@ class build_ext_dffi(build_ext):
             use_ninja = True
         except:
             use_ninja = False
-        cmake_args = ['-DLLVM_CONFIG=%s' % LLVM_CONFIG, "-DCMAKE_BUILD_TYPE=release", "-DDFFI_STATIC_LLVM=ON", "-DPYTHON_BINDINGS=OFF", "-DBUILD_TESTS=OFF", source_dir]
+        cmake_args = ['-DLLVM_CONFIG=%s' % LLVM_CONFIG, "-DCMAKE_BUILD_TYPE=release", "-DDFFI_STATIC_LLVM=ON", "-DPYTHON_BINDINGS=OFF", "-DBUILD_TESTS=OFF", "-DLLVM_TEMPORARILY_ALLOW_OLD_TOOLCHAIN=YES", source_dir]
         if use_ninja:
             cmake_args.extend(("-G","Ninja"))
         system = platform.system()
