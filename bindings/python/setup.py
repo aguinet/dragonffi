@@ -25,7 +25,7 @@ link_args = []
 libraries = []
 if platform.system() in ("Linux","Darwin"):
     # This will work w/ GCC and clang
-    compile_args = ['-std=c++11','-ffunction-sections','-fdata-sections']
+    compile_args = ['-std=c++14','-ffunction-sections','-fdata-sections']
     if platform.system() == "Linux":
         # Stripping the library makes us win 20mb..!
         link_args = ["-static-libstdc++","-Wl,--strip-all","-Wl,-gc-sections"]
