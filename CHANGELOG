@@ -1,3 +1,20 @@
+0.5.1
+-----
+
+* Support for inline anonymous members in structs/unions. Bug found by @Neitsa.
+
+0.5.0
+-----
+
+* Based on LLVM8
+* Many bug fixes
+
+0.4.0
+-----
+
+* Based on LLVM7
+* Use pybind11 2.2.4
+
 0.3.0
 -----
 
