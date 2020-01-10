@@ -6,4 +6,5 @@ Contents:
 .. toctree::
 
    intro.rst
+   building.rst
    reference_py.rst
