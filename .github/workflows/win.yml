@@ -1,0 +1,38 @@
+name: Tests Windows
+
+on: [push]
+
+jobs:
+  build:
+
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        python-version: [3.5,3.6,3.7,3.8]
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v1
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install system dependencies
+      run: |
+        choco install miniconda3 ninja
+        C:\tools\Miniconda3\Scripts\conda.exe install -c conda-forge llvm-utils==8.0.1 clangdev==8.0.1
+        python -m pip install --upgrade pip
+        python -m pip install lit 
+        mkdir build
+    - name: CMake + build
+      working-directory: build
+      run: |
+        call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" x64 -vcvars_ver=14.16
+        cmake -DCMAKE_C_COMPILER=cl.exe -DCMAKE_CXX_COMPILER=cl.exe -DPYTHON_BINDINGS=ON -DBUILD_TESTS=ON -DLLVM_CONFIG=C:/tools/Miniconda3/Library/bin/llvm-config.exe -DCMAKE_BUILD_TYPE=release -G Ninja ..
+        ninja
+      shell: cmd
+    - name: Native tests
+      working-directory: build
+      run: |
+        call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" x64 -vcvars_ver=14.16
+        lit -v tests
+      shell: cmd
