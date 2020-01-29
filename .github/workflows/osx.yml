@@ -1,0 +1,38 @@
+name: Tests OSX
+
+on: [push]
+
+jobs:
+  build:
+
+    runs-on: macOS-latest
+    strategy:
+      matrix:
+        python-version: [2.7,3.5,3.6,3.7,3.8]
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v1
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install system dependencies
+      run: |
+        brew install cmake ninja
+        sudo $CONDA/bin/conda install -c conda-forge llvm-utils==8.0.1 clangdev==8.0.1
+        python -m pip install --upgrade pip
+        python -m pip install lit 
+        mkdir build
+    - name: CMake
+      working-directory: build
+      run: |
+        cmake \
+          -DBUILD_SHARED_LIBS=ON \
+          -DPYTHON_BINDINGS=ON \
+          -DBUILD_TESTS=ON \
+          -DLLVM_CONFIG=$CONDA/bin/llvm-config -DCMAKE_BUILD_TYPE=debug \
+          -G Ninja ..
+    - name: Build
+      working-directory: build
+      run: |
+        ninja

@@ -1,0 +1,40 @@
+name: Tests Linux
+
+on: [push]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [2.7, 3.5, 3.6, 3.7, 3.8]
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v1
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install system dependencies
+      run: |
+        sudo apt install -y clang-8 llvm-8-tools llvm-8-dev libclang-8-dev ninja-build cmake
+        python -m pip install --upgrade pip
+        python -m pip install lit 
+    - name: CMake
+      run: |
+        mkdir build && cd build && cmake \
+          -DBUILD_SHARED_LIBS=ON \
+          -DPYTHON_BINDINGS=ON \
+          -DBUILD_TESTS=ON \
+          -DLLVM_CONFIG=$(which llvm-config-8) -DCMAKE_BUILD_TYPE=debug \
+          -G Ninja ..
+    - name: Build
+      run: |
+        cd build && ninja
+    - name: Native tests
+      run: |
+        cd build && lit -v tests
+    - name: Python tests
+      run: |
+        cd build && lit -v bindings/python/tests

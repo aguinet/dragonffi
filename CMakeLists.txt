@@ -31,6 +31,7 @@ exec_program(${LLVM_CONFIG} ARGS --libs OUTPUT_VARIABLE LLVM_CONFIG_LIBFILES)
 if (${LLVM_BUILD_MODE} STREQUAL "debug")
   set(LLVM_BUILD_DEBUG TRUE)
 endif()
+string(REPLACE "\\" "/" LLVM_PREFIX "${LLVM_PREFIX}")
 string(REPLACE "\\" "/" LLVM_CMAKE "${LLVM_CMAKE}")
 string(REPLACE "\\" "/" LLVM_BINDIR "${LLVM_BINDIR}")
 
@@ -42,16 +43,17 @@ set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake" "${LLVM_CMAKE}")
 set(Clang_DIR "${LLVM_PREFIX}/lib/cmake/clang")
 message(STATUS "Clang cmake directory: ${Clang_DIR}")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake" "${LLVM_CMAKE}" "${Clang_DIR}")
 
 include(PrecompiledHeader)
 
 # Clang
-find_package(Clang)
+include(ClangConfig)
 include_directories(${CLANG_INCLUDE_DIRS})
 link_directories(${CLANG_LIBRARY_DIRS})
+message(STATUS "Clang link dylib: ${CLANG_LINK_CLANG_DYLIB}")
 
 # LLVM
 include(HandleLLVMOptions)
@@ -183,7 +185,6 @@ set(CLANG_LINK_LIBRARIES
   clangCodeGen
 )
 set(DFFI_LINK_LIBRARIES
-  ${CLANG_LINK_LIBRARIES}
   ${llvm_libs}
 )
 
@@ -219,6 +220,15 @@ if (NOT LLVM_ENABLE_RTTI)
     COMPILE_FLAGS ${DFFI_RTTI_FLAG})
 endif()
 
+# Backported from LLVM master
+function(clang_target_link_libraries target type)
+  if (CLANG_LINK_CLANG_DYLIB)
+    target_link_libraries(${target} ${type} clang_shared)
+  else()
+    target_link_libraries(${target} ${type} ${ARGN})
+  endif()
+endfunction()
+
 if (DFFI_STATIC_LLVM)
   add_definitions(-Ddffi_STATIC)
   add_library(dffi_static
@@ -226,7 +236,7 @@ if (DFFI_STATIC_LLVM)
     ${DFFI_SRC}
   )
 
-  foreach(LIB_ ${DFFI_LINK_LIBRARIES})
+  foreach(LIB_ ${DFFI_LINK_LIBRARIES} ${CLANG_LINK_LIBRARIES})
     list(APPEND DFFI_LINK_LIBRARIES_FILES $<TARGET_FILE:${LIB_}>) 
   endforeach(LIB_)
 
@@ -274,7 +284,7 @@ else()
       ${LLVM_LINK_COMPONENTS}
     )
   endif()
-  target_link_libraries(dffi PRIVATE ${CLANG_LINK_LIBRARIES})
+  clang_target_link_libraries(dffi PRIVATE ${CLANG_LINK_LIBRARIES})
   set(DFFI_LIBRARY dffi)
 endif()
 
