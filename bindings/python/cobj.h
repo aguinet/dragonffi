@@ -37,7 +37,7 @@ using dffi::dyn_cast;
 
 static void* alloc_align(size_t Size, size_t Align)
 {
-#ifdef _MSC_VER
+#ifdef _WIN32
   return _aligned_malloc(Size, Align);
 #else
   void* Ptr;
