@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// RUN: "%build_dir/varargs" | "%FileCheck" "%s"
+// RUN: "%build_dir/varargs%exeext" | "%FileCheck" "%s"
 
 #include <cstdio>
 #include <dffi/dffi.h>

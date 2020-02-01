@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// RUN: "%build_dir/system_headers" | "%FileCheck" "%s"
+// RUN: "%build_dir/system_headers%exeext" | "%FileCheck" "%s"
 
 #include <iostream>
 #include <dffi/dffi.h>

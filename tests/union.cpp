@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// RUN: "%build_dir/union" >"%t"
+// RUN: "%build_dir/union%exeext" >"%t"
 // RUN: "%FileCheck" "%s" <"%t"
 
 #include <stdio.h>
