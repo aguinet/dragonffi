@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// RUN: "%build_dir/stdint"
+// RUN: "%build_dir/stdint%exeext"
 
 #include <iostream>
 

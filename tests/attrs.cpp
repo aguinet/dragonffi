@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// RUN: "%build_dir/attrs"
+// RUN: "%build_dir/attrs%exeext"
 
 #include <iostream>
 #include <dffi/dffi.h>

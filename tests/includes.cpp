@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// RUN: "%build_dir/compile" "%S/includes"
+// RUN: "%build_dir/compile%exeext" "%S/includes"
 
 #include <iostream>
 #include <dffi/dffi.h>

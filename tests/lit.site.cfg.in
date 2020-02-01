@@ -17,6 +17,7 @@ import os
 
 config.build_dir = "@CMAKE_CURRENT_BINARY_DIR@"
 config.llvm_bindir = "@LLVM_BINDIR@"
+config.exe_suffix = "0CMAKE_EXECUTABLE_SUFFIX0"
 
 lit_config.load_config(config, "@CMAKE_CURRENT_SOURCE_DIR@/lit.cfg")
 

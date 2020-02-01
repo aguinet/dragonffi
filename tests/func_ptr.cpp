@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// RUN: "%build_dir/func_ptr"
+// RUN: "%build_dir/func_ptr%exeext"
 
 #include <iostream>
 #include <dffi/dffi.h>

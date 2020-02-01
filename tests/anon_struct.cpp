@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// RUN: "%build_dir/anon_struct" | "%FileCheck" "%s"
+// RUN: "%build_dir/anon_struct%exeext" | "%FileCheck" "%s"
 
 #include <iostream>
 #include <dffi/dffi.h>
