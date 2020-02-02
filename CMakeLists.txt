@@ -151,6 +151,7 @@ set(DFFI_SRC
   lib/dffi_impl_clang_res.cpp
   lib/dffi_types.cpp
   lib/dffictx.cpp
+  lib/types_printer.cpp
   lib/anon_member_inliner.cpp
 )
 
