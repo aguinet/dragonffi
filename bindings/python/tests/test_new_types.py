@@ -12,23 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# RUN: "%python" "%s"
-
+import unittest
 import pydffi
-import struct
 
-FFI = pydffi.FFI()
-CU = FFI.cdef('''
-#include <stdlib.h>
-#include <stdbool.h>
-typedef struct {
-    bool valid;
-    void* a;
-    unsigned short len;
-    size_t v;
-} A;
-''')
+from common import DFFITest
 
-a = CU.types.A(valid=1,len=0xBBAA,v=0xDDCCBBAA)
-av = pydffi.view_as_bytes(a)
-assert(struct.unpack(CU.types.A.format, av) == struct.unpack(CU.types.A.portable_format, av))
+class NewTypesTest(DFFITest):
+    def test_newtypes(self):
+        # Basic objs
+        self.assertEqual(self.FFI.Int32Ty(4).value, 4)
+        self.assertEqual(self.FFI.Int32Ty(self.FFI.Int32Ty(4)).value, 4)
+
+if __name__ == '__main__':
+    unittest.main()

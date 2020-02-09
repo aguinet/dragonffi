@@ -12,11 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# RUN: "%python" "%s"
-
+import unittest
 import pydffi
-FFI = pydffi.FFI()
-CU = FFI.compile('''
+
+from common import DFFITest
+
+class WrapperTest(DFFITest):
+    def test_wrapper(self):
+        CU = self.FFI.compile('''
 struct A {
     int a;
     int b;
@@ -25,6 +28,9 @@ struct A init_A(int a, int b) {
   struct A ret = {a,b};
   return ret;
 }
-''')
-FTy = pydffi.typeof(CU.funcs.init_A)
-print(FTy.getWrapperLLVMStr("wrap"))
+        ''')
+        FTy = pydffi.typeof(CU.funcs.init_A)
+        print(FTy.getWrapperLLVMStr("wrap"))
+
+if __name__ == '__main__':
+    unittest.main()

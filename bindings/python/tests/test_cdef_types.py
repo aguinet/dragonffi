@@ -12,18 +12,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
-import platform
+# RUN: "%python" "%s"
+#
 
-# Load general configuration
-lit_config.load_config(config, "@CMAKE_BINARY_DIR@/tests/lit.site.cfg")
+import unittest
+import pydffi
 
-# Customize for python tests
-config.python = "@PYTHON_EXECUTABLE@"
-config.python_ext_dir = os.path.join("@CMAKE_CURRENT_BINARY_DIR@", "..")
+from common import DFFITest
 
-if platform.system() == "Windows":
-  config.python_ext_dir = config.python_ext_dir.replace("/","\\")
+class CDefTypesTest(DFFITest):
+    def test_cdef_types(self):
+        CU = self.FFI.cdef('''
+#include <stdint.h>
+typedef int32_t MyInt;
+typedef struct {
+  int a;
+  int b;
+} A;
+        ''')
 
-# Load python configuration
-lit_config.load_config(config, "@CMAKE_CURRENT_SOURCE_DIR@/lit.cfg")
+        self.assertEqual(CU.types.MyInt, self.FFI.Int32Ty)
+        self.assertTrue(isinstance(CU.types.A, pydffi.StructType))
+
+
+if __name__ == '__main__':
+    unittest.main()

@@ -16,22 +16,21 @@
 #
 
 import pydffi
-FFI = pydffi.FFI()
-CU = FFI.compile('''
-struct A {
-  struct {
-    int a;
-    int b;
-  } s;
-};
+import unittest
 
-void dump(struct A a) {
-  printf("s.a=%d, s.b=%d\\n", a.s.a, a.s.b);
-}
-''')
+from common import DFFITest
 
-A = CU.types.A()
-Obj = A.s
-Ty = pydffi.typeof(Obj)
-fields = [f.name for f in iter(Ty)]
-assert(set(fields) == set(("a","b")))
+class ErrorsTest(DFFITest):
+    def test_errors(self):
+        FFI = self.FFI
+
+        with self.assertRaises(Exception):
+            FFI.compile("this is invalid code")
+
+        with self.assertRaises(Exception):
+            FFI.compile("this is invalid code again")
+
+        FFI.compile("int foo(int a, int b) { return a+b; }")
+
+if __name__ == '__main__':
+    unittest.main()

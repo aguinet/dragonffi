@@ -1,4 +1,3 @@
-# coding: utf-8
 # Copyright 2018 Adrien Guinet <adrien@guinet.me>
 # 
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,26 +12,32 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# RUN: "%python" "%s" | "%FileCheck" "%s"
-
 import pydffi
-import random
+import unittest
 
-J=pydffi.FFI()
+from common import DFFITest
 
-CU = J.compile('''
+class IgnoredTest(DFFITest):
+    def verify_ignored(self, CU, name):
+        with self.assertRaises(pydffi.UnknownFunctionError):
+            getattr(CU.funcs,name)
+
+    def test_ignored(self):
+        D = self.FFI
+        CU = D.compile('''
 #include <stdio.h>
-void print(const char* msg) {
-    puts(msg);
+#include <stdlib.h>
+__attribute__((noreturn)) void fatal(const char* err) {
+    puts(err);
+    exit(1);
 }
-const char* get_str() { return "hello"; }
-''')
-print_ = getattr(CU.funcs, "print")
-get_str = CU.funcs.get_str
+        ''')
+        self.verify_ignored(CU, "fatal")
 
-# CHECK: coucou
-print_("coucou")
-# CHECK: héllo 
-print_("héllo")
+        CU = D.cdef('''
+__attribute__((noreturn)) void fatal(const char* err);
+        ''')
+        self.verify_ignored(CU, "fatal")
 
-assert((get_str().cstr).tobytes() == b"hello")
+if __name__ == '__main__':
+    unittest.main()
