@@ -12,27 +12,30 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# RUN: "%python" "%s"
-# coding: utf-8
-
-import pydffi
+import unittest
 import random
 
-J=pydffi.FFI()
+import pydffi
+from common import DFFITest
 
-CU = J.compile('''
+class BoolTest(DFFITest):
+    def test_bool(self):
+        CU = self.FFI.compile('''
 #include <stdbool.h>
 bool foo(int a) { return a==1; }
 bool invert(const bool v) { return !v; }
-''')
+        ''')
 
-assert(CU.funcs.foo(1) == True)
-assert(CU.funcs.foo(0) == False)
-assert(CU.funcs.invert(True) == False)
-assert(CU.funcs.invert(False) == True)
+        self.assertTrue(CU.funcs.foo(1))
+        self.assertFalse(CU.funcs.foo(0))
+        self.assertFalse(CU.funcs.invert(True))
+        self.assertTrue(CU.funcs.invert(False))
 
-b = CU.funcs.foo(1)
-assert(b == True)
-assert((not b) == False)
-assert((b & False) == False)
-assert((b & True) == True)
+        b = CU.funcs.foo(1)
+        self.assertTrue(b)
+        self.assertFalse(not b)
+        self.assertFalse(b & False)
+        self.assertTrue(b & True)
+
+if __name__ == '__main__':
+    unittest.main()

@@ -21,20 +21,21 @@ jobs:
         sudo apt install -y clang-8 llvm-8-tools llvm-8-dev libclang-8-dev ninja-build cmake
         python -m pip install --upgrade pip
         python -m pip install lit 
+        mkdir build
     - name: CMake
+      working-directory: build
       run: |
-        mkdir build && cd build && cmake \
+        cmake \
           -DBUILD_SHARED_LIBS=ON \
           -DPYTHON_BINDINGS=ON \
           -DBUILD_TESTS=ON \
           -DLLVM_CONFIG=$(which llvm-config-8) -DCMAKE_BUILD_TYPE=debug \
           -G Ninja ..
     - name: Build
+      working-directory: build
       run: |
-        cd build && ninja
-    - name: Native tests
+        ninja
+    - name: Tests
+      working-directory: build
       run: |
-        cd build && lit -v tests
-    - name: Python tests
-      run: |
-        cd build && lit -v bindings/python/tests
+        ninja check

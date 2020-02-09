@@ -12,25 +12,31 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# RUN: "%python" "%s" "%S/../../../tests/includes"
-#
-
+import unittest
 import pydffi
-import sys
 
-F = pydffi.FFI(includeDirs=[sys.argv[1]])
-CU = F.compile('''
-#include "add.h"
-''')
-assert(CU.funcs.add(4,5) == 9)
+from common import DFFITest
 
-try:
-    F = pydffi.FFI()
-    CU = F.compile('''
-    #include "add.h"
-    ''')
-except pydffi.CompileError:
-    sys.exit(0)
+class AnonStructTest(DFFITest): 
+    def test_anon_struct(self):
+        CU = self.FFI.compile('''
+        struct A {
+          struct {
+            int a;
+            int b;
+          } s;
+        };
 
-print("Last compilatin should have failed!")
-sys.exit(1)
+        void dump(struct A a) {
+          printf("s.a=%d, s.b=%d\\n", a.s.a, a.s.b);
+        }
+        ''')
+
+        A = CU.types.A()
+        Obj = A.s
+        Ty = pydffi.typeof(Obj)
+        fields = [f.name for f in iter(Ty)]
+        self.assertEqual(set(fields), set(("a","b")))
+
+if __name__ == '__main__':
+    unittest.main()

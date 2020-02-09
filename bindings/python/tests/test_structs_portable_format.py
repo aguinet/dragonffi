@@ -12,27 +12,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# RUN: "%python" "%s" | "%FileCheck" "%s"
-#
-
+import unittest
 import pydffi
+import struct
 
-D = pydffi.FFI()
-CU = D.compile('''
-#include <stdio.h>
-struct A {
-    int a;
-    short b;
-};
-void print(struct A a) {
-    printf("%d %d\\n", a.a, a.b);
-}
-''')
+from common import DFFITest
 
-a = CU.types.A(a=4,b=10)
-# CHECK: 4 10
-getattr(CU.funcs, "print")(a)
+class StructsPortableFormatTest(DFFITest):
+    def test_structs_portable_format(self):
+        CU = self.FFI.cdef('''
+#include <stdlib.h>
+#include <stdbool.h>
+typedef struct {
+    bool valid;
+    void* a;
+    unsigned short len;
+    size_t v;
+} A;
+        ''')
 
-a = CU.types.A(a=0,b=0)
-# CHECK: 0 0
-getattr(CU.funcs, "print")(a)
+        a = CU.types.A(valid=1,len=0xBBAA,v=0xDDCCBBAA)
+        av = pydffi.view_as_bytes(a)
+        self.assertEqual(struct.unpack(CU.types.A.format, av), struct.unpack(CU.types.A.portable_format, av))
+
+if __name__ == '__main__':
+    unittest.main()

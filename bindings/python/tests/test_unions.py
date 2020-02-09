@@ -12,41 +12,31 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# RUN: "%python" "%s" | "%FileCheck" "%s"
-#
-
+import unittest
 import pydffi
 
-D = pydffi.FFI()
-CU = D.compile('''
-enum A {
-    V0 = 0,
-    V10 = 10
+from common import DFFITest
+
+class UnionsTest(DFFITest):
+    def test_unions(self):
+        D=self.FFI
+        CU = D.compile('''
+union A
+{
+  short a;
+  int b;
 };
 
-struct S {
-    enum A a;
-};
+short get_short(union A a) { return a.a; }
+int get_int(union A a) { return a.b; }
+        ''')
 
-int get(enum A a) { return a; }
-enum A get_a(struct S s) { return s.a; }
-''')
+        a = CU.types.A()
+        a.a = 10
+        self.assertEqual(CU.funcs.get_short(a), 10)
 
-A = CU.types.A
-assert(int(A.V0) == 0)
-assert(int(A.V10) == 10)
+        a = CU.types.A("b", 12345678)
+        self.assertEqual(CU.funcs.get_int(a), 12345678)
 
-# CHECK-DAG: V0 = 0
-# CHECK-DAG: V10 = 10
-for k,v in iter(A):
-    print("%s = %d" % (k,v))
-
-# CHECK-DAG: V0 = 0
-# CHECK-DAG: V10 = 10
-for k,v in dict(iter(A)).items():
-    print("%s = %d" % (k,v))
-
-S = CU.types.S()
-S.a = 10
-A = S.a
-assert(A == 10)
+if __name__ == '__main__':
+    unittest.main()

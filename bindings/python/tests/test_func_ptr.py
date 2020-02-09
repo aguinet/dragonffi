@@ -12,13 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# RUN: "%python" "%s"
-#
-
+import unittest
 import pydffi
 
-FFI=pydffi.FFI()
-CU = FFI.compile('''
+from common import DFFITest
+
+class FuncPtrTest(DFFITest):
+    def test_func_ptr(self):
+        FFI = self.FFI
+        CU = FFI.compile('''
 typedef struct
 {
   int a;
@@ -50,12 +52,15 @@ op get_op(unsigned Id)
 Res call(op f, int a, int b) {
   return f(a,b);
 }
-''')
+        ''')
 
-Add=CU.funcs.get_op(0)
-Add=Add.obj
-Res=Add(1,4)
-assert(Res.res == 5)
+        Add=CU.funcs.get_op(0)
+        Add=Add.obj
+        Res=Add(1,4)
+        self.assertEqual(Res.res, 5)
 
-Res=CU.funcs.call(pydffi.ptr(CU.funcs.sub), 1, 5)
-assert(Res.res == -4)
+        Res=CU.funcs.call(pydffi.ptr(CU.funcs.sub), 1, 5)
+        self.assertEqual(Res.res, -4)
+
+if __name__ == '__main__':
+    unittest.main()

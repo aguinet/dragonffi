@@ -12,28 +12,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# RUN: "%python" "%s"
+import unittest
 import pydffi
-import sys
+import os
 
-def check(CU, name):
-    try:
-        getattr(CU.funcs,name)
-        sys.exit(1)
-    except pydffi.UnknownFunctionError: pass
+from common import DFFITest
 
-D = pydffi.FFI()
-CU = D.compile('''
-#include <stdio.h>
-#include <stdlib.h>
-__attribute__((noreturn)) void fatal(const char* err) {
-    puts(err);
-    exit(1);
-}
-''')
-check(CU, "fatal")
+class IncludesTest(DFFITest):
+    def test_includes(self):
+        tests_dir = os.path.join(os.path.dirname(__file__), "..", "..", "..", "tests", "includes")
+        F = pydffi.FFI(includeDirs=[tests_dir])
+        CU = F.compile('''
+#include "add.h"
+        ''')
+        self.assertEqual(CU.funcs.add(4,5), 9)
 
-CU = D.cdef('''
-__attribute__((noreturn)) void fatal(const char* err);
-''')
-check(CU, "fatal")
+        with self.assertRaises(pydffi.CompileError):
+            CU = self.FFI.compile('''
+#include "add.h"
+            ''')
+
+if __name__ == '__main__':
+    unittest.main()

@@ -13,25 +13,36 @@
 # limitations under the License.
 
 # RUN: "%python" "%s" | "%FileCheck" "%s"
+#
 
+import unittest
 import pydffi
-FFI = pydffi.FFI()
-CU = FFI.compile('''
+
+from common import DFFITest
+
+class FuncsPropTest(DFFITest):
+    def test_funcs_prop(self):
+        D = self.FFI
+        CU = D.compile('''
 #include <stdio.h>
-typedef int int2[2];
-int foo(int2* ar)
-{
-    printf("%d %d\\n", ar[0][0], ar[0][1]);
+#include <stdbool.h>
+
+int foo() { return 42; }
+
+struct A {
+    int a;
+};
+__attribute__((ms_abi)) bool verify(struct A a, int ref) {
+    return a.a == ref;
 }
-''')
 
-v = CU.types.int2()
-v.set(0, 1)
-v.set(1, 2)
-# CHECK: 1 2
-CU.funcs.foo(pydffi.ptr(v))
+bool verify_int(int a, int ref) { return a == ref; }
+        ''')
+        self.assertEqual(CU.funcs.foo().value, 42)
 
-v[0] = 10
-v[1] = 20
-# CHECK: 10 20
-CU.funcs.foo(pydffi.ptr(v))
+        a = CU.types.A(a=15)
+        self.assertTrue(getattr(CU.funcs, "verify")(a, 15))
+        self.assertTrue(CU.funcs.verify_int(D.Int32(42), 42))
+
+if __name__ == '__main__':
+    unittest.main()

@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-configure_file("lit.site.cfg.in" "${CMAKE_CURRENT_BINARY_DIR}/lit.site.cfg" @ONLY)
-
+set(DFFI_LIB_DIR $<TARGET_FILE_DIR:pydffi>)
 add_custom_target(check_python
-    COMMAND "${PYTHON_EXECUTABLE}" -m lit.main "${CMAKE_CURRENT_BINARY_DIR}" -v)
+  COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH=${DFFI_LIB_DIR} "${PYTHON_EXECUTABLE}" -m unittest discover "${CMAKE_CURRENT_SOURCE_DIR}"
+)
 add_dependencies(check_python pydffi)
 add_dependencies(check check_python)

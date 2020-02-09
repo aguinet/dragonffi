@@ -13,15 +13,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# REQUIRES: posix
-# RUN: "%python" "%s" | "%FileCheck" "%s"
+import random
+import unittest
 
 import pydffi
-import random
+from common import DFFITest
 
-FFI=pydffi.FFI()
-
-CU = FFI.compile('''
+class BuffersTest(DFFITest):
+    def test_buffers(self):
+        CU = self.FFI.compile('''
 #include <stdio.h>
 #include <stdint.h>
 
@@ -46,28 +46,29 @@ void bytesupper(uint8_t* S) {
 void strupper(char* S) {
     bytesupper(S);
 }
-''')
-print_ = getattr(CU.funcs, "print")
-print_u8 = CU.funcs.print_u8
-bytesupper = CU.funcs.bytesupper
-strupper = CU.funcs.strupper
+        ''')
+        print_ = getattr(CU.funcs, "print")
+        print_u8 = CU.funcs.print_u8
+        bytesupper = CU.funcs.bytesupper
+        strupper = CU.funcs.strupper
 
-# CHECK: coucou
-print_("coucou")
-# CHECK: héllo 
-print_("héllo")
+        # CHECK: coucou
+        print_("coucou")
+        # CHECK: héllo 
+        print_("héllo")
 
-buf = u"héllo".encode("utf8")
-# CHECK: 68 C3 A9 6C 6C 6F
-print_u8(buf, len(buf))
+        buf = u"héllo".encode("utf8")
+        # CHECK: 68 C3 A9 6C 6C 6F
+        print_u8(buf, len(buf))
 
-buf = bytearray(b"hello")
-# CHECK: 5
-bytesupper(buf)
-assert(buf == b"HELLO")
+        buf = bytearray(b"hello")
+        bytesupper(buf)
+        self.assertEqual(buf, b"HELLO")
 
-buf = bytearray(b"hello")
-buf_char = pydffi.view_as(FFI.arrayType(FFI.UInt8Ty, len(buf)), buf)
-# CHECK: 5
-strupper(pydffi.cast(pydffi.ptr(buf_char),FFI.CharPtrTy))
-assert(buf == b"HELLO")
+        buf = bytearray(b"hello")
+        buf_char = pydffi.view_as(self.FFI.arrayType(self.FFI.UInt8Ty, len(buf)), buf)
+        strupper(pydffi.cast(pydffi.ptr(buf_char),self.FFI.CharPtrTy))
+        self.assertEqual(buf, b"HELLO")
+
+if __name__ == '__main__':
+    unittest.main()

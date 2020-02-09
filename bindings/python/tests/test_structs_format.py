@@ -13,14 +13,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# RUN: "%python" "%s"
-
+import unittest
 import pydffi
 import struct
 import codecs
 
-FFI = pydffi.FFI()
-CU = FFI.cdef('''
+from common import DFFITest
+
+class StructsFormatTest(DFFITest):
+    def test_structsformat(self):
+        FFI = pydffi.FFI()
+        CU = FFI.cdef('''
 #include <stdbool.h>
 typedef struct {
     bool a;
@@ -34,16 +37,19 @@ typedef struct {
     A a;
     unsigned short v1;
 } B;
-''')
+        ''')
 
-vA = CU.types.A(a=1,b=0xAAAAAAAA,c=0x4444)
-buf = pydffi.view_as_bytes(vA)
-vAup = struct.unpack(CU.types.A.format, buf)
-assert(vAup == (1,0xAAAAAAAA,0x4444))
+        vA = CU.types.A(a=1,b=0xAAAAAAAA,c=0x4444)
+        buf = pydffi.view_as_bytes(vA)
+        vAup = struct.unpack(CU.types.A.format, buf)
+        self.assertEqual(vAup,  (1,0xAAAAAAAA,0x4444))
 
-buf_ref = bytearray(b"012345678")
-vB = CU.types.B(v0=1,v1=2,a=vA,buf=pydffi.view_as(CU.types.B.buf.type, buf_ref))
-buf = pydffi.view_as_bytes(vB)
-vBup = struct.unpack(CU.types.B.format, buf)
-assert(bytearray(vBup[:9]) == buf_ref)
-assert(vBup[9:] == (1,1,0xAAAAAAAA,0x4444,2))
+        buf_ref = bytearray(b"012345678")
+        vB = CU.types.B(v0=1,v1=2,a=vA,buf=pydffi.view_as(CU.types.B.buf.type, buf_ref))
+        buf = pydffi.view_as_bytes(vB)
+        vBup = struct.unpack(CU.types.B.format, buf)
+        self.assertEqual(bytearray(vBup[:9]), buf_ref)
+        self.assertEqual(vBup[9:], (1,1,0xAAAAAAAA,0x4444,2))
+
+if __name__ == '__main__':
+    unittest.main()
