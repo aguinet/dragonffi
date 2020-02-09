@@ -242,14 +242,17 @@ if (DFFI_STATIC_LLVM)
 
   set(DFFI_STATIC_LLVM_PATH "${CMAKE_CURRENT_BINARY_DIR}/dffi_static_llvm${CMAKE_STATIC_LIBRARY_SUFFIX}" CACHE STRING "Path to the static library containings dffi and LLVM static libraries")
   if(WIN32)
+    # We put arguments in a separate files, otherwise it might become too big
+    # for cmd.exe to handle.
+    set(LIB_COMMAND_ARGS_FILE "${CMAKE_CURRENT_BINARY_DIR}/lib_exe_args")
+    string(JOIN " " LINK_LIBS ${DFFI_LINK_LIBRARIES_FILES})
+    file(GENERATE OUTPUT ${LIB_COMMAND_ARGS_FILE} CONTENT
+      "/OUT:${DFFI_STATIC_LLVM_PATH} $<TARGET_FILE:dffi_static> ${LINK_LIBS}")
+
     add_custom_command(
       TARGET dffi_static POST_BUILD
       COMMAND "LIB.EXE"
-        ARGS
-          "/OUT:${DFFI_STATIC_LLVM_PATH}"
-          $<TARGET_FILE:dffi_static>
-          ${DFFI_LINK_LIBRARIES_FILES}
-    )
+        ARGS "@${LIB_COMMAND_ARGS_FILE}")
   else()
     if (APPLE)
       set(MERGE_LIBS "${CMAKE_CURRENT_SOURCE_DIR}/tools/merge_libs_osx.sh")

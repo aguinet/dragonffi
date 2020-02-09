@@ -12,15 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# REQUIRES: posix
-
 import unittest
 import pydffi
+import platform
 
 from common import DFFITest
 
 class MultipleCUTest(DFFITest):
     def test_mutiplecu(self):
+        if platform.system() == "Windows":
+            return
+
         J = self.FFI
         CU = J.cdef('''
         struct A {
