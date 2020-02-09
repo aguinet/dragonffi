@@ -4,8 +4,14 @@ DragonFFI
 .. image:: https://img.shields.io/gitter/room/gitterHQ/gitter.svg
     :target: https://gitter.im/dragonffi
 
-.. image:: https://travis-ci.org/aguinet/dragonffi.svg?branch=master
-    :target: https://travis-ci.org/aguinet/dragonffi
+.. image:: https://github.com/aguinet/dragonffi/workflows/Tests%20Linux/badge.svg?branch=master
+    :target: https://github.com/aguinet/dragonffi/actions
+
+.. image:: https://github.com/aguinet/dragonffi/workflows/Tests%20OSX/badge.svg?branch=master
+    :target: https://github.com/aguinet/dragonffi/actions
+
+.. image:: https://github.com/aguinet/dragonffi/workflows/Tests%20Windows/badge.svg?branch=master
+    :target: https://github.com/aguinet/dragonffi/actions
 
 DragonFFI is a C Foreign Function Interface (FFI) library written in C++ and
 based on Clang/LLVM. It allows any language to call C functions throught the
