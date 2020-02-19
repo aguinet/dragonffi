@@ -163,7 +163,6 @@ Some C features are still not supported by dffi (but will be in future releases)
 The python bindings also does not support yet:
 
 * proper ``int128_t`` support (need support in pybind11)
-* proper memoryview for multi-dimensional arrays
 
 Do not hesitate to report bugs!
 
