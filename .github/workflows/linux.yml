@@ -62,4 +62,4 @@ jobs:
     - uses: actions/upload-artifact@v1
       with:
         name: wheel
-        path: dist/
+        path: bindings/python/dist/
