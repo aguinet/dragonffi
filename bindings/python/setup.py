@@ -30,7 +30,7 @@ if platform.system() in ("Linux","Darwin"):
         # Stripping the library makes us win 20mb..!
         link_args = ["-static-libstdc++","-Wl,--strip-all","-Wl,-gc-sections"]
 elif platform.system() == "Windows":
-    compile_args = ['/TP', '/EHsc', '/GL-']
+    compile_args = ['/TP', '/EHsc', '/GL-', '/MD', '/d2FH4-']
     libraries = ['Mincore']
 else:
     raise RuntimeError("unsupported platform '%s'!" % os.platform)

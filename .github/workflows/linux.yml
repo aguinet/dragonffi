@@ -33,8 +33,7 @@ jobs:
         sudo echo "deb http://archive.ubuntu.com/ubuntu bionic-security main multiverse restricted universe" | sudo tee -a /etc/apt/sources.list
         sudo echo "deb http://archive.ubuntu.com/ubuntu bionic-updates main multiverse restricted universe " | sudo tee -a /etc/apt/sources.list
         sudo apt update && sudo apt install -y clang-8 llvm-8-tools llvm-8-dev libclang-8-dev ninja-build cmake
-        python -m pip install lit 
-        python -m pip install purectypes==0.2 six
+        python -m pip install lit purectypes==0.2 six wheel
         mkdir build
     - name: CMake
       working-directory: build
