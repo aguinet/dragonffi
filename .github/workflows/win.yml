@@ -71,4 +71,4 @@ jobs:
     - uses: actions/upload-artifact@v1
       with:
         name: pydffi-win64-py${{ matrix.python-version }}
-        path: bindings/python/dist/*.whl
+        path: bindings/python/dist/
