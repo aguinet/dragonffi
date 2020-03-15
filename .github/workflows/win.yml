@@ -70,5 +70,5 @@ jobs:
       shell: cmd
     - uses: actions/upload-artifact@v1
       with:
-        name: wheel
-        path: bindings/python/dist/
+        name: pydffi-win64-py${{ matrix.python-version }}
+        path: bindings/python/dist/*.whl

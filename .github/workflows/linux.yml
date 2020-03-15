@@ -53,12 +53,7 @@ jobs:
       run: |
         ninja check
 
-    - name: Build Python wheel
+    - name: Verify Python wheel works
       working-directory: bindings/python
       run: |
         LLVM_CONFIG=$(which llvm-config-8) python ./setup.py bdist_wheel
-
-    - uses: actions/upload-artifact@v1
-      with:
-        name: wheel
-        path: bindings/python/dist/
