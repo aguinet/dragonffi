@@ -1,3 +1,8 @@
+0.6.0
+-----
+
+* Fix creation of functions by their type and absolute address
+
 0.5.1
 -----
 

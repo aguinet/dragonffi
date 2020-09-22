@@ -194,14 +194,14 @@ std::unique_ptr<DFFI> default_ctor(unsigned optLevel, py::list includeDirs)
   return std::unique_ptr<DFFI>{new DFFI{Opts}};
 }
 
-CFunction dffi_getfunction(DFFI& D, FunctionType const& Ty, void* Ptr)
+CFunction dffi_getfunction(DFFI& D, FunctionType const& Ty, uintptr_t Ptr)
 {
-  return CFunction{D.getFunction(&Ty, Ptr)};
+  return CFunction{D.getFunction(&Ty, (void*)Ptr)};
 }
 
-CFunction functiontype_getfunction(FunctionType const& Ty, void* Ptr)
+CFunction functiontype_getfunction(FunctionType const& Ty, uintptr_t Ptr)
 {
-  return CFunction{Ty.getFunction(Ptr)};
+  return CFunction{Ty.getFunction((void*)Ptr)};
 }
 
 uintptr_t cpointerobj_getptr(CPointerObj& Obj)

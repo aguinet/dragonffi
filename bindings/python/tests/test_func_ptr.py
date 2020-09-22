@@ -59,8 +59,16 @@ Res call(op f, int a, int b) {
         Res=Add(1,4)
         self.assertEqual(Res.res, 5)
 
-        Res=CU.funcs.call(pydffi.ptr(CU.funcs.sub), 1, 5)
+        sub_addr = pydffi.ptr(CU.funcs.sub)
+        Res=CU.funcs.call(sub_addr, 1, 5)
         self.assertEqual(Res.res, -4)
+
+        subFuncTy = pydffi.typeof(CU.funcs.sub).type
+        funcByAddr = subFuncTy(sub_addr)
+        self.assertEqual(funcByAddr(1,5).res,-4)
+
+        funcByAddr = subFuncTy(sub_addr.value)
+        self.assertEqual(funcByAddr(1,5).res,-4)
 
 if __name__ == '__main__':
     unittest.main()
