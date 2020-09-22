@@ -91,6 +91,31 @@ private:
   details::CUImpl* Impl_;
 };
 
+// Based on LLVM's DynamicLibrary
+struct DFFI_API DynamicLibrary
+{
+  DynamicLibrary(void* Data = &Invalid_):
+    Data_(Data)
+  { }
+
+  bool valid() const {
+    return Data_ != &Invalid_;
+  }
+
+  void* handle() const { return Data_; }
+
+  void* baseAddress() const;
+
+private:
+  // Placeholder whose address represents an invalid library.
+  // We use this instead of NULL or a pointer-int pair because the OS library
+  // might define 0 or 1 to be "special" handles, such as "search all".
+  static char Invalid_;
+
+  // Opaque data used to interface with OS-specific dynamic library handling.
+  void *Data_;
+};
+
 class DFFI_API DFFI
 {
 public:
@@ -114,7 +139,8 @@ public:
   NativeFunc getFunction(FunctionType const* FTy, void* FPtr);
   NativeFunc getFunction(FunctionType const* FTy, Type const** VarArgsTys, size_t VarArgsCount, void* FPtr);
 
-  static bool dlopen(const char* Path, std::string* Err = nullptr);
+  static DynamicLibrary dlopen(const char* Path, std::string* Err = nullptr);
+  static void addSymbol(const char* Name, void* Ptr);
   static std::string getNativeTriple();
 
   // Easy type access
