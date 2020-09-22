@@ -28,11 +28,12 @@ if (BUILD_TESTS)
     compile
     compile_error
     decl
+    dlopen
     enum
     func_ptr
-    multiple_defs
     includes
     inline
+    multiple_defs
     stdint
     struct
     system_headers

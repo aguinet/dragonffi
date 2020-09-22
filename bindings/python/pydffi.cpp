@@ -158,12 +158,19 @@ std::unique_ptr<CObj> cu_getfunction(CompilationUnit& CU, const char* Name)
 //    Data<void>::view(Info.ptr)}};
 //}
 
-void dffi_dlopen(const char* Path)
+DynamicLibrary dffi_dlopen(const char* Path)
 {
   std::string Err;
-  if (!DFFI::dlopen(Path, &Err)) {
+  const auto Ret = DFFI::dlopen(Path, &Err);
+  if (!Ret.valid()) {
     throw DLOpenError{Err};
   }
+  return Ret;
+}
+
+void dffi_add_symbol(const char* Name, uintptr_t Ptr)
+{
+  DFFI::addSymbol(Name, (void*)Ptr);
 }
 
 QualType dffi_const(Type const& Ty)
@@ -809,7 +816,13 @@ PYBIND11_MODULE(PYDFFI_EXT_NAME, m)
     .def_property_readonly("UInt64PtrTy", &DFFI::getUInt64PtrTy, py::return_value_policy::reference_internal)
     ;
 
+  py::class_<DynamicLibrary>(m, "DynamicLibrary")
+    .def_property_readonly("baseAddress",
+      [](DynamicLibrary const& DL) { return (uintptr_t) DL.baseAddress(); });
+    ;
+
   m.def("dlopen", dffi_dlopen);
+  m.def("addSymbol", dffi_add_symbol);
 
   // CObj-related functions
   m.def("cast", &CObj::cast, py::keep_alive<0,1>());

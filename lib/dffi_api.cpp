@@ -23,9 +23,15 @@
 
 #include <llvm/Support/TargetSelect.h>
 
+#ifdef __unix__
+#include <link.h> // For dl_iterate_phdr
+#endif
+
 using namespace llvm;
 
 namespace dffi {
+
+char DynamicLibrary::Invalid_ = 0;
 
 DFFI::DFFI(CCOpts const& Opts):
   Impl_(new details::DFFIImpl{Opts})
@@ -81,9 +87,25 @@ void DFFI::initialize()
   llvm::InitializeAllAsmPrinters();
 }
 
-bool DFFI::dlopen(const char* Path, std::string* Err)
+DynamicLibrary DFFI::dlopen(const char* Path, std::string* Err)
 {
-  return !llvm::sys::DynamicLibrary::LoadLibraryPermanently(Path, Err);
+  // Beware, horrible hack happening here. The opaque pointer of
+  // llvm::sys::DynamicLibrary is private, we can't access it. Waiting for a
+  // patch we need to do in llvm, we statically verify that
+  // sizeof(llvm::sys::DynamicLibrary) == sizeof(void*), and memcpy it...
+  const auto LLVMDL = llvm::sys::DynamicLibrary::getPermanentLibrary(Path, Err);
+  if (!LLVMDL.isValid()) {
+    return {};
+  }
+  static_assert(sizeof(LLVMDL) == sizeof(void*), "llvm::sys::DynamicLibrary layout not the one expected!");
+  void* Handle;
+  memcpy(&Handle, &LLVMDL, sizeof(void*));
+  return {Handle};
+}
+
+void DFFI::addSymbol(const char* Name, void* Ptr)
+{
+  llvm::sys::DynamicLibrary::AddSymbol(Name, Ptr);
 }
 
 std::string DFFI::getNativeTriple()
@@ -491,3 +513,13 @@ void unreachable(const char* msg)
 }
 
 } // dffi
+
+#ifdef __linux__
+#include "dffi_api_linux.inc"
+#elif defined(_WIN32)
+#include "dffi_api_win.inc"
+#else
+void* dffi::DynamicLibrary::baseAddress() const {
+  return nullptr;
+}
+#endif
