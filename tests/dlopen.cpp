@@ -10,11 +10,6 @@
 
 using namespace dffi;
 
-#ifdef __apple__
-static bool test(const char* Path) {
-  return true;
-}
-#else
 static bool test(const char* Path) {
   const auto DL = DFFI::dlopen(Path);
   void* BaseAddr = DL.baseAddress();
@@ -36,7 +31,6 @@ static bool test(const char* Path) {
   printf("Base address: %p\n", BaseAddr);
   return Ref == Buf;
 }
-#endif
 
 int main(int argc, char** argv)
 {

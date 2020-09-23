@@ -1,8 +1,6 @@
 #include <link.h>
 #include <dlfcn.h>
 
-#include <dffi/dffi.h>
-
 void* dffi::DynamicLibrary::baseAddress() const
 {
   assert(valid());
