@@ -518,6 +518,8 @@ void unreachable(const char* msg)
 #include "dffi_api_linux.inc"
 #elif defined(_WIN32)
 #include "dffi_api_win.inc"
+#elif defined(__APPLE__)
+#include "dffi_api_osx.inc"
 #else
 void* dffi::DynamicLibrary::baseAddress() const {
   return nullptr;
