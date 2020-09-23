@@ -13,6 +13,9 @@
 // limitations under the License.
 
 #include <cstdlib>
+#include <unordered_set>
+#include <string>
+
 #include "cobj.h"
 #include "dispatcher.h"
 #include "errors.h"
@@ -570,6 +573,16 @@ std::unique_ptr<CObj> CPointerObj::getObj() {
   return Ret;
 }
 
+// We do this to save formats buffers, because their lifetime need to be
+// conserved by us.
+static std::unordered_set<std::string> Formats_;
+
+py::memoryview memoryview_from_buffer_info(py::buffer_info const& bi)
+{
+  auto F = Formats_.insert(bi.format);
+  return py::memoryview::from_buffer(bi.ptr, bi.itemsize, F.first->c_str(), bi.shape, bi.strides, bi.readonly);
+}
+
 py::memoryview CPointerObj::getMemoryViewObjects(size_t Len)
 {
   auto PointeeTy = getPointeeType();
@@ -578,7 +591,7 @@ py::memoryview CPointerObj::getMemoryViewObjects(size_t Len)
   // TODO: ssize_t is an issue
   py::buffer_info BI(py::buffer_info{getPtr(), static_cast<ssize_t>(PointeeSize), getFormatDescriptor(PointeeTy), static_cast<ssize_t>(Len)});
   BI.readonly = PointeeTy.hasConst();
-  return py::memoryview{BI};
+  return memoryview_from_buffer_info(BI);
 }
 
 py::memoryview CPointerObj::getMemoryViewCStr()
