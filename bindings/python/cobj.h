@@ -720,4 +720,6 @@ std::unique_ptr<CObj> CBasicObj<T>::cast_impl(dffi::Type const* To) const
 
 std::unique_ptr<CObj> createObj(dffi::Type const* Ty, Data<void>&& D);
 
+pybind11::memoryview memoryview_from_buffer_info(pybind11::buffer_info const&);
+
 #endif

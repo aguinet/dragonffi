@@ -114,6 +114,35 @@ public:
     bool is(object_api const& other) const { return derived().ptr() == other.derived().ptr(); }
     /// Equivalent to ``obj is None`` in Python.
     bool is_none() const { return derived().ptr() == Py_None; }
+    /// Equivalent to obj == other in Python
+    bool equal(object_api const &other) const      { return rich_compare(other, Py_EQ); }
+    bool not_equal(object_api const &other) const  { return rich_compare(other, Py_NE); }
+    bool operator<(object_api const &other) const  { return rich_compare(other, Py_LT); }
+    bool operator<=(object_api const &other) const { return rich_compare(other, Py_LE); }
+    bool operator>(object_api const &other) const  { return rich_compare(other, Py_GT); }
+    bool operator>=(object_api const &other) const { return rich_compare(other, Py_GE); }
+
+    object operator-() const;
+    object operator~() const;
+    object operator+(object_api const &other) const;
+    object operator+=(object_api const &other) const;
+    object operator-(object_api const &other) const;
+    object operator-=(object_api const &other) const;
+    object operator*(object_api const &other) const;
+    object operator*=(object_api const &other) const;
+    object operator/(object_api const &other) const;
+    object operator/=(object_api const &other) const;
+    object operator|(object_api const &other) const;
+    object operator|=(object_api const &other) const;
+    object operator&(object_api const &other) const;
+    object operator&=(object_api const &other) const;
+    object operator^(object_api const &other) const;
+    object operator^=(object_api const &other) const;
+    object operator<<(object_api const &other) const;
+    object operator<<=(object_api const &other) const;
+    object operator>>(object_api const &other) const;
+    object operator>>=(object_api const &other) const;
+
     PYBIND11_DEPRECATED("Use py::str(obj) instead")
     pybind11::str str() const;
 
@@ -124,6 +153,9 @@ public:
     int ref_count() const { return static_cast<int>(Py_REFCNT(derived().ptr())); }
     /// Return a handle to the Python type object underlying the instance
     handle get_type() const;
+
+private:
+    bool rich_compare(object_api const &other, int value) const;
 };
 
 NAMESPACE_END(detail)
@@ -297,15 +329,18 @@ public:
     /// Constructs a new exception from the current Python error indicator, if any.  The current
     /// Python error indicator will be cleared.
     error_already_set() : std::runtime_error(detail::error_string()) {
-        PyErr_Fetch(&type.ptr(), &value.ptr(), &trace.ptr());
+        PyErr_Fetch(&m_type.ptr(), &m_value.ptr(), &m_trace.ptr());
     }
+
+    error_already_set(const error_already_set &) = default;
+    error_already_set(error_already_set &&) = default;
 
     inline ~error_already_set();
 
     /// Give the currently-held error back to Python, if any.  If there is currently a Python error
     /// already set it is cleared first.  After this call, the current object no longer stores the
     /// error variables (but the `.what()` string is still available).
-    void restore() { PyErr_Restore(type.release().ptr(), value.release().ptr(), trace.release().ptr()); }
+    void restore() { PyErr_Restore(m_type.release().ptr(), m_value.release().ptr(), m_trace.release().ptr()); }
 
     // Does nothing; provided for backwards compatibility.
     PYBIND11_DEPRECATED("Use of error_already_set.clear() is deprecated")
@@ -314,10 +349,14 @@ public:
     /// Check if the currently trapped error type matches the given Python exception class (or a
     /// subclass thereof).  May also be passed a tuple to search for any exception class matches in
     /// the given tuple.
-    bool matches(handle ex) const { return PyErr_GivenExceptionMatches(ex.ptr(), type.ptr()); }
+    bool matches(handle exc) const { return PyErr_GivenExceptionMatches(m_type.ptr(), exc.ptr()); }
+
+    const object& type() const { return m_type; }
+    const object& value() const { return m_value; }
+    const object& trace() const { return m_trace; }
 
 private:
-    object type, value, trace;
+    object m_type, m_value, m_trace;
 };
 
 /** \defgroup python_builtins _
@@ -356,6 +395,14 @@ inline bool hasattr(handle obj, handle name) {
 
 inline bool hasattr(handle obj, const char *name) {
     return PyObject_HasAttrString(obj.ptr(), name) == 1;
+}
+
+inline void delattr(handle obj, handle name) {
+    if (PyObject_DelAttr(obj.ptr(), name.ptr()) != 0) { throw error_already_set(); }
+}
+
+inline void delattr(handle obj, const char *name) {
+    if (PyObject_DelAttrString(obj.ptr(), name) != 0) { throw error_already_set(); }
 }
 
 inline object getattr(handle obj, handle name) {
@@ -428,7 +475,6 @@ template <typename T, enable_if_t<!is_pyobject<T>::value, int> = 0>
 object object_or_cast(T &&o);
 // Match a PyObject*, which we want to convert directly to handle via its converting constructor
 inline handle object_or_cast(PyObject *ptr) { return ptr; }
-
 
 template <typename Policy>
 class accessor : public object_api<accessor<Policy>> {
@@ -667,7 +713,7 @@ protected:
 
 private:
     handle obj;
-    PyObject *key, *value;
+    PyObject *key = nullptr, *value = nullptr;
     ssize_t pos = -1;
 };
 NAMESPACE_END(iterator_policies)
@@ -695,8 +741,13 @@ inline bool PyIterable_Check(PyObject *obj) {
 }
 
 inline bool PyNone_Check(PyObject *o) { return o == Py_None; }
+#if PY_MAJOR_VERSION >= 3
+inline bool PyEllipsis_Check(PyObject *o) { return o == Py_Ellipsis; }
+#endif
 
 inline bool PyUnicode_Check_Permissive(PyObject *o) { return PyUnicode_Check(o) || PYBIND11_BYTES_CHECK(o); }
+
+inline bool PyStaticMethod_Check(PyObject *o) { return o->ob_type == &PyStaticMethod_Type; }
 
 class kwargs_proxy : public handle {
 public:
@@ -969,6 +1020,14 @@ public:
     none() : object(Py_None, borrowed_t{}) { }
 };
 
+#if PY_MAJOR_VERSION >= 3
+class ellipsis : public object {
+public:
+    PYBIND11_OBJECT(ellipsis, object, detail::PyEllipsis_Check)
+    ellipsis() : object(Py_Ellipsis, borrowed_t{}) { }
+};
+#endif
+
 class bool_ : public object {
 public:
     PYBIND11_OBJECT_CVT(bool_, object, PyBool_Check, raw_bool)
@@ -1079,6 +1138,13 @@ public:
                                     (ssize_t *) stop, (ssize_t *) step,
                                     (ssize_t *) slicelength) == 0;
     }
+    bool compute(ssize_t length, ssize_t *start, ssize_t *stop, ssize_t *step,
+      ssize_t *slicelength) const {
+      return PySlice_GetIndicesEx((PYBIND11_SLICE_OBJECT *) m_ptr,
+          length, start,
+          stop, step,
+          slicelength) == 0;
+    }
 };
 
 class capsule : public object {
@@ -1141,7 +1207,9 @@ public:
         if (!m_ptr) pybind11_fail("Could not allocate tuple object!");
     }
     size_t size() const { return (size_t) PyTuple_Size(m_ptr); }
+    bool empty() const { return size() == 0; }
     detail::tuple_accessor operator[](size_t index) const { return {*this, index}; }
+    detail::item_accessor operator[](handle h) const { return object::operator[](h); }
     detail::tuple_iterator begin() const { return {*this, 0}; }
     detail::tuple_iterator end() const { return {*this, PyTuple_GET_SIZE(m_ptr)}; }
 };
@@ -1159,11 +1227,13 @@ public:
     explicit dict(Args &&...args) : dict(collector(std::forward<Args>(args)...).kwargs()) { }
 
     size_t size() const { return (size_t) PyDict_Size(m_ptr); }
+    bool empty() const { return size() == 0; }
     detail::dict_iterator begin() const { return {*this, 0}; }
     detail::dict_iterator end() const { return {}; }
     void clear() const { PyDict_Clear(ptr()); }
-    bool contains(handle key) const { return PyDict_Contains(ptr(), key.ptr()) == 1; }
-    bool contains(const char *key) const { return PyDict_Contains(ptr(), pybind11::str(key).ptr()) == 1; }
+    template <typename T> bool contains(T &&key) const {
+        return PyDict_Contains(m_ptr, detail::object_or_cast(std::forward<T>(key)).ptr()) == 1;
+    }
 
 private:
     /// Call the `dict` Python type -- always returns a new reference
@@ -1178,7 +1248,9 @@ class sequence : public object {
 public:
     PYBIND11_OBJECT_DEFAULT(sequence, object, PySequence_Check)
     size_t size() const { return (size_t) PySequence_Size(m_ptr); }
+    bool empty() const { return size() == 0; }
     detail::sequence_accessor operator[](size_t index) const { return {*this, index}; }
+    detail::item_accessor operator[](handle h) const { return object::operator[](h); }
     detail::sequence_iterator begin() const { return {*this, 0}; }
     detail::sequence_iterator end() const { return {*this, PySequence_Size(m_ptr)}; }
 };
@@ -1190,11 +1262,17 @@ public:
         if (!m_ptr) pybind11_fail("Could not allocate list object!");
     }
     size_t size() const { return (size_t) PyList_Size(m_ptr); }
+    bool empty() const { return size() == 0; }
     detail::list_accessor operator[](size_t index) const { return {*this, index}; }
+    detail::item_accessor operator[](handle h) const { return object::operator[](h); }
     detail::list_iterator begin() const { return {*this, 0}; }
     detail::list_iterator end() const { return {*this, PyList_GET_SIZE(m_ptr)}; }
     template <typename T> void append(T &&val) const {
         PyList_Append(m_ptr, detail::object_or_cast(std::forward<T>(val)).ptr());
+    }
+    template <typename T> void insert(size_t index, T &&val) const {
+        PyList_Insert(m_ptr, static_cast<ssize_t>(index),
+            detail::object_or_cast(std::forward<T>(val)).ptr());
     }
 };
 
@@ -1208,10 +1286,14 @@ public:
         if (!m_ptr) pybind11_fail("Could not allocate set object!");
     }
     size_t size() const { return (size_t) PySet_Size(m_ptr); }
+    bool empty() const { return size() == 0; }
     template <typename T> bool add(T &&val) const {
         return PySet_Add(m_ptr, detail::object_or_cast(std::forward<T>(val)).ptr()) == 0;
     }
     void clear() const { PySet_Clear(m_ptr); }
+    template <typename T> bool contains(T &&val) const {
+        return PySet_Contains(m_ptr, detail::object_or_cast(std::forward<T>(val)).ptr()) == 1;
+    }
 };
 
 class function : public object {
@@ -1226,11 +1308,16 @@ public:
     bool is_cpp_function() const { return (bool) cpp_function(); }
 };
 
+class staticmethod : public object {
+public:
+    PYBIND11_OBJECT_CVT(staticmethod, object, detail::PyStaticMethod_Check, PyStaticMethod_New)
+};
+
 class buffer : public object {
 public:
     PYBIND11_OBJECT_DEFAULT(buffer, object, PyObject_CheckBuffer)
 
-    buffer_info request(bool writable = false) {
+    buffer_info request(bool writable = false) const {
         int flags = PyBUF_STRIDES | PyBUF_FORMAT;
         if (writable) flags |= PyBUF_WRITABLE;
         Py_buffer *view = new Py_buffer();
@@ -1244,36 +1331,139 @@ public:
 
 class memoryview : public object {
 public:
-    explicit memoryview(const buffer_info& info) {
-        static Py_buffer buf { };
-        // Py_buffer uses signed sizes, strides and shape!..
-        static std::vector<Py_ssize_t> py_strides { };
-        static std::vector<Py_ssize_t> py_shape { };
-        buf.buf = info.ptr;
-        buf.itemsize = info.itemsize;
-        // TODO: this leaks, need to figure out how to fix this properly!
-        buf.format = strdup(info.format.c_str());
-        buf.ndim = (int) info.ndim;
-        buf.len = info.size;
-        py_strides.clear();
-        py_shape.clear();
-        for (size_t i = 0; i < (size_t) info.ndim; ++i) {
-            py_strides.push_back(info.strides[i]);
-            py_shape.push_back(info.shape[i]);
-        }
-        buf.strides = py_strides.data();
-        buf.shape = py_shape.data();
-        buf.suboffsets = nullptr;
-        buf.readonly = info.readonly;
-        buf.internal = nullptr;
+    PYBIND11_OBJECT_CVT(memoryview, object, PyMemoryView_Check, PyMemoryView_FromObject)
 
-        m_ptr = PyMemoryView_FromBuffer(&buf);
+    /** \rst
+        Creates ``memoryview`` from ``buffer_info``.
+
+        ``buffer_info`` must be created from ``buffer::request()``. Otherwise
+        throws an exception.
+
+        For creating a ``memoryview`` from objects that support buffer protocol,
+        use ``memoryview(const object& obj)`` instead of this constructor.
+     \endrst */
+    explicit memoryview(const buffer_info& info) {
+        if (!info.view())
+            pybind11_fail("Prohibited to create memoryview without Py_buffer");
+        // Note: PyMemoryView_FromBuffer never increments obj reference.
+        m_ptr = (info.view()->obj) ?
+            PyMemoryView_FromObject(info.view()->obj) :
+            PyMemoryView_FromBuffer(info.view());
         if (!m_ptr)
             pybind11_fail("Unable to create memoryview from buffer descriptor");
     }
 
-    PYBIND11_OBJECT_CVT(memoryview, object, PyMemoryView_Check, PyMemoryView_FromObject)
+    /** \rst
+        Creates ``memoryview`` from static buffer.
+
+        This method is meant for providing a ``memoryview`` for C/C++ buffer not
+        managed by Python. The caller is responsible for managing the lifetime
+        of ``ptr`` and ``format``, which MUST outlive the memoryview constructed
+        here.
+
+        See also: Python C API documentation for `PyMemoryView_FromBuffer`_.
+
+        .. _PyMemoryView_FromBuffer: https://docs.python.org/c-api/memoryview.html#c.PyMemoryView_FromBuffer
+
+        :param ptr: Pointer to the buffer.
+        :param itemsize: Byte size of an element.
+        :param format: Pointer to the null-terminated format string. For
+            homogeneous Buffers, this should be set to
+            ``format_descriptor<T>::value``.
+        :param shape: Shape of the tensor (1 entry per dimension).
+        :param strides: Number of bytes between adjacent entries (for each
+            per dimension).
+        :param readonly: Flag to indicate if the underlying storage may be
+            written to.
+     \endrst */
+    static memoryview from_buffer(
+        void *ptr, ssize_t itemsize, const char *format,
+        detail::any_container<ssize_t> shape,
+        detail::any_container<ssize_t> strides, bool readonly = false);
+
+    static memoryview from_buffer(
+        const void *ptr, ssize_t itemsize, const char *format,
+        detail::any_container<ssize_t> shape,
+        detail::any_container<ssize_t> strides) {
+        return memoryview::from_buffer(
+            const_cast<void*>(ptr), itemsize, format, shape, strides, true);
+    }
+
+    template<typename T>
+    static memoryview from_buffer(
+        T *ptr, detail::any_container<ssize_t> shape,
+        detail::any_container<ssize_t> strides, bool readonly = false) {
+        return memoryview::from_buffer(
+            reinterpret_cast<void*>(ptr), sizeof(T),
+            format_descriptor<T>::value, shape, strides, readonly);
+    }
+
+    template<typename T>
+    static memoryview from_buffer(
+        const T *ptr, detail::any_container<ssize_t> shape,
+        detail::any_container<ssize_t> strides) {
+        return memoryview::from_buffer(
+            const_cast<T*>(ptr), shape, strides, true);
+    }
+
+#if PY_MAJOR_VERSION >= 3
+    /** \rst
+        Creates ``memoryview`` from static memory.
+
+        This method is meant for providing a ``memoryview`` for C/C++ buffer not
+        managed by Python. The caller is responsible for managing the lifetime
+        of ``mem``, which MUST outlive the memoryview constructed here.
+
+        This method is not available in Python 2.
+
+        See also: Python C API documentation for `PyMemoryView_FromBuffer`_.
+
+        .. _PyMemoryView_FromMemory: https://docs.python.org/c-api/memoryview.html#c.PyMemoryView_FromMemory
+     \endrst */
+    static memoryview from_memory(void *mem, ssize_t size, bool readonly = false) {
+        PyObject* ptr = PyMemoryView_FromMemory(
+            reinterpret_cast<char*>(mem), size,
+            (readonly) ? PyBUF_READ : PyBUF_WRITE);
+        if (!ptr)
+            pybind11_fail("Could not allocate memoryview object!");
+        return memoryview(object(ptr, stolen_t{}));
+    }
+
+    static memoryview from_memory(const void *mem, ssize_t size) {
+        return memoryview::from_memory(const_cast<void*>(mem), size, true);
+    }
+#endif
 };
+
+#ifndef DOXYGEN_SHOULD_SKIP_THIS
+inline memoryview memoryview::from_buffer(
+    void *ptr, ssize_t itemsize, const char* format,
+    detail::any_container<ssize_t> shape,
+    detail::any_container<ssize_t> strides, bool readonly) {
+    size_t ndim = shape->size();
+    if (ndim != strides->size())
+        pybind11_fail("memoryview: shape length doesn't match strides length");
+    ssize_t size = ndim ? 1 : 0;
+    for (size_t i = 0; i < ndim; ++i)
+        size *= (*shape)[i];
+    Py_buffer view;
+    view.buf = ptr;
+    view.obj = nullptr;
+    view.len = size * itemsize;
+    view.readonly = static_cast<int>(readonly);
+    view.itemsize = itemsize;
+    view.format = const_cast<char*>(format);
+    view.ndim = static_cast<int>(ndim);
+    view.shape = shape->data();
+    view.strides = strides->data();
+    view.suboffsets = nullptr;
+    view.internal = nullptr;
+    PyObject* obj = PyMemoryView_FromBuffer(&view);
+    if (!obj)
+        throw error_already_set();
+    return memoryview(object(obj, stolen_t{}));
+}
+#endif  // DOXYGEN_SHOULD_SKIP_THIS
 /// @} pytypes
 
 /// \addtogroup python_builtins
@@ -1282,6 +1472,21 @@ inline size_t len(handle h) {
     ssize_t result = PyObject_Length(h.ptr());
     if (result < 0)
         pybind11_fail("Unable to compute length of object");
+    return (size_t) result;
+}
+
+inline size_t len_hint(handle h) {
+#if PY_VERSION_HEX >= 0x03040000
+    ssize_t result = PyObject_LengthHint(h.ptr(), 0);
+#else
+    ssize_t result = PyObject_Length(h.ptr());
+#endif
+    if (result < 0) {
+        // Sometimes a length can't be determined at all (eg generators)
+        // In which case simply return 0
+        PyErr_Clear();
+        return 0;
+    }
     return (size_t) result;
 }
 
@@ -1307,7 +1512,6 @@ inline list dir(handle obj) {
   if (!result) throw error_already_set();
   return reinterpret_steal<list>(result);
 }
-
 /// @} python_builtins
 
 NAMESPACE_BEGIN(detail)
@@ -1340,6 +1544,56 @@ str_attr_accessor object_api<D>::doc() const { return attr("__doc__"); }
 
 template <typename D>
 handle object_api<D>::get_type() const { return (PyObject *) Py_TYPE(derived().ptr()); }
+
+template <typename D>
+bool object_api<D>::rich_compare(object_api const &other, int value) const {
+    int rv = PyObject_RichCompareBool(derived().ptr(), other.derived().ptr(), value);
+    if (rv == -1)
+        throw error_already_set();
+    return rv == 1;
+}
+
+#define PYBIND11_MATH_OPERATOR_UNARY(op, fn)                                   \
+    template <typename D> object object_api<D>::op() const {                   \
+        object result = reinterpret_steal<object>(fn(derived().ptr()));        \
+        if (!result.ptr())                                                     \
+            throw error_already_set();                                         \
+        return result;                                                         \
+    }
+
+#define PYBIND11_MATH_OPERATOR_BINARY(op, fn)                                  \
+    template <typename D>                                                      \
+    object object_api<D>::op(object_api const &other) const {                  \
+        object result = reinterpret_steal<object>(                             \
+            fn(derived().ptr(), other.derived().ptr()));                       \
+        if (!result.ptr())                                                     \
+            throw error_already_set();                                         \
+        return result;                                                         \
+    }
+
+PYBIND11_MATH_OPERATOR_UNARY (operator~,   PyNumber_Invert)
+PYBIND11_MATH_OPERATOR_UNARY (operator-,   PyNumber_Negative)
+PYBIND11_MATH_OPERATOR_BINARY(operator+,   PyNumber_Add)
+PYBIND11_MATH_OPERATOR_BINARY(operator+=,  PyNumber_InPlaceAdd)
+PYBIND11_MATH_OPERATOR_BINARY(operator-,   PyNumber_Subtract)
+PYBIND11_MATH_OPERATOR_BINARY(operator-=,  PyNumber_InPlaceSubtract)
+PYBIND11_MATH_OPERATOR_BINARY(operator*,   PyNumber_Multiply)
+PYBIND11_MATH_OPERATOR_BINARY(operator*=,  PyNumber_InPlaceMultiply)
+PYBIND11_MATH_OPERATOR_BINARY(operator/,   PyNumber_TrueDivide)
+PYBIND11_MATH_OPERATOR_BINARY(operator/=,  PyNumber_InPlaceTrueDivide)
+PYBIND11_MATH_OPERATOR_BINARY(operator|,   PyNumber_Or)
+PYBIND11_MATH_OPERATOR_BINARY(operator|=,  PyNumber_InPlaceOr)
+PYBIND11_MATH_OPERATOR_BINARY(operator&,   PyNumber_And)
+PYBIND11_MATH_OPERATOR_BINARY(operator&=,  PyNumber_InPlaceAnd)
+PYBIND11_MATH_OPERATOR_BINARY(operator^,   PyNumber_Xor)
+PYBIND11_MATH_OPERATOR_BINARY(operator^=,  PyNumber_InPlaceXor)
+PYBIND11_MATH_OPERATOR_BINARY(operator<<,  PyNumber_Lshift)
+PYBIND11_MATH_OPERATOR_BINARY(operator<<=, PyNumber_InPlaceLshift)
+PYBIND11_MATH_OPERATOR_BINARY(operator>>,  PyNumber_Rshift)
+PYBIND11_MATH_OPERATOR_BINARY(operator>>=, PyNumber_InPlaceRshift)
+
+#undef PYBIND11_MATH_OPERATOR_UNARY
+#undef PYBIND11_MATH_OPERATOR_BINARY
 
 NAMESPACE_END(detail)
 NAMESPACE_END(PYBIND11_NAMESPACE)
