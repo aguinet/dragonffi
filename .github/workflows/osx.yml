@@ -40,3 +40,7 @@ jobs:
       working-directory: build
       run: |
         ninja
+    - name: Tests
+      working-directory: build
+      run: |
+        ninja check
