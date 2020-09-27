@@ -19,9 +19,11 @@
 import unittest
 import pydffi
 
+from common import getFFI
+
 class MemRefsTest(unittest.TestCase):
     def get_CU(self):
-        FFI = pydffi.FFI()
+        FFI = getFFI()
         return FFI.compile('''
         struct A {
           short a;
@@ -40,7 +42,7 @@ class MemRefsTest(unittest.TestCase):
         self.assertEqual(CU.funcs.get_b(A).value, 2)
 
     def get_fun(self):
-        return pydffi().FFI().compile('''
+        return getFFI().compile('''
         unsigned fact(unsigned n) {
           unsigned ret = 1;
           for (unsigned i = 2; i <= n; ++i) {
@@ -59,7 +61,7 @@ class MemRefsTest(unittest.TestCase):
         self.assertEqual(fact.call(6).value, pyfact(6))
 
     def get_A(self):
-        FFI = pydffi.FFI()
+        FFI = getFFI()
         CU = FFI.cdef('''
         struct A {
           short a;
@@ -80,7 +82,7 @@ class MemRefsTest(unittest.TestCase):
         self.assertEqual(A.b, 5)
 
     def get_buf_view(self):
-        FFI = pydffi.FFI()
+        FFI = getFFI()
         buf = bytearray(b"hello\x00")
         return FFI,pydffi.view_as(FFI.arrayType(FFI.UInt8Ty, len(buf)), buf)
 
@@ -101,7 +103,7 @@ class MemRefsTest(unittest.TestCase):
         self.run_A()
         self.run_buf_view()
 
-        self.assertEqual(pydffi.FFI().compile("int foo(int a, int b) { return a+b; }").funcs.foo(1,4), 5)
+        self.assertEqual(getFFI().compile("int foo(int a, int b) { return a+b; }").funcs.foo(1,4), 5)
 
 if __name__ == '__main__':
     unittest.main()

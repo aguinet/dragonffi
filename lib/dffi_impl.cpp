@@ -14,11 +14,13 @@
 
 #include <string>
 
+#include <clang/Basic/LangStandard.h>
 #include <clang/CodeGen/CodeGenAction.h>
 #include <clang/Driver/Compilation.h>
 #include <clang/Driver/Driver.h>
 #include <clang/Driver/DriverDiagnostic.h>
 #include <clang/Driver/Options.h>
+#include <clang/Driver/Tool.h>
 #include <clang/Driver/ToolChain.h>
 #include <clang/Frontend/CompilerInstance.h>
 #include <clang/Frontend/CompilerInvocation.h>
@@ -33,20 +35,21 @@
 #include <llvm/ExecutionEngine/GenericValue.h>
 #include <llvm/ExecutionEngine/MCJIT.h>
 #include <llvm/IR/DebugInfo.h>
+#include <llvm/IR/LegacyPassManager.h>
+#include <llvm/Object/ObjectFile.h>
 #include <llvm/Option/Arg.h>
 #include <llvm/Option/ArgList.h>
 #include <llvm/Support/Compiler.h>
 #include <llvm/Support/ErrorHandling.h>
 #include <llvm/Support/Path.h>
+#include <llvm/Support/Process.h>
 #include <llvm/Support/Program.h>
 #include <llvm/Support/Signals.h>
 #include <llvm/Support/TargetRegistry.h>
 #include <llvm/Support/TargetSelect.h>
-#include <llvm/Support/raw_ostream.h>
 #include <llvm/Support/VirtualFileSystem.h>
+#include <llvm/Support/raw_ostream.h>
 #include <llvm/Target/TargetMachine.h>
-#include <llvm/IR/LegacyPassManager.h>
-#include <llvm/Object/ObjectFile.h>
 
 #include <dffi/config.h>
 #include <dffi/ctypes.h>
@@ -59,7 +62,6 @@
 
 using namespace llvm;
 using namespace clang;
-
 
 namespace dffi {
 
@@ -106,6 +108,20 @@ static CallingConv dwarfCCToDFFI(uint8_t DwCC)
   return CC_C;
 }
 
+std::string CCOpts::getSysroot() const
+{
+  // If this->Sysroot is defined, returns it. Otherwise, check the DFFI_SYSROOT
+  // environment variable.
+  if (!Sysroot.empty()) {
+    return Sysroot;
+  }
+  auto OEnv = sys::Process::GetEnv("DFFI_SYSROOT");
+  if (OEnv.hasValue()) {
+    return std::move(OEnv.getValue());
+  }
+  return {};
+}
+
 namespace details {
 
 namespace {
@@ -120,7 +136,7 @@ llvm::DIType const* getCanonicalDIType(llvm::DIType const* Ty)
       case dwarf::DW_TAG_const_type:
       case dwarf::DW_TAG_volatile_type:
       case dwarf::DW_TAG_restrict_type:
-        return getCanonicalDIType(DTy->getBaseType().resolve());
+        return getCanonicalDIType(DTy->getBaseType());
       default:
         break;
     };
@@ -132,53 +148,7 @@ llvm::DIType const* stripDITypePtr(llvm::DIType const* Ty)
 {
   auto* PtrATy = llvm::cast<DIDerivedType>(Ty);
   assert(PtrATy->getTag() == llvm::dwarf::DW_TAG_pointer_type && "must be a pointer type!");
-  return PtrATy->getBaseType().resolve();
-}
-
-// Inspired by work from Juan Manuel Martinez!
-void InitHeaderSearchFlags(std::string const& TripleStr,
-                          CCOpts const& Opts,
-                          HeaderSearchOptions &HSO) {
-
-  using namespace llvm::sys;
-
-  IntrusiveRefCntPtr<DiagnosticIDs> DiagID(new DiagnosticIDs());
-  IntrusiveRefCntPtr<DiagnosticOptions> DiagOpts(new DiagnosticOptions());
-  auto *DiagsBuffer = new IgnoringDiagConsumer();
-  std::unique_ptr<DiagnosticsEngine> Diags(new DiagnosticsEngine(DiagID, &*DiagOpts, DiagsBuffer));
-
-  SmallVector<const char*, 3> Args = {"dummy.c", 
-    "-target", TripleStr.c_str(), "-resource-dir", getClangResRootDirectory()};
-
-  // Build a dummy compilation to obtain the current toolchain.
-  // Indeed, the BuildToolchain function of clang::driver::Driver is private :/
-  driver::Driver D("dummy", TripleStr, *Diags);
-  std::unique_ptr<driver::Compilation> C(D.BuildCompilation(Args));
-
-  driver::ToolChain const &TC = C->getDefaultToolChain();
-
-  llvm::opt::ArgStringList IncludeArgs;
-  TC.AddClangSystemIncludeArgs(C->getArgs(), IncludeArgs);
-
-  //HSO.Sysroot = ParentHSO.Sysroot;
-  HSO.ResourceDir = getClangResRootDirectory();
-
-  // organized in pairs "-<flag> <directory>"
-  assert(((IncludeArgs.size() & 1) == 0) && "even number of IncludeArgs");
-  HSO.UserEntries.reserve(IncludeArgs.size()/2 + Opts.IncludeDirs.size());
-  for (size_t i = 0; i != IncludeArgs.size(); i += 2) {
-    auto &Directory = IncludeArgs[i+1];
-
-    auto IncludeType = frontend::System;
-    if (IncludeArgs[i] == StringRef("-internal-externc-isystem"))
-      IncludeType = frontend::ExternCSystem;
-
-    HSO.UserEntries.emplace_back(Directory, IncludeType, false, false);
-  }
-
-  for (auto const& D: Opts.IncludeDirs) {
-    HSO.UserEntries.emplace_back(D, frontend::System, false, false);
-  }
+  return PtrATy->getBaseType();
 }
 
 std::string getWrapperName(size_t Idx)
@@ -189,29 +159,71 @@ std::string getWrapperName(size_t Idx)
 } // anonymous
 
 DFFIImpl::DFFIImpl(CCOpts const& Opts):
-    Clang_(new CompilerInstance()),
-    DiagID_(new DiagnosticIDs()),
-    DiagOpts_(new DiagnosticOptions()),
+    Clang_(new CompilerInstance{}),
+		DiagOpts_(new DiagnosticOptions{}),
+		DiagID_(new DiagnosticIDs{}),
     ErrorMsgStream_(ErrorMsg_),
     VFS_(new llvm::vfs::InMemoryFileSystem{}),
     Opts_(Opts)
 {
+  TextDiagnosticPrinter *DiagClient =
+    new TextDiagnosticPrinter{ErrorMsgStream_, &*DiagOpts_};
+  Diags_ = new DiagnosticsEngine{DiagID_, &*DiagOpts_, DiagClient, true};
+
   // Add an overleay with our virtual file system on top of the system!
-  vfs::OverlayFileSystem* Overlay = new llvm::vfs::OverlayFileSystem{vfs::getRealFileSystem()};
+  IntrusiveRefCntPtr<llvm::vfs::OverlayFileSystem> Overlay(new llvm::vfs::OverlayFileSystem{vfs::getRealFileSystem()});
   Overlay->pushOverlay(VFS_);
   // Finally add clang's ressources
   Overlay->pushOverlay(getClangResFileSystem());
-  FileMgr_ = new FileManager{FileSystemOptions{}, Overlay};
 
-  setNewDiagnostics();
-  Clang_->setFileManager(FileMgr_.get());
-  auto& CI = Clang_->getInvocation();
+  const auto TripleStr = llvm::sys::getProcessTriple();
+  Driver_.reset(new driver::Driver{"dummy", TripleStr, *Diags_, Overlay});
+  Driver_->setTitle("clang interpreter");
+  Driver_->setCheckInputsExist(false);
 
+  const char* ResDir = getClangResRootDirectory();
+  SmallVector<const char*, 17> Args = {"dffi", "dummy.c",
+    "-fsyntax-only", "-resource-dir", ResDir};
+  const auto Sysroot = Opts.getSysroot();
+  if (!Sysroot.empty()) {
+    Args.push_back("--sysroot");
+    Args.push_back(Sysroot.c_str());
+  }
+  for (auto const& D: Opts.IncludeDirs) {
+    Args.push_back("-I");
+    Args.push_back(D.c_str());
+  }
+
+
+  std::unique_ptr<driver::Compilation> C(Driver_->BuildCompilation(Args));
+  if (!C) {
+    unreachable("unable to instantiate clang");
+  }
+
+  const driver::JobList &Jobs = C->getJobs();
+  if (Jobs.size() != 1 || !isa<driver::Command>(*Jobs.begin())) {
+    SmallString<256> Msg;
+    llvm::raw_svector_ostream OS(Msg);
+    Jobs.Print(OS, "; ", true);
+    unreachable(OS.str().str().c_str());
+  }
+
+  const driver::Command &Cmd = cast<driver::Command>(*Jobs.begin());
+  if (llvm::StringRef(Cmd.getCreator().getName()) != "clang") {
+    Diags_->Report(diag::err_fe_expected_clang_command);
+    unreachable("bad command");
+  }
+
+  // Initialize a compiler invocation object from the clang (-cc1) arguments.
+  const llvm::opt::ArgStringList &CCArgs = Cmd.getArguments();
+  std::unique_ptr<CompilerInvocation> pCI(new CompilerInvocation{});
+  CompilerInvocation::CreateFromArgs(*pCI, CCArgs, *Diags_);
+
+  auto& CI = *pCI;
 
   auto& TO = CI.getTargetOpts();
-  TO.Triple = llvm::sys::getProcessTriple();
+  TO.Triple = TripleStr;
   // We create it by hand to have a minimal user-friendly API!
-  // From Juan's code!
   auto& CGO = CI.getCodeGenOpts();
   CGO.OptimizeSize = false;
   CGO.OptimizationLevel = Opts.OptLevel;
@@ -250,14 +262,13 @@ DFFIImpl::DFFIImpl(CCOpts const& Opts):
 
   CI.getFrontendOpts().ProgramAction = frontend::EmitLLVMOnly;
 
-  auto& HSO = CI.getHeaderSearchOpts();
-  // WARNING: this logic isn't used anymore for lots of targets (see
-  // clang/Frontend/InitHeaderSearch.cpp:438). We need to use a clang driver
-  // to get everything right!
-  HSO.UseStandardSystemIncludes = true;
+  Clang_->setInvocation(std::move(pCI));
+  Clang_->setDiagnostics(&*Diags_);
+  assert(Clang_->hasDiagnostics());
 
-  // TODO: a big hack is happening here!
-  InitHeaderSearchFlags(TO.Triple, Opts, HSO);
+  FileMgr_ = new FileManager(Clang_->getFileSystemOpts(), std::move(Overlay));
+  Clang_->createSourceManager(*FileMgr_);
+  Clang_->setFileManager(FileMgr_.get());
 
   // Intialize execution engine!
   std::string Error;
@@ -286,14 +297,11 @@ DFFIImpl::DFFIImpl(CCOpts const& Opts):
   }
 }
 
-void DFFIImpl::setNewDiagnostics()
+void DFFIImpl::resetDiagnostics()
 {
-  auto* DiagsBuffer = new TextDiagnosticPrinter{ErrorMsgStream_, &*DiagOpts_};
-  auto* Diags = new DiagnosticsEngine(DiagID_, &*DiagOpts_, DiagsBuffer);
-  auto* SrcMgr = new SourceManager(*Diags, *FileMgr_);
-  //Diags->setWarningsAsErrors(Opts_.WarningsAsErrors);
-  Clang_->setSourceManager(SrcMgr);
-  Clang_->setDiagnostics(Diags);
+  auto& Diag = Clang_->getDiagnostics();
+  Diag.Reset();
+  Diag.getClient()->clear();
 }
 
 void DFFIImpl::getCompileError(std::string& Err)
@@ -301,8 +309,6 @@ void DFFIImpl::getCompileError(std::string& Err)
   ErrorMsgStream_.flush();
   Err = std::move(ErrorMsg_);
   ErrorMsg_ = std::string{};
-  Clang_->getDiagnostics().Clear();
-  Clang_->getDiagnostics().Reset();
 }
 
 std::unique_ptr<llvm::Module> DFFIImpl::compile_llvm_with_decls(StringRef const Code, StringRef const CUName, FuncAliasesMap& FuncAliases, std::string& Err)
@@ -311,19 +317,20 @@ std::unique_ptr<llvm::Module> DFFIImpl::compile_llvm_with_decls(StringRef const 
   // First pass parse the AST of clang and generate wrappers for every
   // defined-only functions. Second pass generates the LLVM IR of the original
   // code with these definitions!
-  setNewDiagnostics();
   auto& CI = Clang_->getInvocation();
   CI.getFrontendOpts().Inputs.clear();
   CI.getFrontendOpts().Inputs.push_back(
-    FrontendInputFile(CUName, InputKind::C));
+    FrontendInputFile(CUName, Language::C));
   auto Buf = MemoryBuffer::getMemBufferCopy(Code);
   VFS_->addFile(CUName, time(NULL), std::move(Buf));
-  auto Action = llvm::make_unique<ASTGenWrappersAction>(FuncAliases);
+  auto Action = std::make_unique<ASTGenWrappersAction>(FuncAliases);
   if(!Clang_->ExecuteAction(*Action)) {
     getCompileError(Err);
+    resetDiagnostics();
     return nullptr;
   }
 
+  resetDiagnostics();
   auto BufForceDecl = Code.str() + "\n" + Action->forceDecls();
   SmallString<128> PrivateCU;
   ("/__dffi_private/force_decls/" + CUName).toStringRef(PrivateCU);
@@ -334,20 +341,20 @@ std::unique_ptr<llvm::Module> DFFIImpl::compile_llvm(StringRef const Code, Strin
 {
   // DiagnosticsEngine->Reset() does not seem to reset everything, as errors
   // are added up from other compilation units!
-  setNewDiagnostics();
-
   auto Buf = MemoryBuffer::getMemBufferCopy(Code);
   auto& CI = Clang_->getInvocation();
   CI.getFrontendOpts().Inputs.clear();
   CI.getFrontendOpts().Inputs.push_back(
-    FrontendInputFile(CUName, InputKind::C));
+    FrontendInputFile(CUName, Language::C));
   VFS_->addFile(CUName, time(NULL), std::move(Buf));
 
-  auto LLVMAction = llvm::make_unique<clang::EmitLLVMOnlyAction>(&Ctx_);
+  auto LLVMAction = std::make_unique<clang::EmitLLVMOnlyAction>(&Ctx_);
   if(!Clang_->ExecuteAction(*LLVMAction)) {
     getCompileError(Err);
+    resetDiagnostics();
     return nullptr;
   }
+  resetDiagnostics();
   return LLVMAction->takeModule();
 }
 
@@ -902,7 +909,7 @@ void CUImpl::parseDIComposite(DICompositeType const* DCTy, llvm::Module& M)
       }
 #endif
 
-      DIType const* FDITy = getCanonicalDIType(DOp->getBaseType().resolve());
+      DIType const* FDITy = getCanonicalDIType(DOp->getBaseType());
       dffi::Type const* FTy = getTypeFromDIType(FDITy);
 
       Fields.emplace_back(CompositeField{FName.c_str(), FTy, FOffset});
@@ -931,9 +938,9 @@ dffi::QualType CUImpl::getQualTypeFromDIType(llvm::DIType const* Ty)
       case dwarf::DW_TAG_typedef:
       case dwarf::DW_TAG_volatile_type:
       case dwarf::DW_TAG_restrict_type:
-        return getQualTypeFromDIType(DTy->getBaseType().resolve());
+        return getQualTypeFromDIType(DTy->getBaseType());
       case dwarf::DW_TAG_const_type:
-        return getQualTypeFromDIType(DTy->getBaseType().resolve()).withConst();
+        return getQualTypeFromDIType(DTy->getBaseType()).withConst();
       default:
         break;
     };
@@ -1011,7 +1018,7 @@ dffi::Type const* CUImpl::getTypeFromDIType(llvm::DIType const* Ty)
 
   if (auto* PtrTy = llvm::dyn_cast<llvm::DIDerivedType>(Ty)) {
     if (PtrTy->getTag() == llvm::dwarf::DW_TAG_pointer_type) {
-      auto Pointee = getQualTypeFromDIType(PtrTy->getBaseType().resolve());
+      auto Pointee = getQualTypeFromDIType(PtrTy->getBaseType());
       return getPointerType(Pointee);
     }
 #ifdef LLVM_BUILD_DEBUG
@@ -1043,7 +1050,7 @@ dffi::Type const* CUImpl::getTypeFromDIType(llvm::DIType const* Ty)
       }
       case llvm::dwarf::DW_TAG_array_type:
       {
-        auto EltTy = getQualTypeFromDIType(DTy->getBaseType().resolve());
+        auto EltTy = getQualTypeFromDIType(DTy->getBaseType());
         auto Count = llvm::cast<DISubrange>(*DTy->getElements().begin())->getCount();
         if (auto* CCount = Count.dyn_cast<ConstantInt*>()) {
           return DFFI_.getArrayType(EltTy, CCount->getZExtValue());
@@ -1070,12 +1077,12 @@ dffi::FunctionType const* CUImpl::getFunctionType(DISubroutineType const* Ty)
   auto ArrayTys = Ty->getTypeArray();
   auto ItTy = ArrayTys.begin();
 
-  auto RetTy = getQualTypeFromDIType((*(ItTy++)).resolve());
+  auto RetTy = getQualTypeFromDIType((*(ItTy++)));
 
   llvm::SmallVector<QualType, 8> ParamsTy;
   ParamsTy.reserve(ArrayTys.size()-1);
   for (auto ItEnd = ArrayTys.end(); ItTy != ItEnd; ++ItTy) {
-    auto ATy = getQualTypeFromDIType((*ItTy).resolve());
+    auto ATy = getQualTypeFromDIType((*ItTy));
     ParamsTy.push_back(ATy);
   }
   bool IsVarArgs = false;

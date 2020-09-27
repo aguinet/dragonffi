@@ -1,6 +1,8 @@
 import pydffi
 import unittest
 import six
+import platform
+import subprocess
 
 try:
     import purectypes
@@ -9,9 +11,15 @@ try:
 except (ImportError, AttributeError):
     has_purectypes = False
 
+def getFFI():
+   options = {}
+   if platform.system() == "Darwin":
+       options["sysroot"] = subprocess.check_output(["xcrun","--show-sdk-path"]).strip()
+   return pydffi.FFI(**options)
+
 class DFFITest(unittest.TestCase):
     def setUp(self):
-        self.FFI = pydffi.FFI()
+        self.FFI = getFFI()
 
     def cstr_from_array(self, ar):
         return pydffi.cast(pydffi.ptr(ar), self.FFI.CharPtrTy).cstr

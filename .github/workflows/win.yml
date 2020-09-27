@@ -22,8 +22,9 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Install system dependencies
       run: |
-        choco install miniconda3 ninja
-        C:\tools\Miniconda3\Scripts\conda.exe install -c conda-forge llvm-utils==8.0.1 clangdev==8.0.1
+        choco install ninja wget
+        wget https://files.geekou.info/llvm10.7z
+        7z x llvm10.7z
         python -m pip install --upgrade pip
         python -m pip install lit purectypes==0.2 six
         mkdir build
@@ -31,22 +32,12 @@ jobs:
       working-directory: build
       run: |
         call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" x64 -vcvars_ver=14.16
-        cmake -DCMAKE_C_COMPILER=cl.exe -DCMAKE_CXX_COMPILER=cl.exe -DPYTHON_BINDINGS=OFF -DBUILD_TESTS=ON -DLLVM_CONFIG=C:/tools/Miniconda3/Library/bin/llvm-config.exe -DCMAKE_BUILD_TYPE=release -G Ninja ..
+        cmake -DCMAKE_C_COMPILER=cl.exe -DCMAKE_CXX_COMPILER=cl.exe -DPYTHON_BINDINGS=ON -DBUILD_TESTS=ON -DLLVM_CONFIG=../llvm10/bin/llvm-config.exe -DCMAKE_BUILD_TYPE=release -G Ninja ..
         ninja
       shell: cmd
-    - name: Native tests
+    - name: Native & Python tests
       working-directory: build
       run: |
         call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" x64 -vcvars_ver=14.16
-        lit -v tests
-      shell: cmd
-    - name: Python build + tests
-      working-directory: bindings/python
-      run: |
-        call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" x64 -vcvars_ver=14.0
-        set LLVM_CONFIG=C:/tools/Miniconda3/Library/bin/llvm-config.exe
-        set CC=cl.exe
-        set CXX=cl.exe
-        python .\setup.py install
-        cd tests && python -m unittest discover .
+        ninja check
       shell: cmd

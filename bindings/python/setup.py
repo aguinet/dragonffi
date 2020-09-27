@@ -30,7 +30,7 @@ if platform.system() in ("Linux","Darwin"):
         # Stripping the library makes us win 20mb..!
         link_args = ["-static-libstdc++","-Wl,--strip-all","-Wl,-gc-sections"]
 elif platform.system() == "Windows":
-    compile_args = ['/TP', '/EHsc', '/GL-']
+    compile_args = ['/TP', '/EHsc', '/MD', '/GL-']
     libraries = ['Mincore']
 else:
     raise RuntimeError("unsupported platform '%s'!" % os.platform)
@@ -66,14 +66,11 @@ class build_ext_dffi(build_ext):
             use_ninja = True
         except:
             use_ninja = False
-        cmake_args = ['-DLLVM_CONFIG=%s' % LLVM_CONFIG, "-DCMAKE_BUILD_TYPE=release", "-DDFFI_STATIC_LLVM=ON", "-DPYTHON_BINDINGS=OFF", "-DBUILD_TESTS=OFF", "-DLLVM_TEMPORARILY_ALLOW_OLD_TOOLCHAIN=YES", source_dir]
+        cmake_args = ['-DLLVM_CONFIG=%s' % LLVM_CONFIG, "-DCMAKE_BUILD_TYPE=release", "-DDFFI_STATIC_LLVM=ON", "-DPYTHON_BINDINGS=OFF", "-DBUILD_TESTS=OFF", source_dir]
         if use_ninja:
             cmake_args.extend(("-G","Ninja"))
         system = platform.system()
-        if system == "Darwin":
-            # Compile for both 32 and 64 bits
-            cmake_args.append("-DCMAKE_OSX_ARCHITECTURES='x86_64;i386'")
-        elif system == "Windows":
+        if system == "Windows":
             # We need to force the usage the dynamic version of the C runtime,
             # as we are not compiling a shared library.
             cmake_args.append("-DCMAKE_CXX_FLAGS='/MD'")
