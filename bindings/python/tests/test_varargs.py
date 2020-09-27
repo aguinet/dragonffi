@@ -2,8 +2,9 @@
 #
 
 import pydffi
+from common import getFFI
 
-F = pydffi.FFI()
+F = getFFI()
 CU = F.cdef('''
 #include <stdarg.h>
 #include <stdio.h>

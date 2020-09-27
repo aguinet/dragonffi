@@ -50,7 +50,11 @@ namespace clang {
 class CompilerInstance;
 class DiagnosticIDs;
 class DiagnosticOptions;
+class DiagnosticsEngine;
 class TextDiagnosticPrinter;
+namespace driver {
+class Driver;
+} // driver
 } // clang
 
 namespace dffi {
@@ -111,14 +115,16 @@ private:
   std::pair<size_t, bool> getFuncTypeWrapperId(FunctionType const* FTy, llvm::ArrayRef<Type const*> VarArgs);
   void genFuncTypeWrapper(TypePrinter& P, size_t WrapperIdx, llvm::raw_string_ostream& ss, FunctionType const* FTy, llvm::ArrayRef<Type const*> VarArgs);
   void getCompileError(std::string& Err);
-  void setNewDiagnostics();
+  void resetDiagnostics();
   void compileWrappers(TypePrinter& P, std::string const& Wrappers);
 
   void* getWrapperAddress(FunctionType const* FTy);
   void* getWrapperAddress(FunctionType const* FTy, llvm::ArrayRef<Type const*> VarArgs);
 
 private:
+  std::unique_ptr<clang::driver::Driver> Driver_;
   std::unique_ptr<clang::CompilerInstance> Clang_;
+  llvm::IntrusiveRefCntPtr<clang::DiagnosticsEngine> Diags_;
   std::string ErrorMsg_;
   llvm::IntrusiveRefCntPtr<clang::DiagnosticIDs> DiagID_;
   llvm::IntrusiveRefCntPtr<clang::DiagnosticOptions> DiagOpts_;

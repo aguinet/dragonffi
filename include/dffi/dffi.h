@@ -45,6 +45,9 @@ struct CCOpts
 {
   unsigned OptLevel;
   std::vector<std::string> IncludeDirs;
+  std::string Sysroot;
+
+  std::string getSysroot() const;
 };
 
 class DFFI;

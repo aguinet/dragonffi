@@ -83,8 +83,7 @@ NativeFunc DFFI::getFunction(FunctionType const* FTy, Type const** VarArgsTys, s
 void DFFI::initialize()
 {
   llvm::InitializeNativeTarget();
-  llvm::InitializeAllTargetMCs();
-  llvm::InitializeAllAsmPrinters();
+  llvm::InitializeNativeTargetAsmPrinter();
 }
 
 DynamicLibrary DFFI::dlopen(const char* Path, std::string* Err)

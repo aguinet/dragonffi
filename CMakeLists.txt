@@ -68,22 +68,26 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR}/include)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/third-party)
 
 set(LLVM_LINK_COMPONENTS
-  ${LLVM_TARGETS_TO_BUILD}
+  ${LLVM_NATIVE_ARCH}
   AggressiveInstCombine
   Analysis
   AsmParser
   AsmPrinter
   BinaryFormat
   BitReader
+  BitstreamReader
   BitWriter
+  CFGuard
   CodeGen
   Core
   Coroutines
   Coverage
   DebugInfoCodeView
   DebugInfoMSF
+  DebugInfoDWARF
   Demangle
   ExecutionEngine
+  FrontendOpenMP
   GlobalISel
   IRReader
   InstCombine
@@ -100,11 +104,13 @@ set(LLVM_LINK_COMPONENTS
   Option
   Passes
   ProfileData
+  Remarks
   RuntimeDyld
   ScalarOpts
   SelectionDAG
   Support
   Target
+  TextAPI
   TransformUtils
   Vectorize
   ipo
@@ -166,7 +172,6 @@ set_source_files_properties(lib/dffi_impl_clang_res.cpp PROPERTIES
   OBJECT_DEPENDS ${_obj_depends})
 
 set(CLANG_LINK_LIBRARIES
-  clangARCMigrate
   clangAST
   clangASTMatchers
   clangAnalysis

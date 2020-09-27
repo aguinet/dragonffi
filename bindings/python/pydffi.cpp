@@ -189,7 +189,7 @@ std::unique_ptr<CObj> dffi_view_from_buffer(QualType Ty, py::buffer& B)
   return Ret;
 }
 
-std::unique_ptr<DFFI> default_ctor(unsigned optLevel, py::list includeDirs)
+std::unique_ptr<DFFI> default_ctor(unsigned optLevel, py::list includeDirs, const char* Sysroot)
 {
   CCOpts Opts;
   Opts.OptLevel = optLevel;
@@ -198,6 +198,7 @@ std::unique_ptr<DFFI> default_ctor(unsigned optLevel, py::list includeDirs)
   for (py::handle O: includeDirs) {
     Dirs.emplace_back(O.cast<std::string>());
   }
+  Opts.Sysroot = Sysroot;
   return std::unique_ptr<DFFI>{new DFFI{Opts}};
 }
 
@@ -708,7 +709,7 @@ PYBIND11_MODULE(PYDFFI_EXT_NAME, m)
     ;
 
   py::class_<DFFI>(m, "FFI")
-    .def(py::init(&default_ctor), py::arg("optLevel") = 2, py::arg("includeDirs") = py::list())
+    .def(py::init(&default_ctor), py::arg("optLevel") = 2, py::arg("includeDirs") = py::list(), py::arg("sysroot") = py::str())
     .def("cdef", dffi_cdef, py::keep_alive<0,1>())
     .def("cdef", dffi_cdef_no_name, py::keep_alive<0,1>())
     .def("compile", dffi_compile, py::keep_alive<0,1>())

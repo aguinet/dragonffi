@@ -217,7 +217,7 @@ private:
 std::unique_ptr<clang::ASTConsumer> ASTGenWrappersAction::CreateASTConsumer(clang::CompilerInstance &Compiler, llvm::StringRef InFile)
 {
   ASTCtxt_ = llvm::IntrusiveRefCntPtr<clang::ASTContext>{&Compiler.getASTContext()};
-  return llvm::make_unique<ASTGenWrappersConsumer>(ForceDecls_, FuncAliases_, Compiler.getLangOpts());
+  return std::make_unique<ASTGenWrappersConsumer>(ForceDecls_, FuncAliases_, Compiler.getLangOpts());
 }
 
 std::string& ASTGenWrappersAction::forceDecls()
