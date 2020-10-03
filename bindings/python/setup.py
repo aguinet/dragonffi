@@ -104,7 +104,7 @@ module = Extension('pydffi.backend',
                     libraries = libraries,
                     sources = glob.glob(os.path.join(this_dir, '*.cpp'))) 
 setup(name = 'pydffi',
-    version = '0.5.1',
+    version = '0.6.0-rc0',
     description = 'dragonffi static python bindings',
     author = 'Adrien Guinet',
     author_email = 'adrien@guinet.me',
@@ -124,7 +124,8 @@ Static python bindings for dragonffi. API isn't yet stable and is subject to cha
 	'Programming Language :: Python :: 3.4',
 	'Programming Language :: Python :: 3.5',
 	'Programming Language :: Python :: 3.6',
-	'Programming Language :: Python :: 3.7'
+	'Programming Language :: Python :: 3.7',
+	'Programming Language :: Python :: 3.8'
     ],
     keywords='ffi clang llvm',
     license='Apache 2.0',

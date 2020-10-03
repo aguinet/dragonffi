@@ -1,0 +1,198 @@
+name: Python wheels (& publish)
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+  release:
+    types: [created]
+
+jobs:
+  build_llvm_win:
+    name: Build LLVM release for Windows
+    runs-on: windows-latest
+    steps:
+    - name: Cache LLVM
+      id: cache-llvm
+      uses: actions/cache@v2
+      with:
+        path: llvm/install
+        # TODO: would be really better to add the hash of the LLVM commit cloned
+        # TODO: add "14.16" as a variable easy to replace
+        key: ${{ runner.os }}-llvm-release-10-msvc1416-2
+    - name: Get LLVM
+      if: steps.cache-llvm.outputs.cache-hit != 'true'
+      uses: actions/checkout@v2
+      with:
+        repository: 'llvm/llvm-project'
+        ref: 'release/10.x'
+        path: 'llvm'
+    - uses: ilammy/msvc-dev-cmd@v1
+      if: steps.cache-llvm.outputs.cache-hit != 'true'
+      with:
+        toolset: "14.16"
+    - name: Build LLVM
+      if: steps.cache-llvm.outputs.cache-hit != 'true'
+      run: |
+        choco install ninja
+        mkdir llvm/build
+        mkdir llvm/install
+        cd llvm/build
+        cmake ../llvm -DLLVM_BUILD_EXAMPLES=OFF -DCLANG_ENABLE_ARCMT=OFF -DCLANG_ENABLE_STATIC_ANALYZER=OFF -DLLVM_BUILD_TOOLS=ON -DCLANG_BUILD_TOOLS=OFF -DLLVM_INSTALL_UTILS=ON -DLLVM_TARGETS_TO_BUILD=X86 -DLLVM_ENABLE_PROJECTS=clang -DLLVM_ENABLE_BINDINGS=OFF -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$PWD/../install" -DLLVM_ENABLE_THREADS=OFF -DLLVM_ENABLE_ZLIB=OFF  -G Ninja
+        ninja install
+
+  build_llvm_manylinux:
+    name: Build LLVM release for Linux
+    runs-on: ubuntu-latest
+    steps:
+    - name: Cache LLVM
+      id: cache-llvm
+      uses: actions/cache@v2
+      with:
+        path: llvm/install
+        key: ${{ runner.os }}-llvm-release-10-manylinux2010_x86_64
+    - uses: actions/checkout@v2
+      if: steps.cache-llvm.outputs.cache-hit != 'true'
+    - name: Get LLVM
+      if: steps.cache-llvm.outputs.cache-hit != 'true'
+      uses: actions/checkout@v2
+      with:
+        repository: 'llvm/llvm-project'
+        ref: 'release/10.x'
+        path: 'llvm'
+    - name: Build LLVM
+      if: steps.cache-llvm.outputs.cache-hit != 'true'
+      run: |
+        docker run -v $GITHUB_WORKSPACE:/pwd "quay.io/pypa/manylinux2010_x86_64" /bin/bash /pwd/ci/build_llvm_manylinux.sh /pwd/llvm
+
+  build_manylinux:
+    runs-on: ubuntu-latest
+    needs: build_llvm_manylinux
+
+    # Split into multiple jobs to speed up the process. Let's compile two
+    # Python versions per job.
+    strategy:
+      matrix:
+        py_vers:
+          - "cp27-cp27m cp27-cp27mu"
+          - "cp35-cp35m cp36-cp36m"
+          - "cp37-cp37m cp38-cp38"
+
+    env:
+      PY_VERS: ${{ matrix.py_vers }}
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Cache LLVM
+      id: cache-llvm
+      uses: actions/cache@v2
+      with:
+        path: llvm/install
+        key: Linux-llvm-release-10-manylinux2010_x86_64
+    - name: Build wheels
+      working-directory: bindings/python
+      run: |
+        docker run -v $GITHUB_WORKSPACE:/pwd "quay.io/pypa/manylinux2010_x86_64" /bin/bash /pwd/ci/build_wheels_manylinux.sh /pwd /pwd/llvm/install $PY_VERS
+    - uses: actions/upload-artifact@v1
+      with:
+        name: pydffi-wheels
+        path: bindings/python/wheelhouse/
+
+  build_osxwin:
+
+    strategy:
+      matrix:
+        python-version: [2.7, 3.5, 3.6, 3.7, 3.8]
+        os:
+          - macos-latest
+          - windows-latest
+        exclude:
+          - os: windows-latest
+            python-version: 2.7
+
+    runs-on: ${{ matrix.os }}
+    needs: build_llvm_win
+
+    steps:
+    - uses: actions/checkout@v2
+    - uses: ilammy/msvc-dev-cmd@v1
+      with:
+        toolset: "14.16"
+      if: runner.os == 'Windows'
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v1
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Cache LLVM
+      if: runner.os == 'Windows'
+      id: cache-llvm
+      uses: actions/cache@v2
+      with:
+        path: llvm/install
+        key: ${{ runner.os }}-llvm-release-10-msvc1416-2
+    - name: Python dependencies
+      run: |
+        pip install wheel
+    - name: Install Windows dependencies
+      run: |
+        choco install ninja
+        echo LLVM_CONFIG=%GITHUB_WORKSPACE%/llvm/install/bin/llvm-config.exe >> %GITHUB_ENV%
+        echo MSSdk=1 >> %GITHUB_ENV%
+        echo DISTUTILS_USE_SDK=1 >> %GITHUB_ENV%
+      if: runner.os == 'Windows'
+      shell: cmd
+    - name: Install OSX dependencies
+      run: |
+        brew install cmake ninja
+        sudo $CONDA/bin/conda install -c conda-forge llvmdev==10.0.1 clangdev==10.0.1
+        echo "LLVM_CONFIG=$CONDA/bin/llvm-config" >> $GITHUB_ENV
+      if: runner.os == 'macOS'
+    - name: Build wheel
+      working-directory: bindings/python
+      run: |
+        python ./setup.py bdist_wheel
+    - name: Install Windows
+      if: runner.os == 'Windows'
+      working-directory: bindings/python
+      run: |
+        pip install (get-item ./dist/*.whl).FullName
+    - name: Install OSX
+      if: runner.os == 'macOS'
+      working-directory: bindings/python
+      run: |
+        pip install dist/*.whl
+    - name: Tests
+      run: |
+        # Do not set bindings/python as the working directory to make sure we
+        # use the generated wheel for tests.
+        pip install six purectypes==0.2
+        python -m unittest discover bindings/python/tests
+    - uses: actions/upload-artifact@v1
+      with:
+        name: pydffi-wheels
+        path: bindings/python/dist/
+
+  publish:
+    if: github.event.release
+    runs-on: ubuntu-latest
+    needs: [build_manylinux, build_osxwin]
+
+    steps:
+    - name: Set up Python
+      uses: actions/setup-python@v1
+      with:
+        python-version: 3.8
+    - name: Install dependencies
+      run: |
+        pip install twine
+    - uses: actions/download-artifact@v1
+      with:
+        name: pydffi-wheels
+        path: wheelhouse
+    - name: Publish to PyPI
+      env:
+        TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
+        TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+      run: |
+        twine upload wheelhouse/*.whl
