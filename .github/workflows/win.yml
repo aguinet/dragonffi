@@ -28,16 +28,17 @@ jobs:
         python -m pip install --upgrade pip
         python -m pip install lit purectypes==0.2 six
         mkdir build
+    - uses: ilammy/msvc-dev-cmd@v0
+      with:
+        toolset: "14.16"
     - name: CMake + build
       working-directory: build
       run: |
-        call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" x64 -vcvars_ver=14.16
         cmake -DCMAKE_C_COMPILER=cl.exe -DCMAKE_CXX_COMPILER=cl.exe -DPYTHON_BINDINGS=ON -DBUILD_TESTS=ON -DLLVM_CONFIG=../llvm10/bin/llvm-config.exe -DCMAKE_BUILD_TYPE=release -G Ninja ..
         ninja
       shell: cmd
     - name: Native & Python tests
       working-directory: build
       run: |
-        call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" x64 -vcvars_ver=14.16
         ninja check
       shell: cmd
