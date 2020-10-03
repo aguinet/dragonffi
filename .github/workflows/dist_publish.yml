@@ -13,12 +13,6 @@ jobs:
     name: Build release LLVM for Windows
     runs-on: windows-latest
     steps:
-    - name: Get LLVM
-      uses: actions/checkout@v2
-      with:
-        repository: 'llvm-project/llvm'
-        ref: 'release/10.x'
-        path: 'llvm'
     - name: Cache LLVM
       id: cache-llvm
       uses: actions/cache@v2
@@ -27,6 +21,13 @@ jobs:
         # TODO: would be really better to add the hash of the LLVM commit cloned
         # TODO: add "14.16" as a variable easy to replace
         key: ${{ runner.os }}-llvm-release-10-msvc1416
+    - name: Get LLVM
+      if: steps.cache-llvm.outputs.cache-hit != 'true'
+      uses: actions/checkout@v2
+      with:
+        repository: 'llvm/llvm-project'
+        ref: 'release/10.x'
+        path: 'llvm'
     - uses: ilammy/msvc-dev-cmd@v1
       if: steps.cache-llvm.outputs.cache-hit != 'true'
       with:
