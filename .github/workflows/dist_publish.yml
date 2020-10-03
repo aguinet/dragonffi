@@ -39,7 +39,7 @@ jobs:
         mkdir llvm/build
         mkdir llvm/install
         cd llvm/build
-        cmake ../llvm -DLLVM_BUILD_EXAMPLES=OFF -DCLANG_ENABLE_ARCMT=OFF -DCLANG_ENABLE_STATIC_ANALYZER=OFF -DLLVM_BUILD_TOOLS=OFF -DCLANG_BUILD_TOOLS=OFF -DLLVM_INSTALL_UTILS=OFF -DLLVM_TARGETS_TO_BUILD="host" -DLLVM_ENABLE_PROJECTS='clang' -DLLVM_ENABLE_BINDINGS=OFF -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../install
+        cmake ../llvm -DLLVM_BUILD_EXAMPLES=OFF -DCLANG_ENABLE_ARCMT=OFF -DCLANG_ENABLE_STATIC_ANALYZER=OFF -DLLVM_BUILD_TOOLS=OFF -DCLANG_BUILD_TOOLS=OFF -DLLVM_INSTALL_UTILS=OFF -DLLVM_TARGETS_TO_BUILD="host" -DLLVM_ENABLE_PROJECTS='clang' -DLLVM_ENABLE_BINDINGS=OFF -DCMAKE_C_COMPILER=cl.exe -DCMAKE_CXX_COMPILER=cl.exe -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../install
         ninja install
 
   build_osxwin:
@@ -63,6 +63,13 @@ jobs:
       uses: actions/setup-python@v1
       with:
         python-version: ${{ matrix.python-version }}
+    - name: Cache LLVM
+      if: runner.os == "Windows"
+      id: cache-llvm
+      uses: actions/cache@v2
+      with:
+        path: llvm/install
+        key: ${{ runner.os }}-llvm-release-10-msvc1416
     - name: Python dependencies
       run: |
         pip install wheel
