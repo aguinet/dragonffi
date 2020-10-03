@@ -37,6 +37,8 @@ jobs:
         wget https://files.geekou.info/llvm10.7z
         7z x llvm10.7z
         echo LLVM_CONFIG=%CD%/llvm10/bin/llvm-config.exe >> %GITHUB_ENV%
+        echo CC=cl.exe >> %GITHUB_ENV%
+        echo CXX=cl.exe >> %GITHUB_ENV%
       if: runner.os == 'Windows'
       shell: cmd
     - name: Install OSX dependencies
