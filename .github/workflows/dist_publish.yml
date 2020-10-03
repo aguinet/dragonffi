@@ -64,7 +64,7 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
     - name: Cache LLVM
-      if: runner.os == "Windows"
+      if: runner.os == 'Windows'
       id: cache-llvm
       uses: actions/cache@v2
       with:
