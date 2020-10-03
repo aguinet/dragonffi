@@ -27,7 +27,7 @@ jobs:
         # TODO: would be really better to add the hash of the LLVM commit cloned
         # TODO: add "14.16" as a variable easy to replace
         key: ${{ runner.os }}-llvm-release-10-msvc1416
-    - uses: ilammy/msvc-dev-cmd@v0
+    - uses: ilammy/msvc-dev-cmd@v1
       if: steps.cache-llvm.outputs.cache-hit != 'true'
       with:
         toolset: "14.16"
@@ -53,7 +53,7 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-    - uses: ilammy/msvc-dev-cmd@v0
+    - uses: ilammy/msvc-dev-cmd@v1
       with:
         toolset: "14.16"
       if: runner.os == 'Windows'
