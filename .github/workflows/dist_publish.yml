@@ -21,9 +21,9 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - uses: ilammy/msvc-dev-cmd@v1
-      if: runner.os == 'Windows'
       with:
-        toolset: 14.12
+        toolset: "14.16"
+      if: runner.os == 'Windows'
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v1
       with:
@@ -37,8 +37,6 @@ jobs:
         wget https://files.geekou.info/llvm10.7z
         7z x llvm10.7z
         echo LLVM_CONFIG=%CD%/llvm10/bin/llvm-config.exe >> %GITHUB_ENV%
-        echo CC=cl.exe >> %GITHUB_ENV%
-        echo CXX=cl.exe >> %GITHUB_ENV%
       if: runner.os == 'Windows'
       shell: cmd
     - name: Install OSX dependencies
