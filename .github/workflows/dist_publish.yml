@@ -34,14 +34,14 @@ jobs:
         choco install ninja wget
         wget https://files.geekou.info/llvm10.7z
         7z x llvm10.7z
-        echo ::set-env LLVM_CONFIG=%CD%/llvm-10/bin/llvm-config.exe
+        echo "LLVM_CONFIG=%CD%/llvm-10/bin/llvm-config.exe" >> $GITHUB_ENV
       if: runner.os == 'Windows'
       shell: cmd
     - name: Install OSX dependencies
       run: |
         brew install cmake ninja
         sudo $CONDA/bin/conda install -c conda-forge llvmdev==10.0.1 clangdev==10.0.1
-        echo "::set-env LLVM_CONFIG=$CONDA/bin/llvm-config.exe"
+        echo "LLVM_CONFIG=$CONDA/bin/llvm-config.exe" >> $GITHUB_ENV
       if: runner.os == 'macOS'
     - name: Build wheel
       working-directory: bindings/python
