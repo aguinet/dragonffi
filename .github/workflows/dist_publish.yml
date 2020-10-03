@@ -41,7 +41,7 @@ jobs:
         brew install cmake ninja
         sudo $CONDA/bin/conda install -c conda-forge llvmdev==10.0.1 clangdev==10.0.1
         echo "::set-env LLVM_CONFIG=$CONDA/bin/llvm-config.exe"
-      if: runner.os == 'OSX'
+      if: runner.os == 'macOS'
     - name: Build wheel
       working-directory: bindings/python
       run: |
