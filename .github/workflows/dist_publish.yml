@@ -14,12 +14,16 @@ jobs:
     strategy:
       matrix:
         python-version: [3.5, 3.6, 3.7, 3.8]
-        os: [windows-latest]
+        os: [windows-latest, macos-latest]
 
     runs-on: ${{ matrix.os }}
 
     steps:
     - uses: actions/checkout@v2
+    - uses: ilammy/msvc-dev-cmd@v1
+      with:
+        toolset: "14.16"
+      if: runner.os == 'Windows'
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v1
       with:
@@ -44,9 +48,7 @@ jobs:
     - name: Build wheel
       working-directory: bindings/python
       run: |
-        call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" x64 -vcvars_ver=14.16
         python ./setup.py bdist_wheel
-      shell: cmd
     - uses: actions/upload-artifact@v1
       with:
         name: pydffi-wheels
