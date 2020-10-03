@@ -9,14 +9,46 @@ on:
     types: [created]
 
 jobs:
+  build_llvm_win:
+    name: Build release LLVM for Windows
+    runs-on: windows-latest
+    steps:
+    - name: Get LLVM
+      uses: actions/checkout@v2
+      with:
+        repository: 'llvm-project/llvm'
+        ref: 'release/10.x'
+        path: 'llvm'
+    - name: Cache LLVM
+      id: cache-llvm
+      uses: actions/cache@v2
+      with:
+        path: llvm/install
+        # TODO: would be really better to add the hash of the LLVM commit cloned
+        # TODO: add "14.16" as a variable easy to replace
+        key: ${{ runner.os }}-llvm-release-10-msvc1416
+    - uses: ilammy/msvc-dev-cmd@v0
+      if: steps.cache-llvm.outputs.cache-hit != 'true'
+      with:
+        toolset: "14.16"
+    - name: Build LLVM
+      if: steps.cache-llvm.outputs.cache-hit != 'true'
+      run: |
+        choco install ninja
+        mkdir llvm/build
+        cd llvm/build
+        cmake ../llvm -DLLVM_BUILD_EXAMPLES=OFF -DCLANG_ENABLE_ARCMT=OFF -DCLANG_ENABLE_STATIC_ANALYZER=OFF -DLLVM_BUILD_TOOLS=OFF -DCLANG_BUILD_TOOLS=OFF -DLLVM_INSTALL_UTILS=OFF -DLLVM_TARGETS_TO_BUILD="host" -DLLVM_ENABLE_PROJECTS='clang' -DLLVM_ENABLE_BINDINGS=OFF -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../install
+        ninja install
+
   build_osxwin:
 
     strategy:
       matrix:
         python-version: [3.5, 3.6, 3.7, 3.8]
-        os: [windows-latest, macos-latest]
+        os: windows-latest
 
     runs-on: ${{ matrix.os }}
+    needs: build_llvm_win
 
     steps:
     - uses: actions/checkout@v2
@@ -34,9 +66,7 @@ jobs:
     - name: Install Windows dependencies
       run: |
         choco install ninja wget
-        wget https://files.geekou.info/llvm10.7z
-        7z x llvm10.7z
-        echo LLVM_CONFIG=%CD%/llvm10/bin/llvm-config.exe >> %GITHUB_ENV%
+        echo LLVM_CONFIG=%GITHUB_WORKSPACE%/llvm/install/bin/llvm-config.exe >> %GITHUB_ENV%
       if: runner.os == 'Windows'
       shell: cmd
     - name: Install OSX dependencies
