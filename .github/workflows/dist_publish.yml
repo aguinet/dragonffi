@@ -1,0 +1,52 @@
+name: Python wheels (& publish)
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+  release:
+    types: [created]
+
+jobs:
+  build_osxwin:
+
+    strategy:
+      matrix:
+        python-version: [3.5, 3.6, 3.7, 3.8]
+        os: [macos-latest, windows-latest]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+    - uses: actions/checkout@v2
+    - uses: ilammy/msvc-dev-cmd@v1
+      if: runner.os == 'Windows'
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v1
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Python dependencies
+      run: |
+        pip install wheel
+    - name: Install Windows dependencies
+      run: |
+        choco install ninja wget
+        wget https://files.geekou.info/llvm10.7z
+        7z x llvm10.7z
+        set LLVM_CONFIG=%CD%/llvm-10/bin/llvm-config.exe
+      if: runner.os == 'Windows'
+    - name: Install OSX dependencies
+      run: |
+        brew install cmake ninja
+        sudo $CONDA/bin/conda install -c conda-forge llvmdev==10.0.1 clangdev==10.0.1
+        export LLVM_CONFIG=$CONDA/bin/llvm-config.exe
+      if: runner.os == 'OSX'
+    - name: Build wheel
+      working-directory: bindings/python
+      run: |
+        python ./setup.py bdist_wheel
+    - uses: actions/upload-artifact@v1
+      with:
+        name: pydffi-wheels
+        path: bindings/python/dist/
