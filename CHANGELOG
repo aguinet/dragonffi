@@ -1,9 +1,10 @@
 0.6.0
 -----
 
-* Fix creation of functions by their type and absolute address
 * Add API to add custom symbols
 * Add API to get base address of dlopen'ed libraries
+* Python: fix creation of functions by their type and absolute address
+* Python: allow creation of pointers with an arbitrary value
 
 0.5.1
 -----
