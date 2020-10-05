@@ -75,18 +75,37 @@ Python wheels are provided for Linux. Simply use pip to install the
 Compilation from source
 =======================
 
-LLVM8 compilation
+LLVM10 compilation
 -----------------
+
+If your system already provides LLVM development package (e.g. on Debian-based
+system), you might be able to use them directly. Otherwise, you can compile
+Clang/LLVM from sources like this:
 
 .. code:: bash
 
   $ cd /path/to/llvm
-  $ wget http://releases.llvm.org/8.0.1/llvm-8.0.1.src.tar.xz
-  $ wget http://releases.llvm.org/8.0.1/cfe-8.0.1.src.tar.xz
-  $ tar xf llvm-8.0.1.src.tar.xz && tar xf cfe-8.0.1.src.tar.xz
-  $ ln -s $PWD/cfe-8.0.1.src llvm-8.0.1.src/tools/clang
+  $ wget https://github.com/llvm/llvm-project/releases/download/llvmorg-10.0.1/llvm-10.0.1.src.tar.xz
+  $ wget https://github.com/llvm/llvm-project/releases/download/llvmorg-10.0.1/clang-10.0.1.src.tar.xz
+  $ tar xf llvm-10.0.1.src.tar.xz && tar xf clang-10.0.1.src.tar.xz
+  $ ln -s $PWD/clang-10.0.1.src llvm-10.0.1.src/tools/clang
   $ mkdir build && cd build && cmake -DCMAKE_BUILD_TYPE=release -DBUILD_SHARED_LIBS=OFF -DLLVM_BUILD_TOOLS=ON -DLLVM_ENABLE_TERMINFO=OFF -DLLVM_ENABLE_LIBEDIT=OFF -DLLVM_ENABLE_ZLIB=OFF ..
   $ make
+
+LLVM development packages
+-------------------------
+
+Debian-based system
+~~~~~~~~~~~~~~~~~~~
+
+Debian-based system provides development packages for clang & llvm:
+
+.. code:: bash
+
+   $ sudo apt install llvm-10-dev libclang-10-dev llvm-10-tools
+
+The path to ``llvm-config`` can be found with ``which llvm-config-10``, and used directly in the CMake command line below.
+
 
 DragonFFI compilation
 ---------------------
