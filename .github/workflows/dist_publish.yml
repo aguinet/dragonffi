@@ -82,6 +82,7 @@ jobs:
           - "cp27-cp27m cp27-cp27mu"
           - "cp35-cp35m cp36-cp36m"
           - "cp37-cp37m cp38-cp38"
+          - "cp39-cp39"
 
     env:
       PY_VERS: ${{ matrix.py_vers }}
@@ -107,7 +108,7 @@ jobs:
 
     strategy:
       matrix:
-        python-version: [2.7, 3.5, 3.6, 3.7, 3.8]
+        python-version: [2.7, 3.5, 3.6, 3.7, 3.8, 3.9]
         os:
           - macos-latest
           - windows-latest
@@ -125,7 +126,7 @@ jobs:
         toolset: "14.16"
       if: runner.os == 'Windows'
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v1
+      uses: actions/setup-python@v2
       with:
         python-version: ${{ matrix.python-version }}
     - name: Cache LLVM
