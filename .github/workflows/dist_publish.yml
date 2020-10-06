@@ -44,6 +44,9 @@ jobs:
 
   build_llvm_manylinux:
     name: Build LLVM release for Linux
+    strategy:
+      matrix:
+        tag: ["manylinux2010_x86_64","manylinux2010_i686"]
     runs-on: ubuntu-latest
     steps:
     - name: Cache LLVM
@@ -51,7 +54,7 @@ jobs:
       uses: actions/cache@v2
       with:
         path: llvm/install
-        key: ${{ runner.os }}-llvm-release-10-manylinux2010_x86_64
+        key: ${{ runner.os }}-llvm-release-10-${{ matrix.tag }}
     - uses: actions/checkout@v2
       if: steps.cache-llvm.outputs.cache-hit != 'true'
     - name: Get LLVM
@@ -64,7 +67,7 @@ jobs:
     - name: Build LLVM
       if: steps.cache-llvm.outputs.cache-hit != 'true'
       run: |
-        docker run -v $GITHUB_WORKSPACE:/pwd "quay.io/pypa/manylinux2010_x86_64" /bin/bash /pwd/ci/build_llvm_manylinux.sh /pwd/llvm
+        docker run -v $GITHUB_WORKSPACE:/pwd "quay.io/pypa/${{ matrix.tag }}" /bin/bash /pwd/ci/build_llvm_manylinux.sh /pwd/llvm
 
   build_manylinux:
     runs-on: ubuntu-latest
@@ -74,6 +77,7 @@ jobs:
     # Python versions per job.
     strategy:
       matrix:
+        tag: ["manylinux2010_x86_64","manylinux2010_i686"]
         py_vers:
           - "cp27-cp27m cp27-cp27mu"
           - "cp35-cp35m cp36-cp36m"
@@ -89,11 +93,11 @@ jobs:
       uses: actions/cache@v2
       with:
         path: llvm/install
-        key: Linux-llvm-release-10-manylinux2010_x86_64
+        key: Linux-llvm-release-10-${{ matrix.tag }}
     - name: Build wheels
       working-directory: bindings/python
       run: |
-        docker run -v $GITHUB_WORKSPACE:/pwd "quay.io/pypa/manylinux2010_x86_64" /bin/bash /pwd/ci/build_wheels_manylinux.sh /pwd /pwd/llvm/install $PY_VERS
+        docker run -v $GITHUB_WORKSPACE:/pwd "quay.io/pypa/${{ matrix.tag }}" /bin/bash /pwd/ci/build_wheels_manylinux.sh /pwd /pwd/llvm/install $PY_VERS
     - uses: actions/upload-artifact@v1
       with:
         name: pydffi-wheels
