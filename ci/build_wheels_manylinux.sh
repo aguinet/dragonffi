@@ -4,10 +4,10 @@
 set -ex
 
 SCRIPT_DIR=$(dirname "$(readlink -f "$0")")
-"$SCRIPT_DIR/install_cmake_manylinux.sh"
+. "$SCRIPT_DIR/install_cmake_manylinux.sh"
 
 # Use own cmake instead of the system one
-export PATH=/opt/cmake/bin:$PATH
+export PATH=$(dirname "$CMAKE_BIN"):$PATH
 
 DFFI=$1
 shift

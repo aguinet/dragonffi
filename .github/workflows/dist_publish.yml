@@ -46,7 +46,13 @@ jobs:
     name: Build LLVM release for Linux
     strategy:
       matrix:
-        tag: ["manylinux2010_x86_64","manylinux2010_i686"]
+        include:
+          - tag: "manylinux2010_x86_64"
+            docker_host: quay.io/pypa
+          - tag: "manylinux2010_i686"
+            docker_host: quay.io/pypa
+          - tag: "manylinux2014_aarch64_cross_x64"
+            docker_host: aguinet
     runs-on: ubuntu-latest
     steps:
     - name: Cache LLVM
@@ -64,10 +70,21 @@ jobs:
         repository: 'llvm/llvm-project'
         ref: 'release/10.x'
         path: 'llvm'
+    - name: Set up QEMU
+      if: matrix.tag == 'manylinux2014_aarch64_cross_x64' && steps.cache-llvm.outputs.cache-hit != 'true'
+      id: qemu
+      uses: docker/setup-qemu-action@v1
+      with:
+        image: tonistiigi/binfmt:latest
+        platforms: arm64
+    - name: Setup AArch64 environment
+      if: matrix.tag == 'manylinux2014_aarch64_cross_x64' && steps.cache-llvm.outputs.cache-hit != 'true'
+      run: |
+        echo "DOCKER_OPTS=--env CC=/opt/native/bin/clang --env CXX=/opt/native/bin/clang++ --env CMAKE_BIN=/opt/native/bin/cmake --env LDFLAGS=-fuse-ld=lld" >>$GITHUB_ENV
     - name: Build LLVM
       if: steps.cache-llvm.outputs.cache-hit != 'true'
       run: |
-        docker run -v $GITHUB_WORKSPACE:/pwd "quay.io/pypa/${{ matrix.tag }}" /bin/bash /pwd/ci/build_llvm_manylinux.sh /pwd/llvm
+        docker run $DOCKER_OPTS -v $GITHUB_WORKSPACE:/pwd "${{ matrix.docker_host }}/${{ matrix.tag }}" /bin/bash /pwd/ci/build_llvm_manylinux.sh /pwd/llvm
 
   build_manylinux:
     runs-on: ubuntu-latest
@@ -77,12 +94,18 @@ jobs:
     # Python versions per job.
     strategy:
       matrix:
-        tag: ["manylinux2010_x86_64","manylinux2010_i686"]
+        tag:
+          - "manylinux2010_x86_64"
+          - "manylinux2010_i686"
+          - "manylinux2014_aarch64_cross_x64"
         py_vers:
           - "cp27-cp27m cp27-cp27mu"
           - "cp35-cp35m cp36-cp36m"
           - "cp37-cp37m cp38-cp38"
           - "cp39-cp39"
+        exclude:
+          - tag: "manylinux2014_aarch64_cross_x64"
+            py_vers: "cp27-cp27m cp27-cp27mu"
 
     env:
       PY_VERS: ${{ matrix.py_vers }}
@@ -95,10 +118,22 @@ jobs:
       with:
         path: llvm/install
         key: Linux-llvm-release-10-${{ matrix.tag }}
+    - name: Set up QEMU
+      if: matrix.tag == 'manylinux2014_aarch64_cross_x64'
+      id: qemu
+      uses: docker/setup-qemu-action@v1
+      with:
+        image: tonistiigi/binfmt:latest
+        platforms: arm64
+    - name: Setup AArch64 environment
+      if: matrix.tag == 'manylinux2014_aarch64_cross_x64'
+      run: |
+        echo "DOCKER_OPTS=--env CC=/opt/native/bin/clang --env CXX=/opt/native/bin/clang++ --env CMAKE_BIN=/opt/native/bin/cmake --env LDFLAGS=-fuse-ld=lld" >>$GITHUB_ENV
     - name: Build wheels
       working-directory: bindings/python
       run: |
-        docker run -v $GITHUB_WORKSPACE:/pwd "quay.io/pypa/${{ matrix.tag }}" /bin/bash /pwd/ci/build_wheels_manylinux.sh /pwd /pwd/llvm/install $PY_VERS
+        [[ ${{ matrix.tag}} == "manylinux2014_aarch64_cross_x64" ]] && DOCKER_ROOT=aguinet || DOCKER_ROOT=quay.io/pypa
+        docker run $DOCKER_OPTS -v $GITHUB_WORKSPACE:/pwd "$DOCKER_ROOT/${{ matrix.tag }}" /bin/bash /pwd/ci/build_wheels_manylinux.sh /pwd /pwd/llvm/install $PY_VERS
     - uses: actions/upload-artifact@v1
       with:
         name: pydffi-wheels
