@@ -13,6 +13,9 @@ DragonFFI
 .. image:: https://github.com/aguinet/dragonffi/workflows/Tests%20Windows/badge.svg?branch=master
     :target: https://github.com/aguinet/dragonffi/actions
 
+.. image:: https://github.com/aguinet/dragonffi/workflows/Python%20wheels%20(&%20publish)/badge.svg
+    :target: https://github.com/aguinet/dragonffi/actions
+
 DragonFFI is a C Foreign Function Interface (FFI) library written in C++ and
 based on Clang/LLVM. It allows any language to call C functions throught the
 provided APIs and bindings.
@@ -25,12 +28,13 @@ Please note that this project is still in alpha stage. Documentation is far
 from complete and, although many efforts have been put into it, its APIs aren't
 considered stable yet!
 
-Supported OSes/architectures:
+Supported OSes/architectures, with `Python wheels precompiled and uploaded to
+PyPI <https://pypi.org/project/pydffi/#files>`_:
 
-* Linux i386/x64, with bindings for python 2/3
-* Linux/AArch64. Python bindings are known to work but aren't tested yet with Travis.
-* OSX i386/x64, with bindings for python 2/3
-* Windows x64, with bindings for python 3
+* Linux i386/x64, with bindings for Python 2/3
+* Linux/AArch64. with bindings for Python 3
+* OSX x64, with bindings for Python 2/3
+* Windows x64, with bindings for Python 3
 
 Why another FFI?
 ================
