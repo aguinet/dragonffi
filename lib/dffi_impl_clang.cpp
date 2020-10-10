@@ -16,6 +16,7 @@
 #include <clang/Frontend/FrontendAction.h>
 #include <clang/Frontend/FrontendActions.h>
 #include <clang/AST/RecursiveASTVisitor.h>
+#include <llvm/ADT/StringSet.h>
 
 #include "dffi_impl.h"
 
@@ -175,6 +176,11 @@ private:
       FuncName = DeclName.getAsString();
     }
 
+    // Verify that we didn't already visited that function. It can occur with aliases.
+    if (!Visited_.insert(FuncName).second) {
+      return;
+    }
+
     auto Params = FD->parameters();
 
     SmallString<128> NewFuncNameBuf;
@@ -207,6 +213,7 @@ private:
 private:
   raw_string_ostream& ForceDecls_;
   FuncAliasesMap& FuncAliases_;
+  StringSet<> Visited_;
   PrintingPolicy PP_;
   unsigned ForceIdx_;
 };
