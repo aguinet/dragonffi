@@ -104,7 +104,7 @@ module = Extension('pydffi.backend',
                     libraries = libraries,
                     sources = glob.glob(os.path.join(this_dir, '*.cpp'))) 
 setup(name = 'pydffi',
-    version = '0.6.0',
+    version = '0.6.1',
     description = 'dragonffi static python bindings',
     author = 'Adrien Guinet',
     author_email = 'adrien@guinet.me',
@@ -112,7 +112,7 @@ setup(name = 'pydffi',
 Static python bindings for dragonffi. API isn't yet stable and is subject to change!
 ''',
     classifiers=[
-	'Development Status :: 3 - Alpha',
+	'Development Status :: 5 - Production/Stable',
 	'Intended Audience :: Science/Research',
 	'Intended Audience :: Developers',
 	'Topic :: Software Development :: Build Tools',
