@@ -3,6 +3,7 @@
    <p align="center">
    <img src="https://raw.githubusercontent.com/aguinet/dragonffi/master/logo.jpg" width=200px alt="logo" />
    </p>
+   <p align="right"><i>Logo by <a href="https://twitter.com/pwissenlit">@pwissenlit</a></i></p>
 
 
 DragonFFI
