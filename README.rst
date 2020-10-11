@@ -1,3 +1,10 @@
+.. raw:: html
+
+   <p align="center">
+   <img src="https://raw.githubusercontent.com/aguinet/dragonffi/master/logo.jpg" width=200px alt="logo" />
+   </p>
+
+
 DragonFFI
 =========
 
@@ -15,6 +22,7 @@ DragonFFI
 
 .. image:: https://github.com/aguinet/dragonffi/workflows/Python%20wheels%20(&%20publish)/badge.svg
     :target: https://github.com/aguinet/dragonffi/actions
+
 
 DragonFFI is a C Foreign Function Interface (FFI) library written in C++ and
 based on Clang/LLVM. It allows any language to call C functions throught the
