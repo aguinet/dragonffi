@@ -9,6 +9,7 @@ include(Python)
 find_package(Python3 REQUIRED)
 find_python_module(sphinx_rtd_theme)
 find_program(SPHINX_BUILD_BIN NAMES sphinx-build)
+message(STATUS "Sphinx build binary: ${SPHINX_BUILD_BIN}")
 
 if(NOT SPHINX_BUILD_BIN)
   message(FATAL_ERROR "Can't build doc: sphinx-build not found")

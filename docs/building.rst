@@ -11,33 +11,54 @@ The following prerequisites are required for both Linux and Windows operating sy
 * `Git <https://git-scm.com/downloads>`_
 * `cmake <https://cmake.org/download/>`_
 * `Ninja <https://github.com/ninja-build/ninja/releases>`_
-* Python >=2.7 or >=3.3 (if you wish to compile the python bindings or the documentation).
+* Python 2.7 or >= 3.5 (if you wish to compile the python bindings or the documentation).
 * LLVM and Clang sources (see below).
 
 LLVM and Clang source can be found at the following locations (at the time of this writing we are using the 8.0.1 version):
 
-* `Download pages for LLVM <http://releases.llvm.org/download.html#8.0.1>`_
-* `LLVM sources direct link <https://github.com/llvm/llvm-project/releases/download/llvmorg-8.0.1/llvm-8.0.1.src.tar.xz>`_
-* `Clang sources direct link <https://github.com/llvm/llvm-project/releases/download/llvmorg-8.0.1/cfe-8.0.1.src.tar.xz>`_
+* `LLVM sources direct link <https://github.com/llvm/llvm-project/releases/download/llvmorg-10.0.1/llvm-10.0.1.src.tar.xz>`_
+* `Clang sources direct link <https://github.com/llvm/llvm-project/releases/download/llvmorg-10.0.1/cfe-10.0.1.src.tar.xz>`_
 
 
 Building on Linux
 -----------------
 
+LLVM10 compilation
+`````````````````
+
+If your system already provides LLVM development package (e.g. on Debian-based
+system), you might be able to use them directly. Otherwise, you can compile
+Clang/LLVM from sources like this:
+
 .. code:: bash
 
   $ cd /path/to/llvm
-  $ wget http://releases.llvm.org/8.0.1/llvm-8.0.1.src.tar.xz
-  $ wget http://releases.llvm.org/8.0.1/cfe-8.0.1.src.tar.xz
-  $ tar xf llvm-8.0.1.src.tar.xz && tar xf cfe-8.0.1.src.tar.xz
-  $ ln -s $PWD/cfe-8.0.1.src llvm-8.0.1.src/tools/clang
+  $ wget https://github.com/llvm/llvm-project/releases/download/llvmorg-10.0.1/llvm-10.0.1.src.tar.xz
+  $ wget https://github.com/llvm/llvm-project/releases/download/llvmorg-10.0.1/clang-10.0.1.src.tar.xz
+  $ tar xf llvm-10.0.1.src.tar.xz && tar xf clang-10.0.1.src.tar.xz
+  $ ln -s $PWD/clang-10.0.1.src llvm-10.0.1.src/tools/clang
   $ mkdir build && cd build && cmake -DCMAKE_BUILD_TYPE=release -DBUILD_SHARED_LIBS=OFF -DLLVM_BUILD_TOOLS=ON -DLLVM_ENABLE_TERMINFO=OFF -DLLVM_ENABLE_LIBEDIT=OFF -DLLVM_ENABLE_ZLIB=OFF ..
   $ make
+
+LLVM development packages
+`````````````````````````
+
+Debian-based system
+~~~~~~~~~~~~~~~~~~~
+
+Debian-based system provides development packages for clang & llvm:
+
+.. code:: bash
+
+   $ sudo apt install llvm-10-dev libclang-10-dev llvm-10-tools
+
+The path to ``llvm-config`` can be found with ``which llvm-config-10``, and used directly in the CMake command line below.
+
 
 DragonFFI compilation
 `````````````````````
 
-After compiling LLVM, DragonFFI can be build:
+After compiling/installing LLVM, DragonFFI can be build:
 
 .. code:: bash
 
@@ -74,25 +95,25 @@ LLVM and Clang
 Download the required sources archives as mentioned previously. Create a directory that will hosts the LLVM and Clang 
 source code.
 
-Extract the `.xz` archive using 7-zip (you'll obtain a .tar file named `llvm-8.0.1.src.tar`):
+Extract the `.xz` archive using 7-zip (you'll obtain a .tar file named `llvm-10.0.1.src.tar`):
 
 .. code:: powershell
 
-    PS> 7z.exe x .\llvm-8.0.1.src.tar.xz
+    PS> 7z.exe x .\llvm-10.0.1.src.tar.xz
 
 
 Now extract LLVM to a chosen directory (note that the directory **must be a full path**):
 
 .. code:: powershell
 
-    PS> 7z.exe x -oD:\programming\libraries\llvm .\llvm-8.0.1.src.tar
+    PS> 7z.exe x -oD:\programming\libraries\llvm .\llvm-10.0.1.src.tar
 
 
 The directory will now look like this:
 
 .. code::
 
-    D:\programming\libraries\llvm\llvm-8.0.1.src
+    D:\programming\libraries\llvm\llvm-10.0.1.src
 
 
 Do the same for clang (the source package is named `cfe`), so you should now have:
@@ -104,19 +125,19 @@ Do the same for clang (the source package is named `cfe`), so you should now hav
 
     Mode                LastWriteTime         Length Name
     ----                -------------         ------ ----
-    d-----       19/07/2019     16:16                cfe-8.0.1.src
-    d-----       09/08/2019     14:56                llvm-8.0.1.src
+    d-----       19/07/2019     16:16                cfe-10.0.1.src
+    d-----       09/08/2019     14:56                llvm-10.0.1.src
 
 
-We'll now create a soft symbolic link from the `\llvm\llvm-8.0.1.src\tools\clang` directory to the clang source (note 
+We'll now create a soft symbolic link from the `\llvm\llvm-10.0.1.src\tools\clang` directory to the clang source (note 
 that this command requires at least PowerShell 5.0 and *may* require administrator privileges):
 
 .. code:: powershell
 
-    PS C:\WINDOWS\system32> New-Item -ItemType SymbolicLink -Path D:\programming\libraries\llvm\llvm-8.0.1.src\tools\clang -Value D:\programming\libraries\llvm\cfe-8.0.1.src
+    PS C:\WINDOWS\system32> New-Item -ItemType SymbolicLink -Path D:\programming\libraries\llvm\llvm-10.0.1.src\tools\clang -Value D:\programming\libraries\llvm\cfe-10.0.1.src
 
 
-    Directory: D:\programming\libraries\llvm\llvm-8.0.1.src\tools
+    Directory: D:\programming\libraries\llvm\llvm-10.0.1.src\tools
 
 
     Mode                LastWriteTime         Length Name
@@ -131,7 +152,7 @@ Create a `build` directory in the LLVM source:
 
 .. code:: powershell
 
-    PS D:\programming\libraries\llvm> cd D:\programming\libraries\llvm\llvm-8.0.1.src
+    PS D:\programming\libraries\llvm> cd D:\programming\libraries\llvm\llvm-10.0.1.src
     PS D:\programming\libraries\llvm\llvm-8.0.1.src> mkdir build
 
 
@@ -177,7 +198,7 @@ Go into the newly cloned `dragonffi` directory then create and go to the `build`
 
     PS k:\projects>cd dragonffi
     PS k:\projects\dragonffi>mkdir build; cd build
-    PS k:\projects\dragonffi\build> cmake -DCMAKE_BUILD_TYPE=release -DLLVM_CONFIG=D:\programming\libraries\llvm\llvm-8.0.1.src\build\bin\llvm-config.exe .. -G Ninja
+    PS k:\projects\dragonffi\build> cmake -DCMAKE_BUILD_TYPE=release -DLLVM_CONFIG=D:\programming\libraries\llvm\llvm-10.0.1.src\build\bin\llvm-config.exe .. -G Ninja
     PS k:\projects\dragonffi\build> ninja
 
 ----
@@ -189,7 +210,7 @@ Ensure that you have an environment variable named `LLVM_CONFIG` which points to
 .. code:: powershell
 
     PS k:\projects\dragonffi> Remove-Item .\build -Recurse -ErrorAction Ignore
-    PS k:\projects\dragonffi> $env:LLVM_CONFIG="D:\programming\libraries\llvm\llvm-8.0.1.src\build\bin\llvm-config.exe"
+    PS k:\projects\dragonffi> $env:LLVM_CONFIG="D:\programming\libraries\llvm\llvm-10.0.1.src\build\bin\llvm-config.exe"
     PS k:\projects\dragonffi> mkdir build; cd build
     PS k:\projects\dragonffi\build> python ..\bindings\python\setup.py build
 

@@ -5,20 +5,15 @@ DragonFFI is a C Foreign Function Interface (FFI) library written in C++ and
 based on Clang/LLVM. It allows any language to call C functions through the
 provided APIs and bindings.
 
-Feel free to join the `Gitter chat <https://gitter.im/dragonffi>`_ for any questions/remarks!
-
 For now, only python bindings and a C++ API are provided.
 
-Please note that this project is still in alpha stage. Documentation is far
-from complete and, although many efforts have been put into it, its APIs aren't
-considered stable yet!
+Supported OSes/architectures, with `Python wheels precompiled and uploaded to
+PyPI <https://pypi.org/project/pydffi/#files>`_:
 
-Supported OSes/architectures:
-
-* Linux i386/x64, with bindings for python 2/3
-* Linux/AArch64. Python bindings are known to work but aren't tested yet with Travis.
-* OSX i386/x64, with bindings for python 2/3
-* Windows x64, with bindings for python 3
+* Linux i386/x64, with bindings for Python 2/3
+* Linux/AArch64. with bindings for Python 3
+* OSX x64, with bindings for Python 2/3
+* Windows x64, with bindings for Python 3
 
 Why another FFI?
 ----------------
@@ -50,19 +45,8 @@ language bindings to JIT the glue code needed for every function interface, so
 that the cost of going from on a language to another could be as small as
 possible. This is not yet implemented but an idea for future versions!
 
-Installation
-============
-
-Python wheels are provided for Linux. Simply use pip to install the
-``pydffi`` package:
-
-.. code:: bash
-
-  $ pip install pydffi
-  
-  
 Current limitations
-===================
+-------------------
 
 Some C features are still not supported by dffi (but will be in future releases):
 
@@ -78,23 +62,23 @@ The python bindings also does not support yet:
 Do not hesitate to report bugs!
 
 Roadmap
-=======
+-------
 
 See the `TODO file <https://github.com/aguinet/dragonffi/blob/master/TODO>`_ at the root of the source directory.
 
 Related work
-============
+------------
 
 * `libffi <https://sourceware.org/libffi/>`_
 * `cffi <https://cffi.readthedocs.io/en/latest/>`_
 * `Skip the FFI: Embedding Clang for C Interoperability (LLVM developer meeting 2014) <https://llvm.org/devmtg/2014-10/#talk18>`_
 
-Contact
-=======
+Installation
+============
 
-* adrien@guinet.me
+Python wheels are provided for Linux. Simply use pip to install the
+``pydffi`` package:
 
-Authors
-=======
+.. code:: bash
 
-* Adrien Guinet (`@adriengnt <https://twitter.com/adriengnt>`_)
+  $ pip install pydffi
