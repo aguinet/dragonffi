@@ -129,7 +129,7 @@ jobs:
       if: matrix.tag == 'manylinux2014_aarch64_cross_x64'
       run: |
         echo "DOCKER_OPTS=--env CC=/opt/native/bin/clang --env CXX=/opt/native/bin/clang++ --env CMAKE_BIN=/opt/native/bin/cmake --env LDFLAGS=-fuse-ld=lld" >>$GITHUB_ENV
-    - name: Build wheels
+    - name: Build wheels & tests
       working-directory: bindings/python
       run: |
         [[ ${{ matrix.tag}} == "manylinux2014_aarch64_cross_x64" ]] && DOCKER_ROOT=aguinet || DOCKER_ROOT=quay.io/pypa
