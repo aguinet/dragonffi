@@ -94,6 +94,7 @@ class build_ext_dffi(build_ext):
         os.chdir(cwd)
         build_ext.run(self)
 
+VERSION="0.6.1"
 module = Extension('pydffi.backend',
                     include_dirs = [os.path.join(this_dir, '../../include'),
                         os.path.join(this_dir, '../../third-party')],
@@ -104,7 +105,7 @@ module = Extension('pydffi.backend',
                     libraries = libraries,
                     sources = glob.glob(os.path.join(this_dir, '*.cpp'))) 
 setup(name = 'pydffi',
-    version = '0.6.1',
+    version = VERSION,
     description = 'dragonffi static python bindings',
     author = 'Adrien Guinet',
     author_email = 'adrien@guinet.me',
@@ -131,7 +132,7 @@ Static python bindings for dragonffi. API isn't yet stable and is subject to cha
     keywords='ffi clang llvm',
     license='Apache 2.0',
     url = "https://github.com/aguinet/dragonffi",
-    download_url = "https://github.com/aguinet/dragonffi/tarball/dffi-0.5.1",
+    download_url = "https://github.com/aguinet/dragonffi/tarball/dffi-%s" % VERSION,
     entry_points = {"purectypes.generators": ".pydffi = pydffi.purectypes_generator:GenPureCType"},
     ext_modules = [module],
     cmdclass={
