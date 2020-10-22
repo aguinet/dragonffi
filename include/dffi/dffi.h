@@ -74,6 +74,7 @@ struct Exception
   virtual const char* msg() const = 0;
 };
 
+/// Represents a compilation unit.
 class DFFI_API CompilationUnit
 {
   friend class DFFI;
@@ -136,6 +137,7 @@ private:
   void *Data_;
 };
 
+/// Represents a DragonFFI instance.
 class DFFI_API DFFI
 {
 public:

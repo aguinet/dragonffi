@@ -430,11 +430,9 @@ PYBIND11_MODULE(PYDFFI_EXT_NAME, m)
   DFFI::initialize();
 
   m.doc() = R"pbdoc(
-        Dragonffi python module
-        -----------------------
-        .. currentmodule:: pydffi
+.. currentmodule:: pydffi
 
-        TODO
+TODO
     )pbdoc";
 
   // Types
@@ -721,6 +719,7 @@ PYBIND11_MODULE(PYDFFI_EXT_NAME, m)
     .def_property_readonly("types", py::cpp_function(cu_types, py::keep_alive<0,1>()))
     ;
 
+<<<<<<< HEAD
   py::enum_<CXXMode>(m, "CXXMode")
     .value("NoCXX", CXXMode::NoCXX)
     .value("Std98", CXXMode::Std98)
@@ -730,8 +729,8 @@ PYBIND11_MODULE(PYDFFI_EXT_NAME, m)
     .value("Std20", CXXMode::Std20)
     ;
 
-  py::class_<DFFI>(m, "FFI", "FFI class documentation TODO")
-    .def(py::init(&default_ctor), py::arg("optLevel") = 2, py::arg("includeDirs") = py::list(), py::arg("sysroot") = py::str(), py::arg("CXX") = CXXMode::NoCXX, py::arg("GNUExtensions") = true)
+  py::class_<DFFI>(m, "FFI", "Represents an instance of FFI, that is linked to multiple compilation units.")
+    .def(py::init(&default_ctor), py::arg("optLevel") = 2, py::arg("includeDirs") = py::list(), py::arg("sysroot") = py::str(), py::arg("CXX") = CXXMode::NoCXX, py::arg("GNUExtensions") = true, "Create a new instance of FFI.")
     .def("cdef", dffi_cdef, py::keep_alive<0,1>(), py::arg("code"), py::arg("name") = nullptr, py::arg("useLastError") = false, "cdef documentation TODO")
     .def("compile", dffi_compile, py::keep_alive<0,1>(), py::arg("code"), py::arg("useLastError") = false)
     .def("basicType", 

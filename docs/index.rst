@@ -7,4 +7,4 @@ Contents:
 
    intro.rst
    building.rst
-   reference_py.rst
+   reference.rst
