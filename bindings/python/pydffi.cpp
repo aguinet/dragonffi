@@ -348,10 +348,16 @@ std::unique_ptr<CUnionObj> uniontype_new(UnionType const& UTy, const char* Field
   return Ret;
 } 
 
+std::unique_ptr<CPointerObj> cpointerobj_new_val(PointerType const& PTy, uintptr_t PtrVal)
+{
+  return std::unique_ptr<CPointerObj>{new CPointerObj{PTy, Data<void*>::emplace_owned((void*)PtrVal)}};
+}
+
 std::unique_ptr<CPointerObj> cpointerobj_new(PointerType const& PTy)
 {
-  return std::unique_ptr<CPointerObj>{new CPointerObj{PTy, Data<void*>::emplace_owned(nullptr)}};
+  return cpointerobj_new_val(PTy, 0);
 }
+
 
 std::unique_ptr<CArrayObj> carraytype_new(ArrayType const& ATy)
 {
@@ -484,6 +490,7 @@ PYBIND11_MODULE(PYDFFI_EXT_NAME, m)
   py::class_<PointerType>(m, "PointerType", type)
     .def("pointee", &PointerType::getPointee, py::return_value_policy::reference_internal)
     .def("__call__", cpointerobj_new, py::keep_alive<0,1>())
+    .def("__call__", cpointerobj_new_val, py::keep_alive<0,1>())
     ;
 
   py::class_<ArrayType>(m, "ArrayType", type)
