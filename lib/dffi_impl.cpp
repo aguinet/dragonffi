@@ -15,6 +15,7 @@
 #include <string>
 #include <cinttypes>
 
+#include <clang/Basic/FileManager.h>
 #include <clang/Basic/LangStandard.h>
 #include <clang/CodeGen/CodeGenAction.h>
 #include <clang/Driver/Compilation.h>
@@ -42,6 +43,7 @@
 #include <llvm/Option/ArgList.h>
 #include <llvm/Support/Compiler.h>
 #include <llvm/Support/ErrorHandling.h>
+#include <llvm/Support/Host.h>
 #include <llvm/Support/Path.h>
 #include <llvm/Support/Process.h>
 #include <llvm/Support/Program.h>
@@ -644,10 +646,11 @@ void* DFFIImpl::getFunctionAddress(StringRef Name)
   // TODO: chances that this is clearly sub optimal
   // TODO: use getAddressToGlobalIfAvailable?
   Function* F = EE_->FindFunctionNamed(Name);
+  const std::string NameStr = Name.str();
   if (!F || F->isDeclaration()) {
-    return sys::DynamicLibrary::SearchForAddressOfSymbol(Name);
+    return sys::DynamicLibrary::SearchForAddressOfSymbol(NameStr);
   }
-  return (void*)EE_->getFunctionAddress(Name.str());
+  return (void*)EE_->getFunctionAddress(NameStr);
 #if 0
   // TODO: we would like to be able to do this! Unfortunatly, MCJIT API is
   // private...
@@ -925,7 +928,9 @@ void CUImpl::parseDIComposite(DICompositeType const* DCTy, llvm::Module& M)
     EnumType::Fields Fields;
     for (auto const* Op: DCTy->getElements()) {
       auto const* EOp = llvm::cast<DIEnumerator>(Op);
-      Fields[EOp->getName().str()] = EOp->getValue();
+      const APInt Val = EOp->getValue();
+      assert(Val.isSignedIntN(sizeof(int)*8) && "enum whose value isn't an int");
+      Fields[EOp->getName().str()] = Val.getSExtValue();
     }
     ETy->setBody(std::move(Fields));
   }

@@ -22,9 +22,9 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Install system dependencies
       run: |
-        choco install ninja wget
-        wget https://files.geekou.info/llvm10.7z
-        7z x llvm10.7z
+        choco install ninja
+        C:\Miniconda\condabin\conda.bat activate base
+        C:\Miniconda\condabin\conda.bat install -c conda-forge llvmdev==11.0.0 clangdev==11.0.0
         python -m pip install --upgrade pip
         python -m pip install lit purectypes==0.2 six
         mkdir build
@@ -34,11 +34,15 @@ jobs:
     - name: CMake + build
       working-directory: build
       run: |
-        cmake -DCMAKE_C_COMPILER=cl.exe -DCMAKE_CXX_COMPILER=cl.exe -DPYTHON_BINDINGS=ON -DBUILD_TESTS=ON -DLLVM_CONFIG=../llvm10/bin/llvm-config.exe -DCMAKE_BUILD_TYPE=release -G Ninja ..
+        cmake -DCMAKE_C_COMPILER=cl.exe -DCMAKE_CXX_COMPILER=cl.exe -DPYTHON_BINDINGS=ON -DBUILD_TESTS=ON -DLLVM_CONFIG=C:/Miniconda/Library/bin/llvm-config.exe -DCMAKE_BUILD_TYPE=release -G Ninja ..
         ninja
       shell: cmd
     - name: Native & Python tests
       working-directory: build
       run: |
+        # We need this, so that \Miniconda\Library\bin ends up in the DLL
+        # resolution path. Indeed, the clang/llvm build we use needs zlib.dll,
+        # which is provided in this path.
+        C:\Miniconda\condabin\conda.bat activate base
         ninja check
       shell: cmd

@@ -171,7 +171,10 @@ llvm::raw_ostream& TypePrinter::print_def(llvm::raw_ostream& OS, dffi::Type cons
     print_def(OS, ArTy->getElementType(), Full, ArName.c_str());
     return OS;
   }
+  default:
+    break;
   };
+  return OS;
 }
 
 void TypePrinter::add_decl(dffi::Type const* Ty)
