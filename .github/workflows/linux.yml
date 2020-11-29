@@ -27,12 +27,14 @@ jobs:
         # Remove the mess it has, purge every thing we don't need from
         # sources.list and reinstall the proper and clean clang/llvm packages
         # from ubuntu 18.
-        sudo apt purge clang-8 llvm-8-dev libclang1-8 llvm-8 llvm-8-runtime libclang-common-8-dev llvm-8-dev libllvm8 liblldb-8
+        sudo apt-get purge clang-8 llvm-8-dev libclang1-8 llvm-8 llvm-8-runtime libclang-common-8-dev llvm-8-dev libllvm8 liblldb-8
         sudo rm /etc/apt/sources.list.d/*
-        sudo echo "deb http://archive.ubuntu.com/ubuntu bionic main multiverse restricted universe" | sudo tee /etc/apt/sources.list
-        sudo echo "deb http://archive.ubuntu.com/ubuntu bionic-security main multiverse restricted universe" | sudo tee -a /etc/apt/sources.list
-        sudo echo "deb http://archive.ubuntu.com/ubuntu bionic-updates main multiverse restricted universe " | sudo tee -a /etc/apt/sources.list
-        sudo apt update && sudo apt install -y clang-10 llvm-10-tools llvm-10-dev libclang-10-dev ninja-build cmake
+        echo "deb http://archive.ubuntu.com/ubuntu bionic main multiverse restricted universe" | sudo tee /etc/apt/sources.list
+        echo "deb http://archive.ubuntu.com/ubuntu bionic-security main multiverse restricted universe" | sudo tee -a /etc/apt/sources.list
+        echo "deb http://archive.ubuntu.com/ubuntu bionic-updates main multiverse restricted universe " | sudo tee -a /etc/apt/sources.list
+        echo "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-11 main" | sudo tee -a /etc/apt/sources.list
+        curl -sSL https://apt.llvm.org/llvm-snapshot.gpg.key|sudo apt-key add -
+        sudo apt-get update && sudo apt-get install -y clang-11 llvm-11-tools llvm-11-dev libclang-11-dev ninja-build cmake
         python -m pip install lit 
         python -m pip install purectypes==0.2 six
         mkdir build
@@ -43,7 +45,8 @@ jobs:
           -DBUILD_SHARED_LIBS=ON \
           -DPYTHON_BINDINGS=ON \
           -DBUILD_TESTS=ON \
-          -DLLVM_CONFIG=$(which llvm-config-10) -DCMAKE_BUILD_TYPE=debug \
+          -DLLVM_CONFIG=$(which llvm-config-11) \
+          -DCMAKE_BUILD_TYPE=debug \
           -G Ninja ..
     - name: Build
       working-directory: build

@@ -21,6 +21,7 @@
 #include <dffi/casting.h>
 #include "dffi_impl.h"
 
+#include <llvm/Support/Host.h>
 #include <llvm/Support/TargetSelect.h>
 
 #ifdef __unix__

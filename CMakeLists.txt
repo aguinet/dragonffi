@@ -49,7 +49,7 @@ set(Clang_DIR "${LLVM_PREFIX}/lib/cmake/clang")
 message(STATUS "Clang cmake directory: ${Clang_DIR}")
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake" "${LLVM_CMAKE}" "${Clang_DIR}")
 set(LLVM_DIR "${LLVM_CMAKE}")
-find_package(LLVM 10 REQUIRED)
+find_package(LLVM 11 REQUIRED)
 
 # Clang
 include(ClangConfig)
@@ -229,7 +229,7 @@ endif()
 # Backported from LLVM master
 function(clang_target_link_libraries target type)
   if (CLANG_LINK_CLANG_DYLIB)
-    target_link_libraries(${target} ${type} clang_shared)
+    target_link_libraries(${target} ${type} clang-cpp)
   else()
     target_link_libraries(${target} ${type} ${ARGN})
   endif()

@@ -32,7 +32,7 @@ $CMAKE_BIN ../llvm/ \
   -DLLVM_ENABLE_THREADS=OFF \
   -DLLVM_ENABLE_ZLIB=OFF \
   -DLLVM_ENABLE_TERMINFO=OFF \
-  -DPYTHON_EXECUTABLE=/opt/python/cp38-cp38/bin/python \
+  -DPython3_EXECUTABLE=/opt/python/cp38-cp38/bin/python \
   $CMAKE_OPTS
 
 make install -j$(nproc)

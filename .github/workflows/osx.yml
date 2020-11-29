@@ -23,7 +23,7 @@ jobs:
     - name: Install system dependencies
       run: |
         brew install cmake ninja
-        sudo $CONDA/bin/conda install -c conda-forge llvmdev==10.0.1 clangdev==10.0.1
+        sudo $CONDA/bin/conda install -c conda-forge llvmdev==11.0.0 clangdev==11.0.0
         python -m pip install --upgrade pip
         python -m pip install lit purectypes==0.2 six
         mkdir build
@@ -35,6 +35,7 @@ jobs:
           -DPYTHON_BINDINGS=ON \
           -DBUILD_TESTS=ON \
           -DLLVM_CONFIG=$CONDA/bin/llvm-config -DCMAKE_BUILD_TYPE=debug \
+          -DCMAKE_BUILD_TYPE=Debug \
           -G Ninja ..
     - name: Build
       working-directory: build
