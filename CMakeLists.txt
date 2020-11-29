@@ -36,18 +36,20 @@ string(REPLACE "\\" "/" LLVM_CMAKE "${LLVM_CMAKE}")
 string(REPLACE "\\" "/" LLVM_BINDIR "${LLVM_BINDIR}")
 
 message(STATUS "LLVM prefix: ${LLVM_PREFIX}")
+message(STATUS "LLVM cmake: ${LLVM_CMAKE}")
 
 set(CMAKE_C_VISIBILITY_PRESET hidden)
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 set(Clang_DIR "${LLVM_PREFIX}/lib/cmake/clang")
 message(STATUS "Clang cmake directory: ${Clang_DIR}")
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake" "${LLVM_CMAKE}" "${Clang_DIR}")
-
-include(PrecompiledHeader)
+set(LLVM_DIR "${LLVM_CMAKE}")
+find_package(LLVM 10 REQUIRED)
 
 # Clang
 include(ClangConfig)
@@ -56,7 +58,6 @@ link_directories(${CLANG_LIBRARY_DIRS})
 message(STATUS "Clang link dylib: ${CLANG_LINK_CLANG_DYLIB}")
 
 # LLVM
-include(HandleLLVMOptions)
 include(AddLLVM)
 include(LLVMConfig)
 

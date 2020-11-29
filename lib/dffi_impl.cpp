@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include <string>
+#include <cinttypes>
 
 #include <clang/Basic/LangStandard.h>
 #include <clang/CodeGen/CodeGenAction.h>
