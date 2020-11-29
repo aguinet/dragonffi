@@ -28,12 +28,6 @@
 namespace dffi {
 class CompositeField;
 class CompositeType;
-}
-template struct DFFI_API std::hash<std::string>;
-template class DFFI_API std::unordered_map<std::string, dffi::CompositeField const*>;
-template class DFFI_API std::unordered_map<std::string, int>;
-
-namespace dffi {
 
 namespace details {
 struct CUImpl;
