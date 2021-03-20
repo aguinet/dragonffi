@@ -127,8 +127,8 @@ public:
 
   static void initialize();
 
-  CompilationUnit compile(const char* Code, std::string& Err);
-  CompilationUnit cdef(const char* Code, const char* CUName, std::string& Err);
+  CompilationUnit compile(const char* Code, std::string& Err, bool UseLastError = false);
+  CompilationUnit cdef(const char* Code, const char* CUName, std::string& Err, bool UseLastError = false);
 
   BasicType const* getBasicType(BasicType::BasicKind K);
   template <class T>

@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <iostream>
 #include <cstdlib>
+#include <iostream>
 
 #include <dffi/config.h>
 #include <dffi/dffi.h>
@@ -46,14 +46,14 @@ DFFI::~DFFI()
   // header file!
 }
 
-CompilationUnit DFFI::compile(const char* Code, std::string& Err)
+CompilationUnit DFFI::compile(const char* Code, std::string& Err, bool UseLastError)
 {
-  return CompilationUnit{Impl_->compile(Code, llvm::StringRef{}, false, Err)};
+  return CompilationUnit{Impl_->compile(Code, llvm::StringRef{}, false, Err, UseLastError)};
 }
 
-CompilationUnit DFFI::cdef(const char* Code, const char* CUName, std::string& Err)
+CompilationUnit DFFI::cdef(const char* Code, const char* CUName, std::string& Err, bool UseLastError)
 {
-  return CompilationUnit{Impl_->compile(Code, CUName ? CUName : llvm::StringRef{}, true, Err)};
+  return CompilationUnit{Impl_->compile(Code, CUName ? CUName : llvm::StringRef{}, true, Err, UseLastError)};
 }
 
 BasicType const* DFFI::getBasicType(BasicType::BasicKind K)
@@ -447,17 +447,23 @@ NativeFunc::NativeFunc(TrampPtrTy Ptr, void* CodePtr, dffi::FunctionType const* 
 
 void NativeFunc::call(void* Ret, void** Args) const
 {
+  if (FTy_->useLastError()) {
+    swapLastError();
+  }
   TrampFuncPtr_(FuncCodePtr_, Ret, Args);
+  if (FTy_->useLastError()) {
+    swapLastError();
+  }
 }
 
 void NativeFunc::call(void** Args) const
 {
-  TrampFuncPtr_(FuncCodePtr_, nullptr, Args);
+  call(nullptr, Args);
 }
 
 void NativeFunc::call() const
 {
-  TrampFuncPtr_(FuncCodePtr_, nullptr, nullptr);
+  call(nullptr, nullptr);
 }
 
 NativeFunc::operator bool() const

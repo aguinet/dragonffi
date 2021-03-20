@@ -159,13 +159,14 @@ uint64_t BasicType::getSize() const
   assert(false && "unhandled basic type!");
 }
 
-FunctionType::FunctionType(details::DFFIImpl& Dffi, QualType RetTy, ParamsVecTy ParamsTy, CallingConv CC, bool VarArgs):
+FunctionType::FunctionType(details::DFFIImpl& Dffi, QualType RetTy, ParamsVecTy ParamsTy, CallingConv CC, bool VarArgs, bool UseLastError):
   Type(Dffi, TY_Function),
   RetTy_(RetTy),
   ParamsTy_(std::move(ParamsTy))
 {
   Flags_.D.CC = CC;
   Flags_.D.VarArgs = VarArgs;
+  Flags_.D.UseLastError = UseLastError;
 }
 
 NativeFunc FunctionType::getFunction(void* Ptr) const

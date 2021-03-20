@@ -435,7 +435,7 @@ void DFFIImpl::genFuncTypeWrapper(TypePrinter& P, size_t WrapperIdx, llvm::raw_s
   ss << ");\n}\n";
 }
 
-CUImpl* DFFIImpl::compile(StringRef const Code, StringRef CUName, bool IncludeDefs, std::string& Err)
+CUImpl* DFFIImpl::compile(StringRef const Code, StringRef CUName, bool IncludeDefs, std::string& Err, bool UseLastError)
 {
   std::string AnonCUName;
   if (CUName.empty()) {
@@ -520,7 +520,7 @@ CUImpl* DFFIImpl::compile(StringRef const Code, StringRef CUName, bool IncludeDe
       ToRemove.push_back(&F);
       continue;
     }
-    auto* DFTy = CU->getFunctionType(F);
+    auto* DFTy = CU->getFunctionType(F, UseLastError);
     if (!DFTy)
       continue;
     if (FName.startswith("__dffi_force_decl_")) {
@@ -690,7 +690,7 @@ NativeFunc DFFIImpl::getFunction(FunctionType const* FTy, ArrayRef<Type const*> 
   for (auto T: VarArgs) {
     Types.emplace_back(T);
   }
-  FTy = getContext().getFunctionType(*this, FTy->getReturnType(), Types, FTy->getCC(), false);
+  FTy = getContext().getFunctionType(*this, FTy->getReturnType(), Types, FTy->getCC(), false, FTy->useLastError());
   return {TFPtr, FPtr, FTy};
 }
 
@@ -1069,7 +1069,7 @@ dffi::Type const* CUImpl::getTypeFromDIType(llvm::DIType const* Ty)
   }
 
   if (auto* FTy = llvm::dyn_cast<DISubroutineType>(Ty)) {
-    return getFunctionType(FTy);
+    return getFunctionType(FTy, false /* UseLastError */);
   }
 
 #ifdef LLVM_BUILD_DEBUG
@@ -1078,7 +1078,7 @@ dffi::Type const* CUImpl::getTypeFromDIType(llvm::DIType const* Ty)
   llvm::report_fatal_error("unsupported type");
 }
 
-dffi::FunctionType const* CUImpl::getFunctionType(DISubroutineType const* Ty)
+dffi::FunctionType const* CUImpl::getFunctionType(DISubroutineType const* Ty, bool UseLastError)
 {
   auto ArrayTys = Ty->getTypeArray();
   auto ItTy = ArrayTys.begin();
@@ -1097,7 +1097,7 @@ dffi::FunctionType const* CUImpl::getFunctionType(DISubroutineType const* Ty)
     ParamsTy.pop_back();
   }
   auto CC = dwarfCCToDFFI(Ty->getCC());
-  return getContext().getFunctionType(DFFI_, RetTy, ParamsTy, CC, IsVarArgs);
+  return getContext().getFunctionType(DFFI_, RetTy, ParamsTy, CC, IsVarArgs, UseLastError);
 }
 
 void CUImpl::parseFunctionAlias(Function& F)
@@ -1119,7 +1119,7 @@ void CUImpl::parseFunctionAlias(Function& F)
   }
 }
 
-dffi::FunctionType const* CUImpl::getFunctionType(Function& F)
+dffi::FunctionType const* CUImpl::getFunctionType(Function& F, bool UseLastError)
 {
   MDNode* MD = F.getMetadata("dbg");
   if (!MD) {
@@ -1127,7 +1127,7 @@ dffi::FunctionType const* CUImpl::getFunctionType(Function& F)
   }
   auto* SP = llvm::cast<DISubprogram>(MD);
   auto* Ty = llvm::cast<DISubroutineType>(SP->getType());
-  return getFunctionType(Ty);
+  return getFunctionType(Ty, UseLastError);
 }
 
 dffi::Type const* CUImpl::getType(StringRef Name) const

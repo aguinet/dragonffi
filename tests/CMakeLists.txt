@@ -33,6 +33,7 @@ if (BUILD_TESTS)
     func_ptr
     includes
     inline
+    lasterror
     multiple_defs
     stdint
     struct

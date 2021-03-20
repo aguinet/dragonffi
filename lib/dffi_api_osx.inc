@@ -23,3 +23,23 @@ void* dffi::DynamicLibrary::baseAddress() const
   }
   return nullptr;
 }
+
+// LastError handling
+#include <algorithm>
+#include <sys/errno.h>
+
+// TODO: verify initial value
+static thread_local int dffi_errno = 0;
+
+void dffi::NativeFunc::swapLastError()
+{
+  std::swap(dffi_errno, errno);
+}
+
+dffi::NativeFunc::LastErrorTy dffi::NativeFunc::getLastError() {
+  return dffi_errno;
+}
+
+void dffi::NativeFunc::setLastError(LastErrorTy Err) {
+  dffi_errno = Err;
+}

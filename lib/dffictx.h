@@ -57,22 +57,24 @@ struct FunctionTypeKeyInfo
     llvm::ArrayRef<QualType> ParamsTy_;
     union {
       struct {
-        uint8_t CC: 7;
+        uint8_t CC: 6;
         uint8_t VarArgs: 1;
+        uint8_t UseLastError: 1;
       } D;
       uint8_t V;
     } Flags_;
 
-    KeyTy(QualType RetTy, llvm::ArrayRef<QualType> ParamsTy, CallingConv CC, bool hasVarArgs):
+    KeyTy(QualType RetTy, llvm::ArrayRef<QualType> ParamsTy, CallingConv CC, bool hasVarArgs, bool useLastError):
       RetTy_(RetTy),
       ParamsTy_(ParamsTy)
     {
       Flags_.D.CC = CC;
       Flags_.D.VarArgs = hasVarArgs;
+      Flags_.D.UseLastError = useLastError;
     }
 
     KeyTy(FunctionType const* FT):
-      KeyTy(FT->getReturnType(), FT->getParams(), FT->getCC(), FT->hasVarArgs())
+      KeyTy(FT->getReturnType(), FT->getParams(), FT->getCC(), FT->hasVarArgs(), FT->useLastError())
     { }
 
     bool operator==(KeyTy const& O) const {
@@ -199,7 +201,7 @@ struct DFFICtx
 
   BasicType* getBasicType(DFFIImpl& Dffi, BasicType::BasicKind Kind);
   PointerType* getPtrType(DFFIImpl& Dffi, QualType Pointee);
-  FunctionType* getFunctionType(DFFIImpl& Dffi, QualType RetTy, llvm::ArrayRef<QualType> ParamsTy, CallingConv CC, bool VarArgs);
+  FunctionType* getFunctionType(DFFIImpl& Dffi, QualType RetTy, llvm::ArrayRef<QualType> ParamsTy, CallingConv CC, bool VarArgs, bool UseLastError);
   ArrayType* getArrayType(DFFIImpl& Dffi, QualType EltTy, uint64_t NElements);
 
 private:

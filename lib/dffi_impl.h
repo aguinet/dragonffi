@@ -92,7 +92,7 @@ struct DFFIImpl
   DFFIImpl(CCOpts const& Opts);
   ~DFFIImpl();
 
-  CUImpl* compile(llvm::StringRef const Code, llvm::StringRef CUName, bool IncludeDefs, std::string& Err);
+  CUImpl* compile(llvm::StringRef const Code, llvm::StringRef CUName, bool IncludeDefs, std::string& Err, bool UseLastError);
 
   BasicType const* getBasicType(BasicType::BasicKind K);
   PointerType const* getPointerType(QualType Ty);
@@ -165,8 +165,8 @@ struct CUImpl
     return DFFI_.getPointerType(Ty);
   }
 
-  dffi::FunctionType const* getFunctionType(llvm::DISubroutineType const* Ty);
-  dffi::FunctionType const* getFunctionType(llvm::Function& F);
+  dffi::FunctionType const* getFunctionType(llvm::DISubroutineType const* Ty, bool UseLastError);
+  dffi::FunctionType const* getFunctionType(llvm::Function& F, bool UseLastError);
 
   QualType getQualTypeFromDIType(llvm::DIType const* Ty);
   dffi::Type const* getTypeFromDIType(llvm::DIType const* Ty);
