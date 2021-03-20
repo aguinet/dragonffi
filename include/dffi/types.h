@@ -290,16 +290,19 @@ public:
   std::string getWrapperLLVM(const char* FuncName) const;
   std::string getWrapperLLVMStr(const char* FuncName) const;
 
+  bool useLastError() const { return Flags_.D.UseLastError; }
+
 protected:
-  FunctionType(details::DFFIImpl& Dffi, QualType RetTy, ParamsVecTy ParamsTy, CallingConv CC, bool VarArgs);
+  FunctionType(details::DFFIImpl& Dffi, QualType RetTy, ParamsVecTy ParamsTy, CallingConv CC, bool VarArgs, bool UseLastError);
 
 private:
   QualType RetTy_;
   ParamsVecTy ParamsTy_;
   union {
     struct {
-      uint8_t CC: 7;
+      uint8_t CC: 6;
       uint8_t VarArgs: 1;
+      uint8_t UseLastError: 1;
     } D;
     uint8_t V;
   } Flags_;

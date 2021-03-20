@@ -16,6 +16,9 @@
 #define DFFI_NATIVE_FUNC_H
 
 #include <dffi/exports.h>
+#ifdef _WIN32
+#include <IntSafe.h> // For DWORD
+#endif
 
 namespace dffi {
 
@@ -29,6 +32,12 @@ struct DFFIImpl;
 struct DFFI_API NativeFunc
 {
   typedef void(*TrampPtrTy)(void*, void*, void**);
+
+#ifdef _WIN32
+  using LastErrorTy = DWORD;
+#else
+  using LastErrorTy = int;
+#endif
 
   NativeFunc();
 
@@ -49,12 +58,17 @@ struct DFFI_API NativeFunc
   dffi::FunctionType const* getType() const { return FTy_; }
   dffi::Type const* getReturnType() const; 
 
+  static LastErrorTy getLastError();
+  static void setLastError(LastErrorTy Err);
+
 protected:
   friend struct details::DFFIImpl;
 
   NativeFunc(TrampPtrTy Ptr, void* CodePtr, dffi::FunctionType const* FTy);
 
 private:
+  static void swapLastError();
+
   TrampPtrTy TrampFuncPtr_;
   void* FuncCodePtr_;
   dffi::FunctionType const* FTy_;

@@ -71,25 +71,20 @@ void throwCompileErr(std::string&& Err)
 }
 
 // DFFI wrappers
-CompilationUnit dffi_cdef(DFFI& C, const char* Code, const char* Name)
+CompilationUnit dffi_cdef(DFFI& C, const char* Code, const char* Name, bool UseLastError = false)
 {
   std::string Err;
-  auto CU = C.cdef(Code, Name, Err);
+  auto CU = C.cdef(Code, Name, Err, UseLastError);
   if (!CU) {
     throwCompileErr(std::move(Err));
   }
   return CU;
 }
 
-CompilationUnit dffi_cdef_no_name(DFFI& C, const char* Code)
-{
-  return dffi_cdef(C, Code, nullptr);
-}
-
-CompilationUnit dffi_compile(DFFI& C, const char* Code)
+CompilationUnit dffi_compile(DFFI& C, const char* Code, bool UseLastError = false)
 {
   std::string Err;
-  auto CU = C.compile(Code, Err);
+  auto CU = C.compile(Code, Err, UseLastError);
   if (!CU) {
     throwCompileErr(std::move(Err));
   }
@@ -503,6 +498,7 @@ PYBIND11_MODULE(PYDFFI_EXT_NAME, m)
     .def_property_readonly("returnType", &FunctionType::getReturnType, py::return_value_policy::reference_internal)
     .def_property_readonly("params", &FunctionType::getParams, py::return_value_policy::reference_internal)
     .def_property_readonly("varArgs", &FunctionType::hasVarArgs)
+    .def_property_readonly("useLastError", &FunctionType::useLastError)
     .def("getWrapperLLVMStr", &FunctionType::getWrapperLLVMStr)
     .def("__call__", functiontype_getfunction, py::keep_alive<0,1>())
     ;
@@ -717,9 +713,8 @@ PYBIND11_MODULE(PYDFFI_EXT_NAME, m)
 
   py::class_<DFFI>(m, "FFI")
     .def(py::init(&default_ctor), py::arg("optLevel") = 2, py::arg("includeDirs") = py::list(), py::arg("sysroot") = py::str())
-    .def("cdef", dffi_cdef, py::keep_alive<0,1>())
-    .def("cdef", dffi_cdef_no_name, py::keep_alive<0,1>())
-    .def("compile", dffi_compile, py::keep_alive<0,1>())
+    .def("cdef", dffi_cdef, py::keep_alive<0,1>(), py::arg("code"), py::arg("name") = nullptr, py::arg("useLastError") = false)
+    .def("compile", dffi_compile, py::keep_alive<0,1>(), py::arg("code"), py::arg("useLastError") = false)
     //.def("view", dffi_view, py::keep_alive<0,1>(), py::keep_alive<0,2>())
     .def("basicType", 
       (BasicType const*(DFFI::*)(BasicType::BasicKind)) &DFFI::getBasicType,
@@ -855,6 +850,8 @@ PYBIND11_MODULE(PYDFFI_EXT_NAME, m)
   // Types
   m.def("format", &getFormatDescriptor);
   m.def("portable_format", &getPortableFormatDescriptor);
+  m.def("getLastError", &NativeFunc::getLastError);
+  m.def("setLastError", &NativeFunc::setLastError);
 
   // Exceptions
   py::register_exception<CompileError>(m, "CompileError");
