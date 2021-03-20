@@ -1,3 +1,9 @@
+0.8.0
+-----
+
+* Support saving errno/LastError for system functions (closes #62)
+* Based on Clang/LLVM 11.1
+
 0.7.0
 -----
 
