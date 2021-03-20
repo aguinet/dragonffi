@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-cmake_minimum_required(VERSION 3.4.3)
+cmake_minimum_required(VERSION 3.10)
 project(dragonffi)
 
 find_program(LLVM_CONFIG NAMES llvm-config DOC "Path to llvm-config utility")
@@ -49,7 +49,7 @@ set(Clang_DIR "${LLVM_PREFIX}/lib/cmake/clang")
 message(STATUS "Clang cmake directory: ${Clang_DIR}")
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake" "${LLVM_CMAKE}" "${Clang_DIR}")
 set(LLVM_DIR "${LLVM_CMAKE}")
-find_package(LLVM 11 REQUIRED)
+find_package(LLVM 11.1 REQUIRED)
 
 # Clang
 include(ClangConfig)

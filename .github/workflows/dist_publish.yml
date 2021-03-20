@@ -181,7 +181,7 @@ jobs:
     - name: Install OSX dependencies
       run: |
         brew install cmake ninja
-        sudo $CONDA/bin/conda install -c conda-forge llvmdev==11.0.0 clangdev==11.0.0
+        sudo $CONDA/bin/conda install -c conda-forge llvmdev==11.1.0 clangdev==11.1.0
         echo "LLVM_CONFIG=$CONDA/bin/llvm-config" >> $GITHUB_ENV
       if: runner.os == 'macOS'
     - name: Build wheel

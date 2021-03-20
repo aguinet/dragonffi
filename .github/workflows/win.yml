@@ -24,7 +24,7 @@ jobs:
       run: |
         choco install ninja
         C:\Miniconda\condabin\conda.bat activate base
-        C:\Miniconda\condabin\conda.bat install -c conda-forge llvmdev==11.0.0 clangdev==11.0.0
+        C:\Miniconda\condabin\conda.bat install -c conda-forge llvmdev==11.1.0 clangdev==11.1.0
         python -m pip install --upgrade pip
         python -m pip install lit purectypes==0.2 six
         mkdir build

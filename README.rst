@@ -98,10 +98,10 @@ Clang/LLVM from sources like this:
 .. code:: bash
 
   $ cd /path/to/llvm
-  $ wget https://github.com/llvm/llvm-project/releases/download/llvmorg-11.0.0/llvm-11.0.0.src.tar.xz
-  $ wget https://github.com/llvm/llvm-project/releases/download/llvmorg-11.0.0/clang-11.0.0.src.tar.xz
-  $ tar xf llvm-11.0.0.src.tar.xz && tar xf clang-11.0.0.src.tar.xz
-  $ ln -s $PWD/clang-11.0.0.src llvm-11.0.0.src/tools/clang
+  $ wget https://github.com/llvm/llvm-project/releases/download/llvmorg-11.1.0/llvm-11.1.0.src.tar.xz
+  $ wget https://github.com/llvm/llvm-project/releases/download/llvmorg-11.1.0/clang-11.1.0.src.tar.xz
+  $ tar xf llvm-11.1.0.src.tar.xz && tar xf clang-11.1.0.src.tar.xz
+  $ ln -s $PWD/clang-11.1.0.src llvm-11.1.0.src/tools/clang
   $ mkdir build && cd build && cmake -DCMAKE_BUILD_TYPE=release -DBUILD_SHARED_LIBS=OFF -DLLVM_BUILD_TOOLS=ON -DLLVM_ENABLE_TERMINFO=OFF -DLLVM_ENABLE_LIBEDIT=OFF -DLLVM_ENABLE_ZLIB=OFF ..
   $ make
 
