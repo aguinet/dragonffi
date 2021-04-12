@@ -123,18 +123,31 @@ struct ASTGenWrappersConsumer: public clang::ASTConsumer
   bool HandleTopLevelDecl(DeclGroupRef DR) override
   {
     for (auto& D: DR) {
-      if (auto* FD = llvm::dyn_cast<FunctionDecl>(D)) {
-        HandleFD(FD);
-      }
-      else
-      if (auto* TD = llvm::dyn_cast<TypedefDecl>(D)) {
-        HandleTypedefDecl(TD);
-      }
+      HandleDecl(D);
     }
     return true;
   }
 
 private:
+  void HandleDecl(Decl* D)
+  {
+    if (auto* LSD = llvm::dyn_cast<LinkageSpecDecl>(D)) {
+      if (LSD->getLanguage() == clang::LinkageSpecDecl::lang_c) {
+        for (auto* CD: LSD->decls()) {
+          HandleDecl(CD);
+        }
+      }
+    }
+    else
+    if (auto* FD = llvm::dyn_cast<FunctionDecl>(D)) {
+      HandleFD(FD);
+    }
+    else
+    if (auto* TD = llvm::dyn_cast<TypedefDecl>(D)) {
+      HandleTypedefDecl(TD);
+    }
+  }
+
   void HandleTypedefDecl(TypedefDecl* TD)
   {
     // TODO: AFAIK, no use-def chain in clang, see if there is a way to know if

@@ -41,11 +41,26 @@ struct DFFIImpl;
 struct CUImpl;
 } // details
 
+enum CXXMode: uint8_t {
+  NoCXX,
+  // Warning: order from here is important!
+  Std98,
+  Std11,
+  Std14,
+  Std17,
+  Std20,
+};
+
 struct CCOpts
 {
   unsigned OptLevel;
   std::vector<std::string> IncludeDirs;
   std::string Sysroot;
+
+  CXXMode CXX = CXXMode::NoCXX;
+  bool GNUExtensions = true;
+
+  bool hasCXX() const { return CXX != CXXMode::NoCXX; }
 
   std::string getSysroot() const;
 };

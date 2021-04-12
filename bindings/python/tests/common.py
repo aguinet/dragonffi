@@ -11,15 +11,20 @@ try:
 except (ImportError, AttributeError):
     has_purectypes = False
 
-def getFFI():
-   options = {}
+def getFFI(options = None):
+   if options is None:
+       options = {}
    if platform.system() == "Darwin":
        options["sysroot"] = subprocess.check_output(["xcrun","--show-sdk-path"]).strip()
    return pydffi.FFI(**options)
 
 class DFFITest(unittest.TestCase):
+    def __init__(self, *args, **kwargs):
+        super(DFFITest, self).__init__(*args, **kwargs)
+        self.options = {}
+
     def setUp(self):
-        self.FFI = getFFI()
+        self.FFI = getFFI(self.options)
 
     def cstr_from_array(self, ar):
         return pydffi.cast(pydffi.ptr(ar), self.FFI.CharPtrTy).cstr

@@ -26,8 +26,10 @@ if (BUILD_TESTS)
     bool
     cconv
     compile
+    compile_cxx
     compile_error
     decl
+    decl_cxx
     dlopen
     enum
     func_ptr

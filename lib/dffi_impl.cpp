@@ -185,7 +185,8 @@ DFFIImpl::DFFIImpl(CCOpts const& Opts):
   Driver_->setCheckInputsExist(false);
 
   const char* ResDir = getClangResRootDirectory();
-  SmallVector<const char*, 17> Args = {"dffi", "dummy.c",
+  SmallVector<const char*, 17> Args = {"dffi",
+    Opts.hasCXX() ? "dummy.cpp" : "dummy.c",
     "-fsyntax-only", "-resource-dir", ResDir};
   const auto Sysroot = Opts.getSysroot();
   if (!Sysroot.empty()) {
@@ -196,7 +197,6 @@ DFFIImpl::DFFIImpl(CCOpts const& Opts):
     Args.push_back("-I");
     Args.push_back(D.c_str());
   }
-
 
   std::unique_ptr<driver::Compilation> C(Driver_->BuildCompilation(Args));
   if (!C) {
@@ -240,15 +240,17 @@ DFFIImpl::DFFIImpl(CCOpts const& Opts):
 
   CI.getLangOpts()->LineComment = true;
   CI.getLangOpts()->Optimize = true;
-  CI.getLangOpts()->CPlusPlus = false;
-  CI.getLangOpts()->C99 = true;
-  CI.getLangOpts()->C11 = true;
-  CI.getLangOpts()->CPlusPlus11 = false;
-  CI.getLangOpts()->CPlusPlus14 = false;
+  CI.getLangOpts()->C99 = !Opts.hasCXX();
+  CI.getLangOpts()->C11 = !Opts.hasCXX();
+  CI.getLangOpts()->CPlusPlus = Opts.hasCXX();
+  CI.getLangOpts()->CPlusPlus11 = Opts.CXX >= CXXMode::Std11;
+  CI.getLangOpts()->CPlusPlus14 = Opts.CXX >= CXXMode::Std14;
+  CI.getLangOpts()->CPlusPlus17 = Opts.CXX >= CXXMode::Std17;
+  CI.getLangOpts()->CPlusPlus20 = Opts.CXX >= CXXMode::Std20;
   CI.getLangOpts()->CXXExceptions = false;
-  CI.getLangOpts()->CXXOperatorNames = false;
-  CI.getLangOpts()->Bool = false;
-  CI.getLangOpts()->WChar = false; // builtin in C++, typedef in C (stddef.h)
+  CI.getLangOpts()->CXXOperatorNames = Opts.hasCXX();
+  CI.getLangOpts()->Bool = Opts.hasCXX();
+  CI.getLangOpts()->WChar = Opts.hasCXX(); // builtin in C++, typedef in C (stddef.h)
   CI.getLangOpts()->EmitAllDecls = true;
 
   const bool IsWinMSVC = Triple{TO.Triple}.isWindowsMSVCEnvironment();
@@ -259,9 +261,9 @@ DFFIImpl::DFFIImpl(CCOpts const& Opts):
   CI.getLangOpts()->MSBitfields = IsWinMSVC;
 
   // gnu compatibility
-  CI.getLangOpts()->GNUMode = true;
-  CI.getLangOpts()->GNUKeywords = true;
-  CI.getLangOpts()->GNUAsm = true;
+  CI.getLangOpts()->GNUMode = Opts.GNUExtensions;
+  CI.getLangOpts()->GNUKeywords = Opts.GNUExtensions;
+  CI.getLangOpts()->GNUAsm = Opts.GNUExtensions;
 
   CI.getFrontendOpts().ProgramAction = frontend::EmitLLVMOnly;
 
@@ -320,10 +322,11 @@ std::unique_ptr<llvm::Module> DFFIImpl::compile_llvm_with_decls(StringRef const 
   // First pass parse the AST of clang and generate wrappers for every
   // defined-only functions. Second pass generates the LLVM IR of the original
   // code with these definitions!
+  const bool hasCXX = Opts_.hasCXX();
   auto& CI = Clang_->getInvocation();
   CI.getFrontendOpts().Inputs.clear();
   CI.getFrontendOpts().Inputs.push_back(
-    FrontendInputFile(CUName, Language::C));
+    FrontendInputFile(CUName, hasCXX ? Language::CXX : Language::C));
   auto Buf = MemoryBuffer::getMemBufferCopy(Code);
   VFS_->addFile(CUName, time(NULL), std::move(Buf));
   auto Action = std::make_unique<ASTGenWrappersAction>(FuncAliases);
@@ -334,7 +337,10 @@ std::unique_ptr<llvm::Module> DFFIImpl::compile_llvm_with_decls(StringRef const 
   }
 
   resetDiagnostics();
-  auto BufForceDecl = Code.str() + "\n" + Action->forceDecls();
+  auto BufForceDecl = Code.str() + "\n";
+  if (hasCXX) BufForceDecl += "extern \"C\" {\n";
+  BufForceDecl += Action->forceDecls();
+  if (hasCXX) BufForceDecl += "\n}\n";
   SmallString<128> PrivateCU;
   ("/__dffi_private/force_decls/" + CUName).toStringRef(PrivateCU);
   return compile_llvm(BufForceDecl, PrivateCU, Err);
@@ -348,7 +354,7 @@ std::unique_ptr<llvm::Module> DFFIImpl::compile_llvm(StringRef const Code, Strin
   auto& CI = Clang_->getInvocation();
   CI.getFrontendOpts().Inputs.clear();
   CI.getFrontendOpts().Inputs.push_back(
-    FrontendInputFile(CUName, Language::C));
+    FrontendInputFile(CUName, Opts_.hasCXX() ? Language::CXX : Language::C));
   VFS_->addFile(CUName, time(NULL), std::move(Buf));
 
   auto LLVMAction = std::make_unique<clang::EmitLLVMOnlyAction>(&Ctx_);
@@ -439,7 +445,7 @@ CUImpl* DFFIImpl::compile(StringRef const Code, StringRef CUName, bool IncludeDe
 {
   std::string AnonCUName;
   if (CUName.empty()) {
-    AnonCUName = "/__dffi_private/anon_cu_" + std::to_string(CUIdx_++) + ".c";
+    AnonCUName = "/__dffi_private/anon_cu_" + std::to_string(CUIdx_++) + (Opts_.hasCXX() ? ".cpp":".c");
     CUName = AnonCUName;
   }
 #ifdef _WIN32
@@ -510,20 +516,25 @@ CUImpl* DFFIImpl::compile(StringRef const Code, StringRef CUName, bool IncludeDe
   llvm::raw_string_ostream Wrappers(Buf);
   TypePrinter Printer;
   SmallVector<Function*, 16> ToRemove;
+  const bool hasCXX = Opts_.hasCXX();
   for (Function& F: *M) {
     if (F.isIntrinsic())
       continue;
-    if (F.doesNotReturn())
+    if (hasCXX && !F.getSubprogram()->getLinkageName().empty())
       continue;
     StringRef FName = F.getName();
-    if (FName.startswith("__dffi_force_typedef")) {
+    const bool ForceDecl = FName.startswith("__dffi_force_decl_");
+    const bool ForceTypedef = FName.startswith("__dffi_force_typedef");
+    if (!ForceDecl && !ForceTypedef && F.doesNotReturn())
+      continue;
+    if (ForceTypedef) {
       ToRemove.push_back(&F);
       continue;
     }
     auto* DFTy = CU->getFunctionType(F, UseLastError);
     if (!DFTy)
       continue;
-    if (FName.startswith("__dffi_force_decl_")) {
+    if (ForceDecl) {
       FName = FName.substr(strlen("__dffi_force_decl_"));
       ToRemove.push_back(&F);
     }
@@ -569,6 +580,9 @@ CUImpl* DFFIImpl::compile(StringRef const Code, StringRef CUName, bool IncludeDe
 void DFFIImpl::compileWrappers(TypePrinter& Printer, std::string const& Wrappers)
 {
   auto& CI = Clang_->getInvocation();
+  CI.getLangOpts()->CPlusPlus = false;
+  CI.getLangOpts()->C99 = true;
+  CI.getLangOpts()->C11 = true;
   auto& CGO = CI.getCodeGenOpts();
   std::string WCode = Printer.getDecls() + "\n" + Wrappers;
   std::stringstream ss;
@@ -585,6 +599,10 @@ void DFFIImpl::compileWrappers(TypePrinter& Printer, std::string const& Wrappers
   auto* pM = M.get();
   EE_->addModule(std::move(M));
   EE_->generateCodeForModule(pM);
+
+  CI.getLangOpts()->CPlusPlus = Opts_.hasCXX();
+  CI.getLangOpts()->C99 = !Opts_.hasCXX();
+  CI.getLangOpts()->C11 = !Opts_.hasCXX();
 }
 
 void* DFFIImpl::getWrapperAddress(FunctionType const* FTy)
@@ -860,6 +878,11 @@ void CUImpl::declareDIComposite(DICompositeType const* DCTy)
 
 void CUImpl::parseDIComposite(DICompositeType const* DCTy, llvm::Module& M)
 {
+  // C++ type, we don't support this!
+  if (!DCTy->getIdentifier().empty()) {
+    return;
+  }
+
   const auto Tag = DCTy->getTag();
   assert((Tag == dwarf::DW_TAG_structure_type || Tag == dwarf::DW_TAG_union_type ||
     Tag == dwarf::DW_TAG_enumeration_type) && "parseDIComposite called without a valid type!");
@@ -1014,18 +1037,20 @@ dffi::Type const* CUImpl::getTypeFromDIType(llvm::DIType const* Ty)
         break;
 #endif
       default:
-        break;
+        return nullptr;
     };
-#ifdef LLVM_BUILD_DEBUG
-    Ty->dump();
-#endif
-    llvm::report_fatal_error("unsupported type");
   }
 
   if (auto* PtrTy = llvm::dyn_cast<llvm::DIDerivedType>(Ty)) {
-    if (PtrTy->getTag() == llvm::dwarf::DW_TAG_pointer_type) {
+    // C++ type, not supported
+    const auto Tag = PtrTy->getTag();
+    if (Tag == llvm::dwarf::DW_TAG_pointer_type) {
       auto Pointee = getQualTypeFromDIType(PtrTy->getBaseType());
       return getPointerType(Pointee);
+    }
+    if (Tag == llvm::dwarf::DW_TAG_reference_type) {
+      // C++ type, not supported
+      return nullptr;
     }
 #ifdef LLVM_BUILD_DEBUG
     Ty->dump();
@@ -1034,6 +1059,11 @@ dffi::Type const* CUImpl::getTypeFromDIType(llvm::DIType const* Ty)
   }
 
   if (auto* DTy = llvm::dyn_cast<DICompositeType>(Ty)) {
+    // C++ type, not supported
+    if (!DTy->getIdentifier().empty()) {
+      return nullptr;
+    }
+
     const auto Tag = DTy->getTag();
     switch (Tag) {
       case llvm::dwarf::DW_TAG_structure_type:
