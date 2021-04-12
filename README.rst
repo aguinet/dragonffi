@@ -181,6 +181,21 @@ Structures can also be used:
   a = CU.types.A(a=1,b=2)
   CU.funcs.print_struct(a)
 
+C++ can be compiled, and used through ``extern C`` functions:
+
+.. code:: python
+
+  import pydffi
+
+  F = pydffi.FFI(CXX=pydffi.CXXMode.Std17)
+  CU = FFI.compile('''
+  template <class T>
+  static T foo(T a, T b) { return a+b; }
+  extern "C" int foo_int(int a, int b) { return foo(a,b); }
+  ''')
+  CU.funcs.foo_int(4,5)
+
+
 More advanced usage examples are provided in the examples directory.
 
 purectypes generator
