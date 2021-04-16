@@ -94,7 +94,7 @@ class build_ext_dffi(build_ext):
         os.chdir(cwd)
         build_ext.run(self)
 
-VERSION="0.8.0"
+VERSION="0.9.0"
 module = Extension('pydffi.backend',
                     include_dirs = [os.path.join(this_dir, '../../include'),
                         os.path.join(this_dir, '../../third-party')],
