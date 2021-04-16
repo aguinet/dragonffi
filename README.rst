@@ -187,7 +187,7 @@ C++ can be compiled, and used through ``extern C`` functions:
 
   import pydffi
 
-  F = pydffi.FFI(CXX=pydffi.CXXMode.Std17)
+  FFI = pydffi.FFI(CXX=pydffi.CXXMode.Std17)
   CU = FFI.compile('''
   template <class T>
   static T foo(T a, T b) { return a+b; }
