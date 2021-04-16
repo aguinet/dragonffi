@@ -60,6 +60,8 @@ struct CCOpts
   CXXMode CXX = CXXMode::NoCXX;
   bool GNUExtensions = true;
 
+  bool LazyJITWrappers = true;
+
   bool hasCXX() const { return CXX != CXXMode::NoCXX; }
 
   std::string getSysroot() const;
