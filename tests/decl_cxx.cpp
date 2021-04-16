@@ -28,6 +28,7 @@ int main(int argc, char** argv)
   CCOpts Opts;
   Opts.OptLevel = 2;
   Opts.CXX = CXXMode::Std11;
+  Opts.LazyJITWrappers = false;
 
   DFFI Jit(Opts);
 

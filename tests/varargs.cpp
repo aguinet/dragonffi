@@ -33,6 +33,7 @@ int main()
 
   CCOpts Opts;
   Opts.OptLevel = 2;
+  Opts.LazyJITWrappers = false;
 
   DFFI Jit(Opts);
 

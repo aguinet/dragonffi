@@ -548,10 +548,12 @@ CUImpl* DFFIImpl::compile(StringRef const Code, StringRef CUName, bool IncludeDe
       CU->parseFunctionAlias(F);
     }
     CU->FuncTys_[FName] = DFTy;
-    auto Id = getFuncTypeWrapperId(DFTy);
-    if (!Id.second) {
-      // TODO: if varag, do we always generate the wrapper for the version w/o varargs?
-      genFuncTypeWrapper(Printer, Id.first, Wrappers, DFTy, {});
+    if (!Opts_.LazyJITWrappers) {
+      auto Id = getFuncTypeWrapperId(DFTy);
+      if (!Id.second) {
+        // TODO: if varag, do we always generate the wrapper for the version w/o varargs?
+        genFuncTypeWrapper(Printer, Id.first, Wrappers, DFTy, {});
+      }
     }
   }
 

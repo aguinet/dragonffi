@@ -2,6 +2,7 @@
 -----
 
 * C++ compilation mode where extern "C" functions can be called
+* FFI wrappers are now only compiled when needed, dividing cdef loading time by ~2
 
 0.8.0
 -----
