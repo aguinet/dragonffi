@@ -1,7 +1,11 @@
+# REQUIRES: linux && libfftw3
+# RUN: %python "%s"
+
 import math
+import ctypes.util
 import pydffi
 
-pydffi.dlopen("/usr/lib/x86_64-linux-gnu/libfftw3.so")
+pydffi.dlopen(ctypes.util.find_library("fftw3"))
 FFI = pydffi.FFI()
 FFT = FFI.cdef("#include <fftw3.h>")
 

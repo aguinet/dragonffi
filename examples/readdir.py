@@ -1,3 +1,8 @@
+# REQUIRES: linux
+# RUN: %python "%s" "%S" |%FileCheck "%s"
+
+# CHECK: readdir.py
+
 import pydffi
 import sys
 

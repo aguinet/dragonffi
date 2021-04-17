@@ -33,18 +33,17 @@ int main(int argc, char** argv)
 
   std::string Err;
   auto CU = Jit.compile(R"(
-    #include <cstdint>
     template <class T>
     static T foo(T a, T b) { return a+b; }
-    extern "C" int32_t foo_int(int32_t a, int32_t b) { return foo(a,b); }
+    extern "C" int foo_int(int a, int b) { return foo(a,b); }
   )", Err);
   if (!CU) {
     std::cerr << "Compile error: " << Err << std::endl;
     return 1;
   }
-  int32_t a = 2;
-  int32_t b = 4;
-  int32_t ret;
+  int a = 2;
+  int b = 4;
+  int ret;
   void* Args_[] = {&a, &b};
   CU.getFunction("foo_int").call(&ret, &Args_[0]);
   if (ret != a+b) {
