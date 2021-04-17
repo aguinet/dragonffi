@@ -39,13 +39,24 @@ PyPI <https://pypi.org/project/pydffi/#files>`_:
 * OSX x64, with bindings for Python 2/3
 * Windows x64, with bindings for Python 3
 
+Installation
+============
+
+Python wheels are provided for Linux. Simply use pip to install the
+``pydffi`` package:
+
+.. code:: bash
+
+  $ pip install pydffi
+
 Documentation
 =============
 
 * `Why another FFI? <docs/intro.rst>`_
-* `Installation <docs/install.rst>`_
 * `Building from source <docs/building.rst>`_
 * `purectypes generator <docs/purectypes.rst>`_
+* C++ API reference: TODO
+* Python API reference: TODO
 
 Usage examples
 ==============

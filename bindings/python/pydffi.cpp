@@ -719,7 +719,6 @@ TODO
     .def_property_readonly("types", py::cpp_function(cu_types, py::keep_alive<0,1>()))
     ;
 
-<<<<<<< HEAD
   py::enum_<CXXMode>(m, "CXXMode")
     .value("NoCXX", CXXMode::NoCXX)
     .value("Std98", CXXMode::Std98)
