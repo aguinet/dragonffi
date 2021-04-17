@@ -42,10 +42,10 @@ PyPI <https://pypi.org/project/pydffi/#files>`_:
 Documentation
 =============
 
-* `Why another FFI? <docs/intro.rst>`
-* `Installation <docs/install.rst>`
-* `Building from source <docs/building.rst>`
-* `purectypes generator <docs/purectypes.rst>`
+* `Why another FFI? <docs/intro.rst>`_
+* `Installation <docs/install.rst>`_
+* `Building from source <docs/building.rst>`_
+* `purectypes generator <docs/purectypes.rst>`_
 
 Usage examples
 ==============
