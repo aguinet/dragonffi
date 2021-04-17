@@ -1,47 +1,25 @@
 Building DragonFFI
 ==================
 
-.. _general_prerequ
-
-Prerequisites
--------------
-
-The following prerequisites are required for both Linux and Windows operating systems:
-
-* `Git <https://git-scm.com/downloads>`_
-* `cmake <https://cmake.org/download/>`_
-* `Ninja <https://github.com/ninja-build/ninja/releases>`_
-* Python 2.7 or >= 3.5 (if you wish to compile the python bindings or the documentation).
-* LLVM and Clang sources (see below).
-
-LLVM and Clang source can be found at the following locations (at the time of this writing we are using the 8.0.1 version):
-
-* `LLVM sources direct link <https://github.com/llvm/llvm-project/releases/download/llvmorg-10.0.1/llvm-10.0.1.src.tar.xz>`_
-* `Clang sources direct link <https://github.com/llvm/llvm-project/releases/download/llvmorg-10.0.1/cfe-10.0.1.src.tar.xz>`_
-
-
-Building on Linux
------------------
-
-LLVM10 compilation
-`````````````````
+LLVM 11 compilation
+-------------------
 
 If your system already provides LLVM development package (e.g. on Debian-based
 system), you might be able to use them directly. Otherwise, you can compile
-Clang/LLVM from sources like this:
+Clang/LLVM from sources like this: 
 
 .. code:: bash
 
   $ cd /path/to/llvm
-  $ wget https://github.com/llvm/llvm-project/releases/download/llvmorg-10.0.1/llvm-10.0.1.src.tar.xz
-  $ wget https://github.com/llvm/llvm-project/releases/download/llvmorg-10.0.1/clang-10.0.1.src.tar.xz
-  $ tar xf llvm-10.0.1.src.tar.xz && tar xf clang-10.0.1.src.tar.xz
-  $ ln -s $PWD/clang-10.0.1.src llvm-10.0.1.src/tools/clang
+  $ wget https://github.com/llvm/llvm-project/releases/download/llvmorg-11.1.0/llvm-11.1.0.src.tar.xz
+  $ wget https://github.com/llvm/llvm-project/releases/download/llvmorg-11.1.0/clang-11.1.0.src.tar.xz
+  $ tar xf llvm-11.1.0.src.tar.xz && tar xf clang-11.1.0.src.tar.xz
+  $ ln -s $PWD/clang-11.1.0.src llvm-11.1.0.src/tools/clang
   $ mkdir build && cd build && cmake -DCMAKE_BUILD_TYPE=release -DBUILD_SHARED_LIBS=OFF -DLLVM_BUILD_TOOLS=ON -DLLVM_ENABLE_TERMINFO=OFF -DLLVM_ENABLE_LIBEDIT=OFF -DLLVM_ENABLE_ZLIB=OFF ..
   $ make
 
 LLVM development packages
-`````````````````````````
+-------------------------
 
 Debian-based system
 ~~~~~~~~~~~~~~~~~~~
@@ -50,15 +28,15 @@ Debian-based system provides development packages for clang & llvm:
 
 .. code:: bash
 
-   $ sudo apt install llvm-10-dev libclang-10-dev llvm-10-tools
+   $ sudo apt install llvm-11-dev libclang-11-dev llvm-11-tools
 
-The path to ``llvm-config`` can be found with ``which llvm-config-10``, and used directly in the CMake command line below.
+The path to ``llvm-config`` can be found with ``which llvm-config-11``, and used directly in the CMake command line below.
 
 
 DragonFFI compilation
-`````````````````````
+---------------------
 
-After compiling/installing LLVM, DragonFFI can be build:
+After compiling LLVM, DragonFFI can be build:
 
 .. code:: bash
 
@@ -66,12 +44,11 @@ After compiling/installing LLVM, DragonFFI can be build:
   $ mkdir build && cd build && cmake -DCMAKE_BUILD_TYPE=release -DLLVM_CONFIG=/path/to/llvm/build/bin/llvm-config ..
   $ cd build && make
 
-
-Building on Windows
--------------------
+Building DragonFFI (Windows specific instructions)
+==================================================
 
 Prerequisites for Windows
-`````````````````````````
+-------------------------
 
 This chapter goes through compiling DragonFFI on Windows with Microsoft's build tools. Note that it is possible to 
 compile it on Windows with `mingw` although in this case you should follow the Linux how-to.
@@ -88,7 +65,7 @@ Ensure all the above programs are in your `%PATH%` environment variable.
 
 
 LLVM and Clang
-``````````````
+--------------
 
 ## Source installation
 
@@ -146,7 +123,7 @@ that this command requires at least PowerShell 5.0 and *may* require administrat
 
 
 Building LLVM
-'''''''''''''
+~~~~~~~~~~~~~
 
 Create a `build` directory in the LLVM source:
 
@@ -176,10 +153,10 @@ environment variable:
 Note that the build will definitely take some time, depending on your machine processing power.
 
 Building DragonFFI
-``````````````````
+------------------
 
 Compiling
-'''''''''
+~~~~~~~~~
 
 Once LLVM have been compiled - and still with your developer command prompt opened - clone `DragonFFI`:
 
@@ -215,7 +192,7 @@ Ensure that you have an environment variable named `LLVM_CONFIG` which points to
     PS k:\projects\dragonffi\build> python ..\bindings\python\setup.py build
 
 Installing
-''''''''''
+~~~~~~~~~~
 
 If you wish to install `dragonffi`, just issue the `install` command - using `setup.py` - rather than the `build` one:
 
