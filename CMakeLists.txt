@@ -153,6 +153,7 @@ check_type_size("_Complex" COMPLEX_T)
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/include/dffi/config.h.in" "${CMAKE_CURRENT_BINARY_DIR}/include/dffi/config.h" @ONLY)
 
 set(DFFI_SRC
+  lib/cconv.cpp
   lib/dffi_api.cpp
   lib/dffi_llvm_wrapper.cpp
   lib/dffi_impl.cpp
@@ -305,3 +306,4 @@ add_subdirectory(bindings)
 
 option(BUILD_TESTS "Build tests" ON)
 add_subdirectory(tests)
+add_subdirectory(examples)

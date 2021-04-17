@@ -14,7 +14,7 @@
 
 // RUN: "%build_dir/compile_error%exeext" 1>"%t.out" 2>"%t.err"
 // RUN: "%FileCheck" "%s" <"%t.out"
-// RUN: "%llvm_bindir/count%exeext" 0 <"%t.err"
+// RUN: "%count" 0 <"%t.err"
 
 #include <iostream>
 #include <dffi/dffi.h>

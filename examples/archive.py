@@ -1,7 +1,14 @@
+# REQUIRES: linux && libarchive
+# RUN: tar cf %t.tar %s
+# RUN: %python "%s" "%t.tar" | %FileCheck "%s"
+
+# CHECK: archive.py
+
 import pydffi
+import ctypes.util
 import sys
 
-pydffi.dlopen("/usr/lib/x86_64-linux-gnu/libarchive.so")
+pydffi.dlopen(ctypes.util.find_library("archive"))
 D = pydffi.FFI()
 CU=D.cdef('''
 #include <archive.h>

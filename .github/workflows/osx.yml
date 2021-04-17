@@ -25,7 +25,7 @@ jobs:
         brew install cmake ninja
         sudo $CONDA/bin/conda install -c conda-forge llvmdev==11.1.0 clangdev==11.1.0
         python -m pip install --upgrade pip
-        python -m pip install lit purectypes==0.2 six
+        python -m pip install lit purectypes==0.2 six psutil
         mkdir build
     - name: CMake
       working-directory: build
@@ -41,8 +41,14 @@ jobs:
       working-directory: build
       run: |
         ninja
-    - name: Tests
+    - name: Tests Python
       working-directory: build
       run: |
-        ninja check
-
+        ninja check_python
+    # For whatever reason, lit seems to go into some kind of infinite loop with
+    # python >= 3.8
+    - name: Tests native
+      if: matrix.python-version == '3.7'
+      working-directory: build
+      run: |
+        ninja check_lib

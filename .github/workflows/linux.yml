@@ -34,7 +34,7 @@ jobs:
         echo "deb http://archive.ubuntu.com/ubuntu bionic-updates main multiverse restricted universe " | sudo tee -a /etc/apt/sources.list
         echo "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-11 main" | sudo tee -a /etc/apt/sources.list
         curl -sSL https://apt.llvm.org/llvm-snapshot.gpg.key|sudo apt-key add -
-        sudo apt-get update && sudo apt-get install -y clang-11 llvm-11-tools llvm-11-dev libclang-11-dev ninja-build cmake
+        sudo apt-get update && sudo apt-get install -y clang-11 llvm-11-tools llvm-11-dev libclang-11-dev ninja-build cmake libarchive-dev libfftw3-dev
         python -m pip install lit 
         python -m pip install purectypes==0.2 six
         mkdir build
