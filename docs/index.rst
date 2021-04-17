@@ -9,4 +9,5 @@ Contents:
    install.rst
    building.rst
    purectypes.rst
+   use_cases.rst
    reference.rst

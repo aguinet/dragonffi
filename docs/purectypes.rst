@@ -1,15 +1,15 @@
 purectypes generator
 ====================
 
-DragonFFI can generate `purectypes <https://github.com/aguinet/purectypes>`
+DragonFFI can generate `purectypes <https://github.com/aguinet/purectypes>`_
 types from any C type. The main use case for this is to be able to parse and
 generate C structures for a given ABI in a portable way. For instance, you
-could generate the `purectypes <https://github.com/aguinet/purectypes>` version
+could generate the `purectypes <https://github.com/aguinet/purectypes>`_ version
 of the `DXGI_ADAPTER_DESC3
-<https://docs.microsoft.com/en-us/windows/win32/api/dxgi1_6/ns-dxgi1_6-dxgi_adapter_desc3>`
+<https://docs.microsoft.com/en-us/windows/win32/api/dxgi1_6/ns-dxgi1_6-dxgi_adapter_desc3>`_
 DirectX structure, and then parse a blob of data that represents this structure under any OS.
 
-To do such a thing, we first need to generate the `purectypes`-related code
+To do such a thing, we first need to generate the ``purectypes``-related code
 under Windows. Let's install the relevant packages:
 
 .. code:: bash
@@ -50,5 +50,5 @@ We can for instance modify `Obj` and regenerate the packed structure:
    hexdump(Data)
 
 
-`purectypes <https://github.com/aguinet/purectypes>` is a pure Python module,
-and does not depend on `DragonFFI` per se.
+`purectypes <https://github.com/aguinet/purectypes>`_ is a pure Python module,
+and does not depend on ``DragonFFI`` per se.
