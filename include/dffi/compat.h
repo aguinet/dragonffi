@@ -40,8 +40,15 @@
 #endif
 
 #if defined(_MSC_VER)
-#include <BaseTsd.h>
-typedef SSIZE_T ssize_t;
+// LLVM's C API defines "by hand" ssize_t. We need to do the same otherwise we
+// got a conflicting type...
+// #include <BaseTsd.h>
+// typedef SSIZE_T ssize_t;
+#if defined(_WIN64)
+typedef signed __int64 ssize_t;
+#else
+typedef signed int ssize_t;
+#endif /* _WIN64 */
 #endif
 
 
