@@ -184,7 +184,7 @@ std::unique_ptr<CObj> dffi_view_from_buffer(QualType Ty, py::buffer& B)
   return Ret;
 }
 
-std::unique_ptr<DFFI> default_ctor(unsigned optLevel, py::list includeDirs, const char* Sysroot, CXXMode CXX, bool GNUExtensions)
+std::unique_ptr<DFFI> default_ctor(unsigned optLevel, py::list includeDirs, const char* Sysroot, CXXMode CXX, bool GNUExtensions, bool LazyJITWrappers)
 {
   CCOpts Opts;
   Opts.OptLevel = optLevel;
@@ -196,6 +196,7 @@ std::unique_ptr<DFFI> default_ctor(unsigned optLevel, py::list includeDirs, cons
   Opts.Sysroot = Sysroot;
   Opts.CXX = CXX;
   Opts.GNUExtensions = GNUExtensions;
+  Opts.LazyJITWrappers = LazyJITWrappers;
   return std::unique_ptr<DFFI>{new DFFI{Opts}};
 }
 
@@ -724,7 +725,7 @@ PYBIND11_MODULE(PYDFFI_EXT_NAME, m)
     ;
 
   py::class_<DFFI>(m, "FFI")
-    .def(py::init(&default_ctor), py::arg("optLevel") = 2, py::arg("includeDirs") = py::list(), py::arg("sysroot") = py::str(), py::arg("CXX") = CXXMode::NoCXX, py::arg("GNUExtensions") = true)
+    .def(py::init(&default_ctor), py::arg("optLevel") = 2, py::arg("includeDirs") = py::list(), py::arg("sysroot") = py::str(), py::arg("CXX") = CXXMode::NoCXX, py::arg("GNUExtensions") = true, py::arg("lazyJITWrappers") = true)
     .def("cdef", dffi_cdef, py::keep_alive<0,1>(), py::arg("code"), py::arg("name") = nullptr, py::arg("useLastError") = false)
     .def("compile", dffi_compile, py::keep_alive<0,1>(), py::arg("code"), py::arg("useLastError") = false)
     //.def("view", dffi_view, py::keep_alive<0,1>(), py::keep_alive<0,2>())
