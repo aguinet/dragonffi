@@ -113,6 +113,7 @@ set(LLVM_LINK_COMPONENTS
   Target
   TextAPI
   TransformUtils
+  HelloNew
   Vectorize
   ipo
 )

@@ -54,8 +54,12 @@ if (BUILD_TESTS)
   find_package(PythonInterp REQUIRED)
   set(_LIT_RUNNER "${CMAKE_CURRENT_SOURCE_DIR}/run_lit.py")
   set(LIT_RUNNER "${_LIT_RUNNER}" PARENT_SCOPE)
+
+  # NOTE: added --max-time to timeout lit after specified seconds.
+  # Default timeout is one week
   add_custom_target(check_lib
-    COMMAND "${PYTHON_EXECUTABLE}" "${_LIT_RUNNER}" "${CMAKE_CURRENT_BINARY_DIR}" -v) 
+    COMMAND "${PYTHON_EXECUTABLE}" "${_LIT_RUNNER}" "${CMAKE_CURRENT_BINARY_DIR}" -v --max-time=900)
+
   add_dependencies(check_lib ${TESTS})
   add_dependencies(check check_lib) 
   set(PYTHON_EXECUTABLE ${PYTHON_EXECUTABLE_SAVE})
