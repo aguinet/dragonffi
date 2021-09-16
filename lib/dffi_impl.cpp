@@ -180,8 +180,7 @@ DFFIImpl::DFFIImpl(CCOpts const& Opts):
   Overlay->pushOverlay(getClangResFileSystem());
 
   const auto TripleStr = llvm::sys::getProcessTriple();
-  Driver_.reset(new driver::Driver{"dummy", TripleStr, *Diags_, Overlay});
-  Driver_->setTitle("clang interpreter");
+  Driver_.reset(new driver::Driver{"dummy", TripleStr, *Diags_, "clang interpreter", Overlay});
   Driver_->setCheckInputsExist(false);
 
   const char* ResDir = getClangResRootDirectory();
@@ -232,7 +231,6 @@ DFFIImpl::DFFIImpl(CCOpts const& Opts):
   CGO.OptimizationLevel = Opts.OptLevel;
   CGO.CodeModel = "default";
   CGO.RelocationModel = llvm::Reloc::PIC_;
-  CGO.ThreadModel = "posix";
   // We use debug info for type recognition!
   CGO.setDebugInfo(codegenoptions::FullDebugInfo);
 
