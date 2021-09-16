@@ -20,13 +20,13 @@ jobs:
         path: llvm/install
         # TODO: would be really better to add the hash of the LLVM commit cloned
         # TODO: add "14.16" as a variable easy to replace
-        key: ${{ runner.os }}-llvm-release-11-msvc1416
+        key: ${{ runner.os }}-llvm-release-12-msvc1416
     - name: Get LLVM
       if: steps.cache-llvm.outputs.cache-hit != 'true'
       uses: actions/checkout@v2
       with:
         repository: 'llvm/llvm-project'
-        ref: 'release/11.x'
+        ref: 'release/12.x'
         path: 'llvm'
     - uses: ilammy/msvc-dev-cmd@v1
       if: steps.cache-llvm.outputs.cache-hit != 'true'
@@ -60,7 +60,7 @@ jobs:
       uses: actions/cache@v2
       with:
         path: llvm/install
-        key: ${{ runner.os }}-llvm-release-11-${{ matrix.tag }}
+        key: ${{ runner.os }}-llvm-release-12-${{ matrix.tag }}
     - uses: actions/checkout@v2
       if: steps.cache-llvm.outputs.cache-hit != 'true'
     - name: Get LLVM
@@ -68,7 +68,7 @@ jobs:
       uses: actions/checkout@v2
       with:
         repository: 'llvm/llvm-project'
-        ref: 'release/11.x'
+        ref: 'release/12.x'
         path: 'llvm'
     - name: Set up QEMU
       if: matrix.tag == 'manylinux2014_aarch64_cross_x64' && steps.cache-llvm.outputs.cache-hit != 'true'
@@ -101,6 +101,10 @@ jobs:
         py_vers:
           - "cp36-cp36m cp37-cp37m"
           - "cp38-cp38 cp39-cp39"
+          - "cp310-cp310"
+        exclude:
+          - tag: "manylinux2014_aarch64_cross_x64"
+            py_vers: "cp310-cp310"
 
     env:
       PY_VERS: ${{ matrix.py_vers }}
@@ -112,7 +116,7 @@ jobs:
       uses: actions/cache@v2
       with:
         path: llvm/install
-        key: Linux-llvm-release-11-${{ matrix.tag }}
+        key: Linux-llvm-release-12-${{ matrix.tag }}
     - name: Set up QEMU
       if: matrix.tag == 'manylinux2014_aarch64_cross_x64'
       id: qemu
@@ -138,13 +142,10 @@ jobs:
 
     strategy:
       matrix:
-        python-version: [2.7, 3.5, 3.6, 3.7, 3.8, 3.9]
+        python-version: ["3.6", "3.7", "3.8", "3.9", "3.10"]
         os:
           - macos-latest
           - windows-latest
-        exclude:
-          - os: windows-latest
-            python-version: 2.7
 
     runs-on: ${{ matrix.os }}
     needs: build_llvm_win
@@ -165,7 +166,7 @@ jobs:
       uses: actions/cache@v2
       with:
         path: llvm/install
-        key: ${{ runner.os }}-llvm-release-11-msvc1416
+        key: ${{ runner.os }}-llvm-release-12-msvc1416
     - name: Python dependencies
       run: |
         pip install wheel
@@ -180,7 +181,7 @@ jobs:
     - name: Install OSX dependencies
       run: |
         brew install cmake ninja
-        sudo $CONDA/bin/conda install -c conda-forge llvmdev==11.1.0 clangdev==11.1.0
+        sudo $CONDA/bin/conda install -c conda-forge llvmdev==12.0.1 clangdev==12.0.1
         echo "LLVM_CONFIG=$CONDA/bin/llvm-config" >> $GITHUB_ENV
       if: runner.os == 'macOS'
     - name: Build wheel
