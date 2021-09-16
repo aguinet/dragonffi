@@ -9,10 +9,14 @@ if (BUILD_TESTS)
 
     set(PYDFFI_LIB_DIR $<TARGET_FILE_DIR:pydffi>)
     configure_file("lit.site.cfg.in" "${CMAKE_CURRENT_BINARY_DIR}/lit.site.cfg" ESCAPE_QUOTES @ONLY)
+
+    # NOTE: added --max-time to timeout lit after specified seconds.
+    # Default timeout is one week
     add_custom_target(check_python_examples
-      COMMAND ${CMAKE_COMMAND} -E env PYDFFI_DIR=${PYDFFI_LIB_DIR} "${PYTHON_EXECUTABLE}" "${LIT_RUNNER}" "${CMAKE_CURRENT_BINARY_DIR}" -v
+      COMMAND ${CMAKE_COMMAND} -E env PYDFFI_DIR=${PYDFFI_LIB_DIR} "${PYTHON_EXECUTABLE}" "${LIT_RUNNER}" "${CMAKE_CURRENT_BINARY_DIR}" -v --max-time=900
       DEPENDS ${EXAMPLES}
     )
+
     add_dependencies(check check_python_examples)
   endif()
 
