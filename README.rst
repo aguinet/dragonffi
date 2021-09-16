@@ -102,8 +102,14 @@ Clang/LLVM from sources like this:
   $ wget https://github.com/llvm/llvm-project/releases/download/llvmorg-11.1.0/clang-11.1.0.src.tar.xz
   $ tar xf llvm-11.1.0.src.tar.xz && tar xf clang-11.1.0.src.tar.xz
   $ ln -s $PWD/clang-11.1.0.src llvm-11.1.0.src/tools/clang
-  $ mkdir build && cd build && cmake -DCMAKE_BUILD_TYPE=release -DBUILD_SHARED_LIBS=OFF -DLLVM_BUILD_TOOLS=ON -DLLVM_ENABLE_TERMINFO=OFF -DLLVM_ENABLE_LIBEDIT=OFF -DLLVM_ENABLE_ZLIB=OFF ..
-  $ make
+  $ cd llvm-11.1.0.src && mkdir build && cd build && cmake .. -G "Ninja" \
+      -DCMAKE_BUILD_TYPE=release -DLLVM_BUILD_EXAMPLES=OFF \
+      -DBUILD_SHARED_LIBS=OFF -DLLVM_BUILD_TOOLS=ON \
+      -DLLVM_ENABLE_BINDINGS=OFF -DLLVM_ENABLE_THREADS=OFF \
+      -DLLVM_ENABLE_TERMINFO=OFF -DLLVM_ENABLE_LIBEDIT=OFF \
+      -DLLVM_ENABLE_ZLIB=OFF
+  $ ninja -j8
+
 
 LLVM development packages
 -------------------------
@@ -128,8 +134,8 @@ After compiling LLVM, DragonFFI can be build:
 .. code:: bash
 
   $ cd /path/to/dragonffi
-  $ mkdir build && cd build && cmake -DCMAKE_BUILD_TYPE=release -DLLVM_CONFIG=/path/to/llvm/build/bin/llvm-config ..
-  $ cd build && make
+  $ mkdir build && cd build && cmake .. -G "Ninja" -DCMAKE_BUILD_TYPE=release -DLLVM_CONFIG=/path/to/llvm/build/bin/llvm-config
+  $ ninja -j8
 
 Usage examples
 ==============
