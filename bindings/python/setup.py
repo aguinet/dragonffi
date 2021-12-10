@@ -23,12 +23,17 @@ import errno
 
 link_args = []
 libraries = []
-if platform.system() in ("Linux","Darwin"):
+if platform.system() in ("Linux", "Darwin"):
     # This will work w/ GCC and clang
     compile_args = ['-std=c++14','-ffunction-sections','-fdata-sections']
     if platform.system() == "Linux":
         # Stripping the library makes us win 20mb..!
         link_args = ["-static-libstdc++","-Wl,--strip-all","-Wl,-gc-sections"]
+    # NOTE: starting from LLVM 12, LLVM_ENABLE_ZLIB is enabled by default on
+    # llvm from miniconda for MacOS. Thus, we need to link against system's
+    # zlib as dffi_static do not link against zlib.a
+    if platform.system() == "Darwin":
+        libraries += ['z']
 elif platform.system() == "Windows":
     compile_args = ['/TP', '/EHsc', '/MD', '/GL-']
     libraries = ['Mincore']
