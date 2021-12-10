@@ -498,8 +498,11 @@ const char* CCToClangAttribute(CallingConv CC)
       return " __attribute__((pcs(\"aapcs-vfp\")))";
     case CC_IntelOclBicc: 
       return " __attribute__((intel_ocl_bicc))";
+    case CC_AArch64VectorCall:
+      return "__attribute__((aarch64_vector_pcs))";
     case CC_SpirFunction: 
     case CC_OpenCLKernel: 
+    case CC_SwiftAsync:
       // TODO: we should just not support these?
       return "";
     case CC_Swift:        
