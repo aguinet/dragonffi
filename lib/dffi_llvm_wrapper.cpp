@@ -31,7 +31,7 @@ std::unique_ptr<llvm::Module> isolateFunc(llvm::Function* F, const char* FuncNam
     VMap[&*FArgsIt] = &*NewFArgsIt;
   }
   llvm::SmallVector<llvm::ReturnInst*, 1> Returns;
-  llvm::CloneFunctionInto(NewF, F, VMap, true, Returns);
+  llvm::CloneFunctionInto(NewF, F, VMap, llvm::CloneFunctionChangeType::GlobalChanges, Returns);
   return Ret;
 }
 

@@ -40,9 +40,9 @@ considered stable yet!
 Supported OSes/architectures, with `Python wheels precompiled and uploaded to
 PyPI <https://pypi.org/project/pydffi/#files>`_:
 
-* Linux i386/x64, with bindings for Python 2/3
+* Linux i386/x64, with bindings for Python 3
 * Linux/AArch64. with bindings for Python 3
-* OSX x64, with bindings for Python 2/3
+* OSX x64, with bindings for Python 3
 * Windows x64, with bindings for Python 3
 
 Why another FFI?
@@ -88,7 +88,7 @@ Python wheels are provided for Linux. Simply use pip to install the
 Compilation from source
 =======================
 
-LLVM 12 compilation
+LLVM 13 compilation
 -------------------
 
 If your system already provides LLVM development package (e.g. on Debian-based
@@ -98,11 +98,11 @@ Clang/LLVM from sources like this:
 .. code:: bash
 
   $ cd /path/to/llvm
-  $ wget https://github.com/llvm/llvm-project/releases/download/llvmorg-12.0.1/llvm-12.0.1.src.tar.xz
-  $ wget https://github.com/llvm/llvm-project/releases/download/llvmorg-12.0.1/clang-12.0.1.src.tar.xz
-  $ tar xf llvm-12.0.1.src.tar.xz && tar xf clang-12.0.1.src.tar.xz
-  $ ln -s $PWD/clang-12.0.1.src llvm-12.0.1.src/tools/clang
-  $ cd llvm-12.0.1.src && mkdir build && cd build && cmake .. -G "Ninja" \
+  $ wget https://github.com/llvm/llvm-project/releases/download/llvmorg-13.0.0/llvm-13.0.0.src.tar.xz
+  $ wget https://github.com/llvm/llvm-project/releases/download/llvmorg-13.0.0/clang-13.0.0.src.tar.xz
+  $ tar xf llvm-13.0.0.src.tar.xz && tar xf clang-13.0.0.src.tar.xz
+  $ ln -s $PWD/clang-13.0.0.src llvm-13.0.0.src/tools/clang
+  $ cd llvm-13.0.0.src && mkdir build && cd build && cmake .. -G "Ninja" \
       -DCMAKE_BUILD_TYPE=release -DLLVM_BUILD_EXAMPLES=OFF \
       -DBUILD_SHARED_LIBS=OFF -DLLVM_BUILD_TOOLS=ON \
       -DLLVM_ENABLE_BINDINGS=OFF -DLLVM_ENABLE_THREADS=OFF \
@@ -121,9 +121,9 @@ Debian-based system provides development packages for clang & llvm:
 
 .. code:: bash
 
-   $ sudo apt install llvm-12-dev libclang-12-dev llvm-12-tools
+   $ sudo apt install llvm-13-dev libclang-13-dev llvm-13-tools
 
-The path to ``llvm-config`` can be found with ``which llvm-config-12``, and used directly in the CMake command line below.
+The path to ``llvm-config`` can be found with ``which llvm-config-13``, and used directly in the CMake command line below.
 
 
 DragonFFI compilation

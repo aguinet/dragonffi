@@ -49,7 +49,7 @@ set(Clang_DIR "${LLVM_PREFIX}/lib/cmake/clang")
 message(STATUS "Clang cmake directory: ${Clang_DIR}")
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake" "${LLVM_CMAKE}" "${Clang_DIR}")
 set(LLVM_DIR "${LLVM_CMAKE}")
-find_package(LLVM 12.0 REQUIRED)
+find_package(LLVM 13.0 REQUIRED)
 
 # Clang
 include(ClangConfig)
@@ -113,7 +113,6 @@ set(LLVM_LINK_COMPONENTS
   Target
   TextAPI
   TransformUtils
-  HelloNew
   Vectorize
   ipo
 )
