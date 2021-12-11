@@ -36,7 +36,7 @@ jobs:
       working-directory: build
       run: |
         cmake -DCMAKE_C_COMPILER=cl.exe -DCMAKE_CXX_COMPILER=cl.exe -DPYTHON_BINDINGS=ON -DBUILD_TESTS=ON -DLLVM_CONFIG=C:/Miniconda/Library/bin/llvm-config.exe -DCMAKE_BUILD_TYPE=release -DCMAKE_PREFIX_PATH="C:/Miniconda/Library/lib/" -G Ninja ..
-        ninja
+        ninja -j1
     - name: Native & Python tests
       working-directory: build
       run: |
