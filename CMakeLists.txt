@@ -103,6 +103,7 @@ set(LLVM_LINK_COMPONENTS
   ObjCARCOpts
   Object
   Option
+  OrcTargetProcess
   Passes
   ProfileData
   Remarks
