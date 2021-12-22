@@ -81,8 +81,11 @@ void printFunctionAttrs(const clang::FunctionType::ExtInfo &Info,
   case clang::CC_X86RegCall:
     OS << " __attribute__((regcall))";
     break;
+  case clang::CC_AArch64VectorCall:
+    OS << "__attribute__((aarch64_vector_pcs))";
   case clang::CC_SpirFunction:
   case clang::CC_OpenCLKernel:
+  case clang::CC_SwiftAsync:
     // Do nothing. These CCs are not available as attributes.
     break;
   case clang::CC_Swift:
