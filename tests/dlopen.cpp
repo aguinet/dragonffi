@@ -1,4 +1,4 @@
-// RUN: %clang "%S/lib.c" -shared -O1 -o "%t.so"
+// RUN: %clang "%S/lib.c" -shared -O1 -o "%t.so" %TEST_dlopen_LDFLAGS
 // RUN: "%build_dir/dlopen%exeext" "%t.so"
 
 #include <cstdio>
