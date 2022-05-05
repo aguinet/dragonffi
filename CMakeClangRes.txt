@@ -12,19 +12,40 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-file(GLOB_RECURSE CLANG_RES_GLOB LIST_DIRECTORIES false "${CLANG_RES_DIR}/*")
-string(LENGTH "${CLANG_RES_DIR}" CLANG_RES_DIR_LENGTH)
+file(GLOB_RECURSE CLANG_RES_GLOB LIST_DIRECTORIES false  RELATIVE "${CLANG_RES_DIR}" "${CLANG_RES_DIR}/*")
 set(VFS_INIT "")
 set(FILE_IDX 0)
 file(WRITE "${CLANG_RES_HEADER}" "")
-foreach(RES ${CLANG_RES_GLOB})
-  get_filename_component(RES "${RES}" ABSOLUTE)
-  string(SUBSTRING "${RES}" 0 ${CLANG_RES_DIR_LENGTH} RES_ROOT)
-  if (NOT "${RES_ROOT}" STREQUAL "${CLANG_RES_DIR}")
-    message(FATAL_ERROR "Unknown directory for ressource '${RES}'")
+set(RES_BLACKLIST
+  "riscv_vector.h"
+  "opencl-c.h"
+  "opencl-c-base.h"
+  "altivec.h"
+  "hexagon_protos.h"
+  "hvx_hexagon_protos.h"
+  "hexagon_types.h"
+  "wasm_simd128.h"
+)
+set(DIR_BLACKLIST
+  "cuda_wrappers"
+  "ppc_wrappers"
+  "profile"
+  "sanitizer"
+  "xray"
+)
+foreach(RES_NAME ${CLANG_RES_GLOB})
+  # Is blacklisted?
+  list(FIND RES_BLACKLIST "${RES_NAME}" IS_BLACKLISTED)
+  if (NOT IS_BLACKLISTED EQUAL -1)
+    continue()
   endif()
-  MATH(EXPR IDX_START "${CLANG_RES_DIR_LENGTH}+1")
-  string(SUBSTRING "${RES}" ${IDX_START} -1 RES_NAME)
+  get_filename_component(RES_DIR "${RES_NAME}" DIRECTORY)
+  list(FIND DIR_BLACKLIST "${RES_DIR}" IS_BLACKLISTED)
+  if (NOT IS_BLACKLISTED EQUAL -1)
+    continue()
+  endif()
+
+  set(RES "${CLANG_RES_DIR}/${RES_NAME}")
   file(READ "${RES}" RES_DATA HEX)
   string(REGEX REPLACE "([0-9a-f][0-9a-f])" "0x\\1," RES_DATA_ARRAY "${RES_DATA}")
   set(VAR_NAME "__file_${FILE_IDX}")
@@ -33,4 +54,3 @@ foreach(RES ${CLANG_RES_GLOB})
   MATH(EXPR FILE_IDX "${FILE_IDX}+1")
 endforeach()
 file(APPEND "${CLANG_RES_HEADER}" "void initVFS(llvm::vfs::InMemoryFileSystem& VFS) {\n ${VFS_INIT} \n}")
-
