@@ -38,6 +38,7 @@
 #include <llvm/ExecutionEngine/MCJIT.h>
 #include <llvm/IR/DebugInfo.h>
 #include <llvm/IR/LegacyPassManager.h>
+#include <llvm/MC/TargetRegistry.h>
 #include <llvm/Object/ObjectFile.h>
 #include <llvm/Option/Arg.h>
 #include <llvm/Option/ArgList.h>
@@ -48,7 +49,6 @@
 #include <llvm/Support/Process.h>
 #include <llvm/Support/Program.h>
 #include <llvm/Support/Signals.h>
-#include <llvm/Support/TargetRegistry.h>
 #include <llvm/Support/TargetSelect.h>
 #include <llvm/Support/VirtualFileSystem.h>
 #include <llvm/Support/raw_ostream.h>
@@ -119,8 +119,8 @@ std::string CCOpts::getSysroot() const
     return Sysroot;
   }
   auto OEnv = sys::Process::GetEnv("DFFI_SYSROOT");
-  if (OEnv.hasValue()) {
-    return std::move(OEnv.getValue());
+  if (OEnv) {
+    return std::move(*OEnv);
   }
   return {};
 }
@@ -614,7 +614,7 @@ void* DFFIImpl::getWrapperAddress(FunctionType const* FTy)
     std::string Buf;
     llvm::raw_string_ostream ss(Buf);
     TypePrinter P;
-    genFuncTypeWrapper(P, WIdx, ss, FTy, None);
+    genFuncTypeWrapper(P, WIdx, ss, FTy, std::nullopt);
     compileWrappers(P, ss.str());
   }
   std::string TName = getWrapperName(WIdx);

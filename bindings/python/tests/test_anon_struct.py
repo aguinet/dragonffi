@@ -20,6 +20,7 @@ from common import DFFITest
 class AnonStructTest(DFFITest): 
     def test_anon_struct(self):
         CU = self.FFI.compile('''
+        #include <stdio.h>
         struct A {
           struct {
             int a;
