@@ -20,13 +20,13 @@ jobs:
         path: llvm/install
         # TODO: would be really better to add the hash of the LLVM commit cloned
         # TODO: add "14.16" as a variable easy to replace
-        key: ${{ runner.os }}-llvm-release-13-msvc1416
+        key: ${{ runner.os }}-llvm-release-16-msvc1416
     - name: Get LLVM
       if: steps.cache-llvm.outputs.cache-hit != 'true'
       uses: actions/checkout@v2
       with:
         repository: 'llvm/llvm-project'
-        ref: 'release/13.x'
+        ref: 'release/16.x'
         path: 'llvm'
     - uses: ilammy/msvc-dev-cmd@v1
       if: steps.cache-llvm.outputs.cache-hit != 'true'
@@ -47,9 +47,9 @@ jobs:
     strategy:
       matrix:
         include:
-          - tag: "manylinux2010_x86_64"
+          - tag: "manylinux2014_x86_64"
             docker_host: quay.io/pypa
-          - tag: "manylinux2010_i686"
+          - tag: "manylinux2014_i686"
             docker_host: quay.io/pypa
           - tag: "manylinux2014_aarch64_cross_x64"
             docker_host: aguinet
@@ -95,16 +95,13 @@ jobs:
     strategy:
       matrix:
         tag:
-          - "manylinux2010_x86_64"
-          - "manylinux2010_i686"
+          - "manylinux2014_x86_64"
+          - "manylinux2014_i686"
           - "manylinux2014_aarch64_cross_x64"
         py_vers:
-          - "cp36-cp36m cp37-cp37m"
-          - "cp38-cp38 cp39-cp39"
-          - "cp310-cp310"
-        exclude:
-          - tag: "manylinux2014_aarch64_cross_x64"
-            py_vers: "cp310-cp310"
+          - "cp37-cp37m cp38-cp38 "
+          - "cp39-cp39 cp310-cp310"
+          - "cp311-cp311"
 
     env:
       PY_VERS: ${{ matrix.py_vers }}
