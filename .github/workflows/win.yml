@@ -31,7 +31,7 @@ jobs:
         mkdir build
     - uses: ilammy/msvc-dev-cmd@v1
       with:
-        toolset: "14.16"
+        vsversion: 2019
     - name: CMake + build
       working-directory: build
       run: |
