@@ -38,6 +38,7 @@ int main()
 
   std::string Err;
   auto CU = Jit.compile(R"(
+#include <stdio.h>
 typedef struct {
   char a;
   union {
@@ -49,10 +50,6 @@ typedef struct {
 void dump(A a) {
   printf("u.a=%d, u.b=%d\n", a.u.a, a.u.b);
 }
-
-/*void dump_anon(struct { int a; int b; } s) {
-  printf("a=%d, b=%d\n", s.a, s.b);
-}*/
 )", Err);
   if (!CU) {
     std::cerr << Err << std::endl;

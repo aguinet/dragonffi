@@ -39,6 +39,7 @@ int main()
 
   std::string Err;
   auto CU = Jit.compile(R"(
+#include <stdio.h>
 typedef struct {
   char a;
   struct {
