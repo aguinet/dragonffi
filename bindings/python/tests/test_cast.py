@@ -31,7 +31,7 @@ class CastTest(DFFITest):
 
         # Array/pointer casts
         CU = FFI.compile('''
-#include <stdio.h>
+#include <string.h>
 #include <stdbool.h>
 
 typedef struct {

@@ -24,6 +24,8 @@ class BuffersTest(DFFITest):
         CU = self.FFI.compile('''
 #include <stdio.h>
 #include <stdint.h>
+#include <string.h>
+#include <ctype.h>
 
 void print(const char* msg) {
     puts(msg);
@@ -33,7 +35,7 @@ void print_u8(uint8_t const* buf, size_t len) {
         printf("%02X ", buf[i]);
     }
     printf("\\n");
-} 
+}
 
 void bytesupper(uint8_t* S) {
     const size_t Len = strlen(S);
