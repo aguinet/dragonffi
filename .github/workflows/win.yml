@@ -30,8 +30,6 @@ jobs:
         python -m pip install lit purectypes==0.2 six
         mkdir build
     - uses: ilammy/msvc-dev-cmd@v1
-      with:
-        vsversion: 2019
     - name: CMake + build
       working-directory: build
       run: |
