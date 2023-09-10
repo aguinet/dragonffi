@@ -31,7 +31,7 @@ jobs:
     - uses: ilammy/msvc-dev-cmd@v1
       if: steps.cache-llvm.outputs.cache-hit != 'true'
       with:
-        toolset: "14.16"
+        vsversion: "2022"
     - name: Build LLVM
       if: steps.cache-llvm.outputs.cache-hit != 'true'
       run: |
@@ -151,7 +151,7 @@ jobs:
     - uses: actions/checkout@v2
     - uses: ilammy/msvc-dev-cmd@v1
       with:
-        toolset: "14.16"
+        vsversion: "2022"
       if: runner.os == 'Windows'
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v2
