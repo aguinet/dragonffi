@@ -9,7 +9,7 @@ on:
 jobs:
   build:
 
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-22.04
     strategy:
       matrix:
         python-version: ["3.7", "3.8", "3.9", "3.10", "3.11"]
@@ -22,20 +22,10 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Install system dependencies
       run: |
-        # Github's ubuntu 18 docker image provides broken clang/llvm 8
-        # packages from whatever sources...
-        # Remove the mess it has, purge every thing we don't need from
-        # sources.list and reinstall the proper and clean clang/llvm packages
-        # from ubuntu 18.
-        sudo apt-get purge clang-8 llvm-8-dev libclang1-8 llvm-8 llvm-8-runtime libclang-common-8-dev llvm-8-dev libllvm8 liblldb-8
-        sudo rm /etc/apt/sources.list.d/*
-        echo "deb http://archive.ubuntu.com/ubuntu bionic main multiverse restricted universe" | sudo tee /etc/apt/sources.list
-        echo "deb http://archive.ubuntu.com/ubuntu bionic-security main multiverse restricted universe" | sudo tee -a /etc/apt/sources.list
-        echo "deb http://archive.ubuntu.com/ubuntu bionic-updates main multiverse restricted universe " | sudo tee -a /etc/apt/sources.list
-        echo "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-13 main" | sudo tee -a /etc/apt/sources.list
+        echo "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy main" | sudo tee -a /etc/apt/sources.list
         curl -sSL https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
-        sudo apt-get update && sudo apt-get install -y clang-13 llvm-13-tools llvm-13-dev libclang-13-dev ninja-build cmake libarchive-dev libfftw3-dev
-        python -m pip install lit 
+        sudo apt-get update && sudo apt-get install -y clang-16 llvm-16-tools llvm-16-dev libclang-16-dev ninja-build cmake libarchive-dev libfftw3-dev
+        python -m pip install lit
         python -m pip install purectypes==0.2 six
         mkdir build
     - name: CMake
@@ -45,7 +35,7 @@ jobs:
           -DBUILD_SHARED_LIBS=ON \
           -DPYTHON_BINDINGS=ON \
           -DBUILD_TESTS=ON \
-          -DLLVM_CONFIG=$(which llvm-config-13) \
+          -DLLVM_CONFIG=$(which llvm-config-16) \
           -DCMAKE_BUILD_TYPE=debug \
           -G Ninja ..
     - name: Build
