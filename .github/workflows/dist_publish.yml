@@ -113,7 +113,7 @@ jobs:
       uses: actions/cache@v2
       with:
         path: llvm/install
-        key: Linux-llvm-release-13-${{ matrix.tag }}
+        key: Linux-llvm-release-16-${{ matrix.tag }}
     - name: Set up QEMU
       if: matrix.tag == 'manylinux2014_aarch64_cross_x64'
       id: qemu
