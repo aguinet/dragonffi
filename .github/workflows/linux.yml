@@ -22,7 +22,7 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Install system dependencies
       run: |
-        echo "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy main" | sudo tee -a /etc/apt/sources.list
+        echo "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-16 main" | sudo tee -a /etc/apt/sources.list
         curl -sSL https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
         sudo apt-get update && sudo apt-get install -y clang-16 llvm-16-tools llvm-16-dev libclang-16-dev ninja-build cmake libarchive-dev libfftw3-dev
         python -m pip install lit
