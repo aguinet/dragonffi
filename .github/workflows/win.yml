@@ -12,7 +12,7 @@ jobs:
     runs-on: windows-latest
     strategy:
       matrix:
-        python-version: ["3.6", "3.7", "3.8", "3.9", "3.10"]
+        python-version: ["3.7", "3.8", "3.9", "3.10", "3.11"]
 
     steps:
     - uses: actions/checkout@v2
@@ -25,17 +25,17 @@ jobs:
         choco install ninja
         C:\Miniconda\condabin\conda.bat activate base
         C:\Miniconda\condabin\conda.bat update  -c conda-forge python
-        C:\Miniconda\condabin\conda.bat install -c conda-forge llvmdev==13.0.0 clangdev==13.0.0
+        C:\Miniconda\condabin\conda.bat install -c conda-forge llvmdev==16.0.0 clangdev==16.0.0
         python -m pip install --upgrade pip
         python -m pip install lit purectypes==0.2 six
         mkdir build
     - uses: ilammy/msvc-dev-cmd@v1
       with:
-        toolset: "14.16"
+        vsversion: "2022"
     - name: CMake + build
       working-directory: build
       run: |
-        cmake -DCMAKE_C_COMPILER=cl.exe -DCMAKE_CXX_COMPILER=cl.exe -DPYTHON_BINDINGS=ON -DBUILD_TESTS=ON -DLLVM_CONFIG=C:/Miniconda/Library/bin/llvm-config.exe -DCMAKE_BUILD_TYPE=release -DCMAKE_PREFIX_PATH="C:/Miniconda/Library/lib/" -G Ninja ..
+        cmake -DCMAKE_C_COMPILER=cl.exe -DCMAKE_CXX_COMPILER=cl.exe -DPYTHON_BINDINGS=ON -DBUILD_TESTS=ON -DLLVM_CONFIG=C:/Miniconda/Library/bin/llvm-config.exe -DCMAKE_BUILD_TYPE=release -DCMAKE_PREFIX_PATH="C:/Miniconda/Library/lib/" -G Ninja .. -DLLVM_ENABLE_ZSTD=OFF -DLLVM_ENABLE_ZLIB=OFF
         ninja
     - name: Native & Python tests
       working-directory: build

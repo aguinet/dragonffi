@@ -37,6 +37,7 @@ int main()
 
   std::string Err;
   auto CU = Jit.compile(R"(
+#include <stdio.h>
 struct A {
   int a;
   int b;

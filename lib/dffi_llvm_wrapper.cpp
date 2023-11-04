@@ -39,7 +39,7 @@ std::unique_ptr<llvm::Module> isolateFunc(llvm::Function* F, const char* FuncNam
 
 std::string FunctionType::getWrapperLLVM(const char* FuncName) const
 {
-  llvm::Function* F = getDFFI().getWrapperLLVMFunc(this, llvm::None);
+  llvm::Function* F = getDFFI().getWrapperLLVMFunc(this, std::nullopt);
   auto M = isolateFunc(F, FuncName);
   std::string Ret;
   llvm::raw_string_ostream ss(Ret);
@@ -49,7 +49,7 @@ std::string FunctionType::getWrapperLLVM(const char* FuncName) const
 
 std::string FunctionType::getWrapperLLVMStr(const char* FuncName) const
 {
-  llvm::Function* F = getDFFI().getWrapperLLVMFunc(this, llvm::None);
+  llvm::Function* F = getDFFI().getWrapperLLVMFunc(this, std::nullopt);
   auto M = isolateFunc(F, FuncName);
   std::string Ret;
   llvm::raw_string_ostream ss(Ret);

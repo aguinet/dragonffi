@@ -23,7 +23,7 @@ class StrTest(DFFITest):
         J=self.FFI
 
         CU = J.compile('''
-#include <stdio.h>
+#include <string.h>
 #include <stdbool.h>
 
 bool check_str0(const char* msg) {

@@ -40,7 +40,7 @@ message(STATUS "LLVM cmake: ${LLVM_CMAKE}")
 
 set(CMAKE_C_VISIBILITY_PRESET hidden)
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
@@ -49,7 +49,7 @@ set(Clang_DIR "${LLVM_PREFIX}/lib/cmake/clang")
 message(STATUS "Clang cmake directory: ${Clang_DIR}")
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake" "${LLVM_CMAKE}" "${Clang_DIR}")
 set(LLVM_DIR "${LLVM_CMAKE}")
-find_package(LLVM 13.0 REQUIRED)
+find_package(LLVM 16 REQUIRED)
 
 # Clang
 include(ClangConfig)

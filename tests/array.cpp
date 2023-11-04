@@ -30,6 +30,8 @@ int main(int argc, char** argv)
 
   std::string Err;
   auto CU = Jit.compile(R"(
+#include <string.h>
+#include <stdio.h>
 struct A
 {
   char buf[256];

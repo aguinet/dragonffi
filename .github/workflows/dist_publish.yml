@@ -20,18 +20,18 @@ jobs:
         path: llvm/install
         # TODO: would be really better to add the hash of the LLVM commit cloned
         # TODO: add "14.16" as a variable easy to replace
-        key: ${{ runner.os }}-llvm-release-13-msvc1416
+        key: ${{ runner.os }}-llvm-release-16-msvc1416
     - name: Get LLVM
       if: steps.cache-llvm.outputs.cache-hit != 'true'
       uses: actions/checkout@v2
       with:
         repository: 'llvm/llvm-project'
-        ref: 'release/13.x'
+        ref: 'release/16.x'
         path: 'llvm'
     - uses: ilammy/msvc-dev-cmd@v1
       if: steps.cache-llvm.outputs.cache-hit != 'true'
       with:
-        toolset: "14.16"
+        vsversion: "2022"
     - name: Build LLVM
       if: steps.cache-llvm.outputs.cache-hit != 'true'
       run: |
@@ -39,7 +39,7 @@ jobs:
         mkdir llvm/build
         mkdir llvm/install
         cd llvm/build
-        cmake ../llvm -DLLVM_BUILD_EXAMPLES=OFF -DCLANG_ENABLE_ARCMT=OFF -DCLANG_ENABLE_STATIC_ANALYZER=OFF -DLLVM_BUILD_TOOLS=ON -DCLANG_BUILD_TOOLS=OFF -DLLVM_INSTALL_UTILS=ON -DLLVM_TARGETS_TO_BUILD=X86 -DLLVM_ENABLE_PROJECTS=clang -DLLVM_ENABLE_BINDINGS=OFF -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$PWD/../install" -DLLVM_ENABLE_THREADS=OFF -DLLVM_ENABLE_ZLIB=OFF  -G Ninja
+        cmake ../llvm -DLLVM_BUILD_EXAMPLES=OFF -DCLANG_ENABLE_ARCMT=OFF -DCLANG_ENABLE_STATIC_ANALYZER=OFF -DLLVM_BUILD_TOOLS=ON -DCLANG_BUILD_TOOLS=OFF -DLLVM_INSTALL_UTILS=ON -DLLVM_TARGETS_TO_BUILD=X86 -DLLVM_ENABLE_PROJECTS=clang -DLLVM_ENABLE_BINDINGS=OFF -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$PWD/../install" -DLLVM_ENABLE_THREADS=OFF -DLLVM_ENABLE_ZLIB=OFF -DLLVM_ENABLE_ZSTD=OFF -G Ninja
         ninja install
 
   build_llvm_manylinux:
@@ -47,9 +47,9 @@ jobs:
     strategy:
       matrix:
         include:
-          - tag: "manylinux2010_x86_64"
+          - tag: "manylinux2014_x86_64"
             docker_host: quay.io/pypa
-          - tag: "manylinux2010_i686"
+          - tag: "manylinux2014_i686"
             docker_host: quay.io/pypa
           - tag: "manylinux2014_aarch64_cross_x64"
             docker_host: aguinet
@@ -60,7 +60,7 @@ jobs:
       uses: actions/cache@v2
       with:
         path: llvm/install
-        key: ${{ runner.os }}-llvm-release-13-${{ matrix.tag }}
+        key: ${{ runner.os }}-llvm-release-16-${{ matrix.tag }}
     - uses: actions/checkout@v2
       if: steps.cache-llvm.outputs.cache-hit != 'true'
     - name: Get LLVM
@@ -68,7 +68,7 @@ jobs:
       uses: actions/checkout@v2
       with:
         repository: 'llvm/llvm-project'
-        ref: 'release/13.x'
+        ref: 'release/16.x'
         path: 'llvm'
     - name: Set up QEMU
       if: matrix.tag == 'manylinux2014_aarch64_cross_x64' && steps.cache-llvm.outputs.cache-hit != 'true'
@@ -95,16 +95,13 @@ jobs:
     strategy:
       matrix:
         tag:
-          - "manylinux2010_x86_64"
-          - "manylinux2010_i686"
+          - "manylinux2014_x86_64"
+          - "manylinux2014_i686"
           - "manylinux2014_aarch64_cross_x64"
         py_vers:
-          - "cp36-cp36m cp37-cp37m"
-          - "cp38-cp38 cp39-cp39"
-          - "cp310-cp310"
-        exclude:
-          - tag: "manylinux2014_aarch64_cross_x64"
-            py_vers: "cp310-cp310"
+          - "cp37-cp37m cp38-cp38 "
+          - "cp39-cp39 cp310-cp310"
+          - "cp311-cp311"
 
     env:
       PY_VERS: ${{ matrix.py_vers }}
@@ -116,7 +113,7 @@ jobs:
       uses: actions/cache@v2
       with:
         path: llvm/install
-        key: Linux-llvm-release-13-${{ matrix.tag }}
+        key: Linux-llvm-release-16-${{ matrix.tag }}
     - name: Set up QEMU
       if: matrix.tag == 'manylinux2014_aarch64_cross_x64'
       id: qemu
@@ -142,7 +139,7 @@ jobs:
 
     strategy:
       matrix:
-        python-version: ["3.6", "3.7", "3.8", "3.9", "3.10"]
+        python-version: ["3.7", "3.8", "3.9", "3.10", "3.11"]
         os:
           - macos-latest
           - windows-latest
@@ -154,7 +151,7 @@ jobs:
     - uses: actions/checkout@v2
     - uses: ilammy/msvc-dev-cmd@v1
       with:
-        toolset: "14.16"
+        vsversion: "2022"
       if: runner.os == 'Windows'
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v2
@@ -166,7 +163,7 @@ jobs:
       uses: actions/cache@v2
       with:
         path: llvm/install
-        key: ${{ runner.os }}-llvm-release-13-msvc1416
+        key: ${{ runner.os }}-llvm-release-16-msvc1416
     - name: Python dependencies
       run: |
         pip install wheel
@@ -181,7 +178,7 @@ jobs:
     - name: Install OSX dependencies
       run: |
         brew install cmake ninja
-        sudo $CONDA/bin/conda install -c conda-forge llvmdev==13.0.0 clangdev==13.0.0
+        sudo $CONDA/bin/conda install -c conda-forge llvmdev==16.0.6 clangdev==16.0.6
         echo "LLVM_CONFIG=$CONDA/bin/llvm-config" >> $GITHUB_ENV
       if: runner.os == 'macOS'
     - name: Build wheel

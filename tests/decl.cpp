@@ -93,6 +93,7 @@ void toto()
   CU.getFunction("foo").call(nullptr);
 
   CU = Jit.compile(R"(
+void print(const char* s);
 void foo();
 void foo2() {
   print("foo2");

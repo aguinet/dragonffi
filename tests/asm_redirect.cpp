@@ -32,6 +32,7 @@ int main(int argc, char** argv)
   std::string Err;
   // This trick comes directly from stdio.h under Debian! Enjoy' :)
   auto CU = Jit.compile(R"(
+#include <stdio.h>
 void myfunc() __asm__ ("" "redirected_myfunc");
 void myfunc() { puts("toto"); }
 )", Err);
