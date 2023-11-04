@@ -176,7 +176,7 @@ DFFIImpl::DFFIImpl(CCOpts const& Opts):
   // Add an overleay with our virtual file system on top of the system!
   IntrusiveRefCntPtr<llvm::vfs::OverlayFileSystem> Overlay(new llvm::vfs::OverlayFileSystem{vfs::getRealFileSystem()});
   Overlay->pushOverlay(VFS_);
-  // Finally add clang's ressources
+  // Finally add clang's resources
   Overlay->pushOverlay(getClangResFileSystem());
 
   const auto TripleStr = llvm::sys::getProcessTriple();
