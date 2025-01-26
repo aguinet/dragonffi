@@ -104,6 +104,7 @@ unsigned BasicType::getAlign() const
 #endif
   }
   assert(false && "unhandled basic type!");
+  return 0;
 }
 
 uint64_t BasicType::getSize() const
@@ -157,6 +158,7 @@ uint64_t BasicType::getSize() const
 #endif
   }
   assert(false && "unhandled basic type!");
+  return 0;
 }
 
 FunctionType::FunctionType(details::DFFIImpl& Dffi, QualType RetTy, ParamsVecTy ParamsTy, CallingConv CC, bool VarArgs, bool UseLastError):

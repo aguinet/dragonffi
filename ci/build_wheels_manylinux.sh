@@ -20,6 +20,7 @@ export MAKEFLAGS="-j$(nproc)"
 
 cd "$DFFI/bindings/python"
 for PY in $*; do
+  /opt/python/$PY/bin/pip install setuptools
   /opt/python/$PY/bin/python ./setup.py bdist_wheel
   rm -rf build
 done

@@ -19,19 +19,16 @@ jobs:
       with:
         path: llvm/install
         # TODO: would be really better to add the hash of the LLVM commit cloned
-        # TODO: add "14.16" as a variable easy to replace
-        key: ${{ runner.os }}-llvm-release-13-msvc1416
+        key: ${{ runner.os }}-llvm-release-13-msvc
     - name: Get LLVM
       if: steps.cache-llvm.outputs.cache-hit != 'true'
       uses: actions/checkout@v2
       with:
-        repository: 'llvm/llvm-project'
+        repository: 'aguinet/llvm-project'
         ref: 'release/13.x'
         path: 'llvm'
     - uses: ilammy/msvc-dev-cmd@v1
       if: steps.cache-llvm.outputs.cache-hit != 'true'
-      with:
-        toolset: "14.16"
     - name: Build LLVM
       if: steps.cache-llvm.outputs.cache-hit != 'true'
       run: |
@@ -47,47 +44,33 @@ jobs:
     strategy:
       matrix:
         include:
-          - tag: "manylinux2010_x86_64"
-            docker_host: quay.io/pypa
-          - tag: "manylinux2010_i686"
-            docker_host: quay.io/pypa
-          - tag: "manylinux2014_aarch64_cross_x64"
-            docker_host: aguinet
-    runs-on: ubuntu-latest
+          - image: "manylinux_2_28_x86_64"
+            runs: ubuntu-24.04
+          - image: "manylinux_2_28_aarch64"
+            runs: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runs }}
     steps:
     - name: Cache LLVM
       id: cache-llvm
       uses: actions/cache@v2
       with:
         path: llvm/install
-        key: ${{ runner.os }}-llvm-release-13-${{ matrix.tag }}
+        key: ${{ runner.os }}-llvm-release-13-${{ matrix.image }}-00
     - uses: actions/checkout@v2
       if: steps.cache-llvm.outputs.cache-hit != 'true'
     - name: Get LLVM
       if: steps.cache-llvm.outputs.cache-hit != 'true'
       uses: actions/checkout@v2
       with:
-        repository: 'llvm/llvm-project'
+        repository: 'aguinet/llvm-project'
         ref: 'release/13.x'
         path: 'llvm'
-    - name: Set up QEMU
-      if: matrix.tag == 'manylinux2014_aarch64_cross_x64' && steps.cache-llvm.outputs.cache-hit != 'true'
-      id: qemu
-      uses: docker/setup-qemu-action@v1
-      with:
-        image: tonistiigi/binfmt:latest
-        platforms: arm64
-    - name: Setup AArch64 environment
-      if: matrix.tag == 'manylinux2014_aarch64_cross_x64' && steps.cache-llvm.outputs.cache-hit != 'true'
-      run: |
-        echo "DOCKER_OPTS=--env CC=/opt/native/bin/clang --env CXX=/opt/native/bin/clang++ --env CMAKE_BIN=/opt/native/bin/cmake --env LDFLAGS=-fuse-ld=lld" >>$GITHUB_ENV
     - name: Build LLVM
       if: steps.cache-llvm.outputs.cache-hit != 'true'
       run: |
-        docker run $DOCKER_OPTS -v $GITHUB_WORKSPACE:/pwd "${{ matrix.docker_host }}/${{ matrix.tag }}" /bin/bash /pwd/ci/build_llvm_manylinux.sh /pwd/llvm
+        docker run -v $GITHUB_WORKSPACE:/pwd "quay.io/pypa/${{ matrix.image }}" /bin/bash /pwd/ci/build_llvm_manylinux.sh /pwd/llvm
 
   build_manylinux:
-    runs-on: ubuntu-latest
     needs: build_llvm_manylinux
 
     # Split into multiple jobs to speed up the process. Let's compile two
@@ -95,19 +78,24 @@ jobs:
     strategy:
       matrix:
         tag:
-          - "manylinux2010_x86_64"
-          - "manylinux2010_i686"
-          - "manylinux2014_aarch64_cross_x64"
+          - image: "manylinux_2_28_x86_64"
+            runs: ubuntu-24.04
+          - image: "manylinux_2_28_aarch64"
+            runs: ubuntu-24.04-arm
         py_vers:
-          - "cp36-cp36m cp37-cp37m"
-          - "cp38-cp38 cp39-cp39"
+          - "cp38-cp38"
+          - "cp39-cp39"
           - "cp310-cp310"
-        exclude:
-          - tag: "manylinux2014_aarch64_cross_x64"
-            py_vers: "cp310-cp310"
+          - "cp311-cp311"
+          - "cp312-cp312"
+          - "cp313-cp313"
 
     env:
       PY_VERS: ${{ matrix.py_vers }}
+
+    runs-on: ${{ matrix.tag.runs }}
+    container:
+      image: quay.io/pypa/${{ matrix.tag.image }}
 
     steps:
     - uses: actions/checkout@v2
@@ -116,35 +104,22 @@ jobs:
       uses: actions/cache@v2
       with:
         path: llvm/install
-        key: Linux-llvm-release-13-${{ matrix.tag }}
-    - name: Set up QEMU
-      if: matrix.tag == 'manylinux2014_aarch64_cross_x64'
-      id: qemu
-      uses: docker/setup-qemu-action@v1
-      with:
-        image: tonistiigi/binfmt:latest
-        platforms: arm64
-    - name: Setup AArch64 environment
-      if: matrix.tag == 'manylinux2014_aarch64_cross_x64'
-      run: |
-        echo "DOCKER_OPTS=--env CC=/opt/native/bin/clang --env CXX=/opt/native/bin/clang++ --env CMAKE_BIN=/opt/native/bin/cmake --env LDFLAGS=-fuse-ld=lld" >>$GITHUB_ENV
+        key: Linux-llvm-release-13-${{ matrix.tag.image }}-00
     - name: Build wheels & tests
-      working-directory: bindings/python
       run: |
-        [[ ${{ matrix.tag}} == "manylinux2014_aarch64_cross_x64" ]] && DOCKER_ROOT=aguinet || DOCKER_ROOT=quay.io/pypa
-        docker run $DOCKER_OPTS -v $GITHUB_WORKSPACE:/pwd "$DOCKER_ROOT/${{ matrix.tag }}" /bin/bash /pwd/ci/build_wheels_manylinux.sh /pwd /pwd/llvm/install $PY_VERS
-    - uses: actions/upload-artifact@v1
+        /bin/bash ./ci/build_wheels_manylinux.sh "$PWD" "${PWD}/llvm/install" $PY_VERS
+    - uses: actions/upload-artifact@v4
       with:
-        name: pydffi-wheels
+        name: pydffi-wheels-linux-${{ matrix.tag.image }}-${{ matrix.py_vers }}
         path: bindings/python/wheelhouse/
 
   build_osxwin:
 
     strategy:
       matrix:
-        python-version: ["3.6", "3.7", "3.8", "3.9", "3.10"]
+        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12", "3.13"]
         os:
-          - macos-latest
+          #- macos-latest
           - windows-latest
 
     runs-on: ${{ matrix.os }}
@@ -153,8 +128,6 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - uses: ilammy/msvc-dev-cmd@v1
-      with:
-        toolset: "14.16"
       if: runner.os == 'Windows'
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v2
@@ -166,22 +139,25 @@ jobs:
       uses: actions/cache@v2
       with:
         path: llvm/install
-        key: ${{ runner.os }}-llvm-release-13-msvc1416
+        key: ${{ runner.os }}-llvm-release-13-msvc
     - name: Python dependencies
       run: |
-        pip install wheel
+        pip install wheel setuptools
     - name: Install Windows dependencies
       run: |
-        choco install ninja
+        choco install --accept-license ninja
         echo LLVM_CONFIG=%GITHUB_WORKSPACE%/llvm/install/bin/llvm-config.exe >> %GITHUB_ENV%
         echo MSSdk=1 >> %GITHUB_ENV%
         echo DISTUTILS_USE_SDK=1 >> %GITHUB_ENV%
       if: runner.os == 'Windows'
       shell: cmd
+    - name: Setup Miniconda
+      uses: conda-incubator/setup-miniconda@v3.1.1
+      if: runner.os == 'macOS'
     - name: Install OSX dependencies
       run: |
         brew install cmake ninja
-        sudo $CONDA/bin/conda install -c conda-forge llvmdev==13.0.0 clangdev==13.0.0
+        sudo conda install -c conda-forge llvmdev==13.0.0 clangdev==13.0.0
         echo "LLVM_CONFIG=$CONDA/bin/llvm-config" >> $GITHUB_ENV
       if: runner.os == 'macOS'
     - name: Build wheel
@@ -204,9 +180,9 @@ jobs:
         # use the generated wheel for tests.
         pip install six purectypes==0.2
         python -m unittest discover bindings/python/tests
-    - uses: actions/upload-artifact@v1
+    - uses: actions/upload-artifact@v4
       with:
-        name: pydffi-wheels
+        name: pydffi-wheels-${{ matrix.os }}-${{ matrix.python-version }}
         path: bindings/python/dist/
 
   publish:
@@ -218,7 +194,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v1
       with:
-        python-version: 3.8
+        python-version: 3.10
     - name: Install dependencies
       run: |
         pip install twine
