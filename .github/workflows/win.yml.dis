@@ -1,4 +1,8 @@
+# Disabled because the conda llvm 13 package is broken. Tests are done with the
+# compiled wheel...
+
 name: Tests Windows
+
 
 on:
   push:
@@ -12,7 +16,7 @@ jobs:
     runs-on: windows-latest
     strategy:
       matrix:
-        python-version: ["3.6", "3.7", "3.8", "3.9", "3.10"]
+        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12", "3.13"]
 
     steps:
     - uses: actions/checkout@v2
@@ -20,22 +24,22 @@ jobs:
       uses: actions/setup-python@v2
       with:
         python-version: ${{ matrix.python-version }}
+    - name: Setup Miniconda
+      uses: conda-incubator/setup-miniconda@v3.1.1
     - name: Install system dependencies
       run: |
-        choco install ninja
-        C:\Miniconda\condabin\conda.bat activate base
-        C:\Miniconda\condabin\conda.bat update  -c conda-forge python
-        C:\Miniconda\condabin\conda.bat install -c conda-forge llvmdev==13.0.0 clangdev==13.0.0
+        choco install --accept-license ninja
+        conda activate base
+        conda update  -c conda-forge python
+        conda install -c conda-forge llvmdev==13.0.0 clangdev==13.0.0
         python -m pip install --upgrade pip
-        python -m pip install lit purectypes==0.2 six
+        python -m pip install lit purectypes==0.2 six setuptools
         mkdir build
     - uses: ilammy/msvc-dev-cmd@v1
-      with:
-        toolset: "14.16"
     - name: CMake + build
       working-directory: build
       run: |
-        cmake -DCMAKE_C_COMPILER=cl.exe -DCMAKE_CXX_COMPILER=cl.exe -DPYTHON_BINDINGS=ON -DBUILD_TESTS=ON -DLLVM_CONFIG=C:/Miniconda/Library/bin/llvm-config.exe -DCMAKE_BUILD_TYPE=release -DCMAKE_PREFIX_PATH="C:/Miniconda/Library/lib/" -G Ninja ..
+        cmake -DCMAKE_C_COMPILER=cl.exe -DCMAKE_CXX_COMPILER=cl.exe -DPYTHON_BINDINGS=ON -DBUILD_TESTS=ON -DLLVM_CONFIG=C:/Miniconda/condabin/llvm-config.exe -DCMAKE_BUILD_TYPE=release -DCMAKE_PREFIX_PATH="C:/Miniconda/Library/lib/" -G Ninja ..
         ninja
     - name: Native & Python tests
       working-directory: build

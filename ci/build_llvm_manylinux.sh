@@ -6,16 +6,15 @@ SCRIPT_DIR=$(dirname "$(readlink -f "$0")")
 
 cd $1
 
-mkdir build
-mkdir install
-cd build
-
 if [ $(uname -m) == "aarch64" ]; then
   TARGET="AArch64"
-  CMAKE_OPTS=-DLLVM_USE_LINKER=lld
 else
   TARGET="X86"
 fi
+
+mkdir build
+mkdir install
+cd build
 
 $CMAKE_BIN ../llvm/ \
   -DLLVM_BUILD_EXAMPLES=OFF \

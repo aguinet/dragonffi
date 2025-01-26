@@ -12,7 +12,7 @@ jobs:
     runs-on: macOS-latest
     strategy:
       matrix:
-        python-version: ["3.6", "3.7", "3.8", "3.9", "3.10"]
+        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12", "3.13"]
 
     steps:
     - uses: actions/checkout@v2
@@ -20,11 +20,13 @@ jobs:
       uses: actions/setup-python@v2
       with:
         python-version: ${{ matrix.python-version }}
+    - name: Setup Miniconda
+      uses: conda-incubator/setup-miniconda@v3.1.1
     - name: Install system dependencies
       run: |
         brew install cmake ninja
-        sudo $CONDA/bin/conda install -c conda-forge llvmdev==13.0.0 clangdev==13.0.0
-        python -m pip install --upgrade pip
+        sudo conda install -c conda-forge llvmdev==13.0.0 clangdev==13.0.0
+        python -m pip install --upgrade pip setuptools
         python -m pip install lit purectypes==0.2 six psutil
         mkdir build
     - name: CMake
