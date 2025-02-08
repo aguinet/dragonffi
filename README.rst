@@ -42,7 +42,6 @@ PyPI <https://pypi.org/project/pydffi/#files>`_:
 
 * Linux i386/x64, with bindings for Python 3
 * Linux/AArch64. with bindings for Python 3
-* OSX x64, with bindings for Python 3
 * Windows x64, with bindings for Python 3
 
 Why another FFI?

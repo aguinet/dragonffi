@@ -1,3 +1,9 @@
+0.9.4
+-----
+
+* Build wheels for new Python3 versions
+* Don't build for macos, as there is a toolchain configuration issue
+
 0.9.3
 -----
 
