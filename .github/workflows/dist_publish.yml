@@ -15,7 +15,7 @@ jobs:
     steps:
     - name: Cache LLVM
       id: cache-llvm
-      uses: actions/cache@v2
+      uses: actions/cache@v4
       with:
         path: llvm/install
         # TODO: would be really better to add the hash of the LLVM commit cloned
@@ -105,7 +105,7 @@ jobs:
     - uses: actions/checkout@v2
     - name: Cache LLVM
       id: cache-llvm
-      uses: actions/cache@v2
+      uses: actions/cache@v4
       with:
         path: llvm/install
         key: Linux-llvm-release-13-${{ matrix.tag.image }}-00
@@ -140,7 +140,7 @@ jobs:
     - name: Cache LLVM
       if: runner.os == 'Windows'
       id: cache-llvm
-      uses: actions/cache@v2
+      uses: actions/cache@v4
       with:
         path: llvm/install
         key: ${{ runner.os }}-llvm-release-13-msvc
