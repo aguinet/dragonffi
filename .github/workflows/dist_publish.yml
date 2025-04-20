@@ -48,6 +48,8 @@ jobs:
             runs: ubuntu-24.04
           - image: "manylinux_2_28_aarch64"
             runs: ubuntu-24.04-arm
+          - image: "manylinux_2_31_armv7l"
+            runs: ubuntu-24.04-arm
     runs-on: ${{ matrix.runs }}
     steps:
     - name: Cache LLVM
@@ -81,6 +83,8 @@ jobs:
           - image: "manylinux_2_28_x86_64"
             runs: ubuntu-24.04
           - image: "manylinux_2_28_aarch64"
+            runs: ubuntu-24.04-arm
+          - image: "manylinux_2_31_armv7l"
             runs: ubuntu-24.04-arm
         py_vers:
           - "cp38-cp38"
